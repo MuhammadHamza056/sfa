@@ -51,6 +51,7 @@ class AssetsConstants {
   static const String house3 = "assets/icons/house3.svg";
   static const String circleUser3 = "assets/icons/circle-user3.svg";
   static const String thumbsUp = "assets/icons/thumbs-up.svg";
+  static const String thumbsUp2 = "assets/icons/thumbs-up2.svg";
   static const String trash = "assets/icons/trash.svg";
   static const String trash2 = "assets/icons/trash2.svg";
   static const String edit = "assets/icons/edit.svg";

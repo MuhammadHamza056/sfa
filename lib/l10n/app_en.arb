@@ -241,5 +241,16 @@
   "pointsDiscountValue": "-20 SAR",
   "subtotalAfterPoints": "2,480 SAR",
   "addressByMap": "Address via Map",
-  "saveAddressForFuture": "Save Address for Future Orders"
+  "saveAddressForFuture": "Save Address for Future Orders",
+  "ratingsAndReviews": "Ratings & Reviews",
+  "writeYourReview": "Write your review",
+  "reviewsTitle": "Reviews",
+  "verifiedPurchase": "Verified Purchase",
+  "helpful": "Helpful",
+  "twoDaysAgo": "2 days ago",
+  "oneWeekAgo": "1 week ago",
+  "addReview": "Add Review",
+  "addReviewOnProduct": "Add your review on the product",
+  "ratingLabel": "Rating*",
+  "noteLabel": "Note*"
 }

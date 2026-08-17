@@ -86,7 +86,10 @@ class BrandsHeader extends StatelessWidget {
                                   width: 24,
                                   height: 24,
                                 ),
-                                onPressed: () {},
+                                onPressed: () {
+                                  context.read<DashboardBloc>().add(const CacheCurrentTabEvent());
+                                  context.read<DashboardBloc>().add(const ChangeTabEvent(8));
+                                },
                               ),
                             ],
                           ),

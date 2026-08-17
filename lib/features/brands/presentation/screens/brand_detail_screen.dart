@@ -124,7 +124,10 @@ class BrandDetailScreen extends StatelessWidget {
                     width: 22,
                     height: 22,
                   ),
-                  onPressed: () {},
+                  onPressed: () {
+                    context.read<DashboardBloc>().add(const CacheCurrentTabEvent());
+                    context.read<DashboardBloc>().add(const ChangeTabEvent(8));
+                  },
                 ),
               ],
             ),

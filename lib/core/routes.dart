@@ -21,6 +21,9 @@ import '../features/wallet/presentation/screens/all_transactions_screen.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../features/orders/bloc/orders_bloc.dart';
 import '../features/address/presentation/screens/address_screen.dart';
+import '../features/brands/presentation/screens/product_reviews_screen.dart';
+import '../features/brands/presentation/screens/write_review_screen.dart';
+
 
 final router = GoRouter(
   initialLocation: '/splash',
@@ -152,6 +155,20 @@ final router = GoRouter(
         body: AllTransactionsScreen(),
         initialTab: 3,
         customIndex: 3,
+      ),
+    ),
+    GoRoute(
+      path: '/product-reviews',
+      builder: (context, state) => const DashboardScreen(
+        body: ProductReviewsScreen(),
+        customIndex: 1,
+      ),
+    ),
+    GoRoute(
+      path: '/write-review',
+      builder: (context, state) => const DashboardScreen(
+        body: WriteReviewScreen(),
+        customIndex: 1,
       ),
     ),
   ],

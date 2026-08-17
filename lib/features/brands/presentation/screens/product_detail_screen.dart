@@ -2,6 +2,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:go_router/go_router.dart';
 import 'package:sfa/core/localization/app_localizations.dart';
 import 'package:sfa/utils/app_style.dart';
 import 'package:sfa/utils/assets_constants.dart';
@@ -401,19 +402,22 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                       ),
 
                       // Rating (Star & text)
-                      Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          const Icon(Icons.star, size: 14, color: Colors.amber),
-                          const SizedBox(width: 4),
-                          Text(
-                            productRating,
-                            style: AppStyle.bodyText.copyWith(
-                              fontSize: 11.5,
-                              color: AppColors.textcolor_50,
+                      GestureDetector(
+                        onTap: () => context.push('/product-reviews'),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const Icon(Icons.star, size: 14, color: Colors.amber),
+                            const SizedBox(width: 4),
+                            Text(
+                              productRating,
+                              style: AppStyle.bodyText.copyWith(
+                                fontSize: 11.5,
+                                color: AppColors.textcolor_50,
+                              ),
                             ),
-                          ),
-                        ],
+                          ],
+                        ),
                       ),
                     ],
                   ),

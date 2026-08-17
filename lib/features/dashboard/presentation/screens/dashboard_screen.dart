@@ -23,6 +23,8 @@ import 'package:sfa/features/favorites/presentation/screens/favorites_screen.dar
 import 'package:sfa/features/wallet/presentation/screens/wallet_screen.dart';
 import 'package:sfa/features/wallet/presentation/screens/all_transactions_screen.dart';
 import 'package:sfa/features/address/presentation/screens/address_screen.dart';
+import 'package:sfa/features/brands/presentation/screens/product_reviews_screen.dart';
+import 'package:sfa/features/brands/presentation/screens/write_review_screen.dart';
 
 import 'package:sfa/features/favorites/bloc/favorites_bloc.dart';
 import 'package:sfa/features/favorites/bloc/favorites_event.dart';
@@ -176,46 +178,64 @@ class _DashboardScreenState extends State<DashboardScreen>
               child: Scaffold(
                 backgroundColor: Colors.white,
                 extendBody: state.currentIndex == 2 && !state.drawerOpen,
-                 appBar: (() {
-                   if (widget.body != null) {
-                     return widget.body is WalletScreen ||
-                            widget.body is AllTransactionsScreen ||
-                            widget.body is AddressScreen;
-                   }
-                   return !(state.currentIndex == 0 ||
-                            state.currentIndex == 1 ||
-                            state.currentIndex == 2 ||
-                            state.currentIndex == 6 ||
-                            state.currentIndex == 7);
-                 })()
-                     ? PreferredSize(
-                        preferredSize: const Size.fromHeight(56),
-                        child: Container(
-                          color: Colors.white,
-                          child: SafeArea(
-                            bottom: false,
-                            child: Container(
-                              height: 56,
-                              padding: const EdgeInsets.symmetric(horizontal: 16),
-                              child: Stack(
-                                alignment: Alignment.center,
-                                children: [
-                                  // Centered Title
-                                  Text(
-                                    widget.body is WalletScreen
-                                        ? loc.translate('refundWallet')
-                                        : widget.body is AllTransactionsScreen
-                                            ? loc.translate('allTransactionsTitle')
-                                            : widget.body is AddressScreen
-                                                ? loc.translate('drawerMyAddresses')
-                                                : 'SFA',
-                                    style: GoogleFonts.cairo(
-                                      fontSize: (widget.body is WalletScreen || widget.body is AllTransactionsScreen || widget.body is AddressScreen) ? 20 : 24,
-                                      fontWeight: FontWeight.bold,
-                                      letterSpacing: (widget.body is WalletScreen || widget.body is AllTransactionsScreen || widget.body is AddressScreen) ? 0 : 2.0,
-                                      color: AppColors.textcolor,
-                                    ),
-                                  ),
+                  appBar: (() {
+                    if (widget.body != null) {
+                      return widget.body is WalletScreen ||
+                             widget.body is AllTransactionsScreen ||
+                             widget.body is AddressScreen ||
+                             widget.body is ProductReviewsScreen ||
+                             widget.body is WriteReviewScreen;
+                    }
+                    return !(state.currentIndex == 0 ||
+                             state.currentIndex == 1 ||
+                             state.currentIndex == 2 ||
+                             state.currentIndex == 6 ||
+                             state.currentIndex == 7);
+                  })()
+                      ? PreferredSize(
+                         preferredSize: const Size.fromHeight(56),
+                         child: Container(
+                           color: Colors.white,
+                           child: SafeArea(
+                             bottom: false,
+                             child: Container(
+                               height: 56,
+                               padding: const EdgeInsets.symmetric(horizontal: 16),
+                               child: Stack(
+                                 alignment: Alignment.center,
+                                 children: [
+                                   // Centered Title
+                                   Text(
+                                     widget.body is WalletScreen
+                                         ? loc.translate('refundWallet')
+                                         : widget.body is AllTransactionsScreen
+                                             ? loc.translate('allTransactionsTitle')
+                                             : widget.body is AddressScreen
+                                                 ? loc.translate('drawerMyAddresses')
+                                                 : widget.body is ProductReviewsScreen
+                                                     ? loc.translate('ratingsAndReviews')
+                                                     : widget.body is WriteReviewScreen
+                                                         ? loc.translate('addReview')
+                                                         : 'SFA',
+                                     style: GoogleFonts.cairo(
+                                       fontSize: (widget.body is WalletScreen ||
+                                               widget.body is AllTransactionsScreen ||
+                                               widget.body is AddressScreen ||
+                                               widget.body is ProductReviewsScreen ||
+                                               widget.body is WriteReviewScreen)
+                                           ? 20
+                                           : 24,
+                                       fontWeight: FontWeight.bold,
+                                       letterSpacing: (widget.body is WalletScreen ||
+                                               widget.body is AllTransactionsScreen ||
+                                               widget.body is AddressScreen ||
+                                               widget.body is ProductReviewsScreen ||
+                                               widget.body is WriteReviewScreen)
+                                           ? 0
+                                           : 2.0,
+                                       color: AppColors.textcolor,
+                                     ),
+                                   ),
                                   // Left & Right Controls
                                   Row(
                                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -226,6 +246,9 @@ class _DashboardScreenState extends State<DashboardScreen>
                                         children: [
                                           GestureDetector(
                                             onTap: () {
+                                              if (widget.body != null) {
+                                                context.pop();
+                                              }
                                               context.read<DashboardBloc>().add(
                                                 const CacheCurrentTabEvent(),
                                               );
@@ -247,6 +270,9 @@ class _DashboardScreenState extends State<DashboardScreen>
                                           ),
                                           GestureDetector(
                                             onTap: () {
+                                              if (widget.body != null) {
+                                                context.pop();
+                                              }
                                               context.read<DashboardBloc>().add(
                                                 const CacheCurrentTabEvent(),
                                               );
@@ -288,8 +314,8 @@ class _DashboardScreenState extends State<DashboardScreen>
                                           ),
                                           GestureDetector(
                                             onTap: () {
-                                              if (state.currentIndex == 5 || widget.body is WalletScreen || widget.body is AllTransactionsScreen || widget.body is AddressScreen) {
-                                                if (widget.body is WalletScreen || widget.body is AllTransactionsScreen || widget.body is AddressScreen) {
+                                              if (state.currentIndex == 5 || widget.body is WalletScreen || widget.body is AllTransactionsScreen || widget.body is AddressScreen || widget.body is ProductReviewsScreen || widget.body is WriteReviewScreen) {
+                                                if (widget.body is WalletScreen || widget.body is AllTransactionsScreen || widget.body is AddressScreen || widget.body is ProductReviewsScreen || widget.body is WriteReviewScreen) {
                                                   context.pop();
                                                 } else {
                                                   context.read<DashboardBloc>().add(
@@ -303,7 +329,7 @@ class _DashboardScreenState extends State<DashboardScreen>
                                             child: Padding(
                                               padding: const EdgeInsets.all(8.0),
                                               child: SvgPicture.asset(
-                                                (state.currentIndex == 5 || widget.body is WalletScreen || widget.body is AllTransactionsScreen || widget.body is AddressScreen)
+                                                (state.currentIndex == 5 || widget.body is WalletScreen || widget.body is AllTransactionsScreen || widget.body is AddressScreen || widget.body is ProductReviewsScreen || widget.body is WriteReviewScreen)
                                                     ? AssetsConstants.back
                                                     : AssetsConstants.menu,
                                                 width: 22,

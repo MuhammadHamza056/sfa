@@ -241,5 +241,16 @@
   "pointsDiscountValue": "-20 ر.س.",
   "subtotalAfterPoints": "2,480 ر.س.",
   "addressByMap": "العنوان باستخدام الخريطة",
-  "saveAddressForFuture": "سجل العنوان للطلبات المستقبلية"
+  "saveAddressForFuture": "سجل العنوان للطلبات المستقبلية",
+  "ratingsAndReviews": "التقييمات والمراجعات",
+  "writeYourReview": "اكتب تقييمك",
+  "reviewsTitle": "المراجعات",
+  "verifiedPurchase": "مشتري موثق",
+  "helpful": "مفيد",
+  "twoDaysAgo": "منذ يومين",
+  "oneWeekAgo": "منذ أسبوع",
+  "addReview": "أضف تقييم",
+  "addReviewOnProduct": "أضف تقييمك على المنتج",
+  "ratingLabel": "التقييم*",
+  "noteLabel": "ملاحظة*"
 }

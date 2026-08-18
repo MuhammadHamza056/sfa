@@ -27,6 +27,7 @@ import 'package:sfa/features/address/presentation/screens/address_screen.dart';
 import 'package:sfa/features/address/presentation/screens/add_edit_address_screen.dart';
 import 'package:sfa/features/brands/presentation/screens/product_reviews_screen.dart';
 import 'package:sfa/features/brands/presentation/screens/write_review_screen.dart';
+import 'package:sfa/features/favorites/presentation/screens/wishlist_detail_screen.dart';
 
 import 'package:sfa/features/favorites/bloc/favorites_bloc.dart';
 import 'package:sfa/features/favorites/bloc/favorites_event.dart';
@@ -189,7 +190,8 @@ class _DashboardScreenState extends State<DashboardScreen>
                              widget.body is AddressScreen ||
                              widget.body is AddEditAddressScreen ||
                              widget.body is ProductReviewsScreen ||
-                             widget.body is WriteReviewScreen;
+                             widget.body is WriteReviewScreen ||
+                             widget.body is WishlistDetailScreen;
                     }
                     return !(state.currentIndex == 0 ||
                              state.currentIndex == 1 ||
@@ -225,14 +227,17 @@ class _DashboardScreenState extends State<DashboardScreen>
                                                          ? loc.translate('ratingsAndReviews')
                                                          : widget.body is WriteReviewScreen
                                                              ? loc.translate('addReview')
-                                                             : 'SFA',
+                                                             : widget.body is WishlistDetailScreen
+                                                                 ? (widget.body as WishlistDetailScreen).title
+                                                                 : 'SFA',
                                      style: GoogleFonts.cairo(
                                        fontSize: (widget.body is WalletScreen ||
                                                widget.body is AllTransactionsScreen ||
                                                widget.body is AddressScreen ||
                                                widget.body is AddEditAddressScreen ||
                                                widget.body is ProductReviewsScreen ||
-                                               widget.body is WriteReviewScreen)
+                                               widget.body is WriteReviewScreen ||
+                                               widget.body is WishlistDetailScreen)
                                            ? 20
                                            : 24,
                                        fontWeight: FontWeight.bold,
@@ -241,7 +246,8 @@ class _DashboardScreenState extends State<DashboardScreen>
                                                widget.body is AddressScreen ||
                                                widget.body is AddEditAddressScreen ||
                                                widget.body is ProductReviewsScreen ||
-                                               widget.body is WriteReviewScreen)
+                                               widget.body is WriteReviewScreen ||
+                                               widget.body is WishlistDetailScreen)
                                            ? 0
                                            : 2.0,
                                        color: context.palette.textPrimary,
@@ -325,8 +331,8 @@ class _DashboardScreenState extends State<DashboardScreen>
                                           ),
                                           GestureDetector(
                                             onTap: () {
-                                              if (state.currentIndex == 5 || widget.body is WalletScreen || widget.body is AllTransactionsScreen || widget.body is AddressScreen || widget.body is AddEditAddressScreen || widget.body is ProductReviewsScreen || widget.body is WriteReviewScreen) {
-                                                if (widget.body is WalletScreen || widget.body is AllTransactionsScreen || widget.body is AddressScreen || widget.body is AddEditAddressScreen || widget.body is ProductReviewsScreen || widget.body is WriteReviewScreen) {
+                                              if (state.currentIndex == 5 || widget.body is WalletScreen || widget.body is AllTransactionsScreen || widget.body is AddressScreen || widget.body is AddEditAddressScreen || widget.body is ProductReviewsScreen || widget.body is WriteReviewScreen || widget.body is WishlistDetailScreen) {
+                                                if (widget.body is WalletScreen || widget.body is AllTransactionsScreen || widget.body is AddressScreen || widget.body is AddEditAddressScreen || widget.body is ProductReviewsScreen || widget.body is WriteReviewScreen || widget.body is WishlistDetailScreen) {
                                                   context.pop();
                                                 } else {
                                                   context.read<DashboardBloc>().add(
@@ -340,7 +346,7 @@ class _DashboardScreenState extends State<DashboardScreen>
                                             child: Padding(
                                               padding: const EdgeInsets.all(8.0),
                                               child: SvgPicture.asset(
-                                                (state.currentIndex == 5 || widget.body is WalletScreen || widget.body is AllTransactionsScreen || widget.body is AddressScreen || widget.body is AddEditAddressScreen || widget.body is ProductReviewsScreen || widget.body is WriteReviewScreen)
+                                                (state.currentIndex == 5 || widget.body is WalletScreen || widget.body is AllTransactionsScreen || widget.body is AddressScreen || widget.body is AddEditAddressScreen || widget.body is ProductReviewsScreen || widget.body is WriteReviewScreen || widget.body is WishlistDetailScreen)
                                                     ? AssetsConstants.back
                                                     : AssetsConstants.menu,
                                                 width: 22,

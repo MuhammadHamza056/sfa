@@ -24,6 +24,8 @@ import '../features/address/presentation/screens/address_screen.dart';
 import '../features/address/presentation/screens/add_edit_address_screen.dart';
 import '../features/brands/presentation/screens/product_reviews_screen.dart';
 import '../features/brands/presentation/screens/write_review_screen.dart';
+import '../features/favorites/presentation/screens/wishlist_detail_screen.dart';
+import '../features/favorites/models/wishlist_product.dart';
 
 
 final router = GoRouter(
@@ -122,6 +124,20 @@ final router = GoRouter(
         return DashboardScreen(
           body: AddEditAddressScreen(address: address),
           customIndex: 3,
+        );
+      },
+    ),
+    GoRoute(
+      path: '/wishlist-detail',
+      builder: (context, state) {
+        final extra = state.extra as Map<String, dynamic>;
+        return DashboardScreen(
+          body: WishlistDetailScreen(
+            title: extra['title'] as String,
+            addedByName: extra['addedByName'] as String,
+            avatarUrl: extra['avatarUrl'] as String,
+            products: extra['products'] as List<WishlistProduct>,
+          ),
         );
       },
     ),

@@ -167,7 +167,9 @@ class _ProductReviewsScreenState extends State<ProductReviewsScreen> {
                                 ),
                                 const SizedBox(width: 4),
                                 Text(
-                                  isAr ? '4.9 · 85 تقييماً' : '4.9 · 85 reviews',
+                                  isAr
+                                      ? '4.9 · 85 تقييماً'
+                                      : '4.9 · 85 reviews',
                                   style: AppStyle.bodyText.copyWith(
                                     fontSize: 13.5,
                                     color: context.palette.textMuted,
@@ -188,12 +190,13 @@ class _ProductReviewsScreenState extends State<ProductReviewsScreen> {
                                 width: 140,
                                 height: 140,
                                 fit: BoxFit.cover,
-                                errorWidget: (context, url, error) => Image.network(
-                                  productImage,
-                                  width: 140,
-                                  height: 140,
-                                  fit: BoxFit.cover,
-                                ),
+                                errorWidget: (context, url, error) =>
+                                    Image.network(
+                                      productImage,
+                                      width: 140,
+                                      height: 140,
+                                      fit: BoxFit.cover,
+                                    ),
                               ),
                             ),
                             Positioned(
@@ -297,11 +300,11 @@ class _ProductReviewsScreenState extends State<ProductReviewsScreen> {
                                   child: LinearProgressIndicator(
                                     value: percentage,
                                     minHeight: 6,
-                                    backgroundColor: context.palette.surfaceMuted,
-                                    valueColor:
-                                        AlwaysStoppedAnimation<Color>(
-                                          context.palette.textPrimary,
-                                        ),
+                                    backgroundColor:
+                                        context.palette.surfaceMuted,
+                                    valueColor: AlwaysStoppedAnimation<Color>(
+                                      context.palette.textPrimary,
+                                    ),
                                   ),
                                 ),
                               ),

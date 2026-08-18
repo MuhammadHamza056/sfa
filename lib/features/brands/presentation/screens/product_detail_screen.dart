@@ -1,4 +1,5 @@
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_svg/flutter_svg.dart';
@@ -13,6 +14,7 @@ import 'package:sfa/features/dashboard/bloc/dashboard_state.dart';
 import 'package:sfa/features/brands/bloc/product_detail_bloc.dart';
 import 'package:sfa/features/brands/bloc/product_detail_event.dart';
 import 'package:sfa/features/brands/bloc/product_detail_state.dart';
+import 'package:sfa/features/brands/presentation/widgets/delivery_terms_bottom_sheet.dart';
 import 'package:sfa/features/favorites/models/favorite_product.dart';
 import 'package:sfa/features/favorites/bloc/favorites_bloc.dart';
 import 'package:sfa/features/favorites/bloc/favorites_event.dart';
@@ -45,17 +47,21 @@ class ProductDetailScreen extends StatefulWidget {
 class _ProductDetailScreenState extends State<ProductDetailScreen> {
   final ScrollController _scrollController = ScrollController();
   late final ProductDetailBloc _productDetailBloc;
+  late final TapGestureRecognizer _deliveryTermsRecognizer;
 
   @override
   void initState() {
     super.initState();
     _productDetailBloc = ProductDetailBloc();
+    _deliveryTermsRecognizer = TapGestureRecognizer()
+      ..onTap = () => DeliveryTermsBottomSheet.show(context);
   }
 
   @override
   void dispose() {
     _scrollController.dispose();
     _productDetailBloc.close();
+    _deliveryTermsRecognizer.dispose();
     super.dispose();
   }
 
@@ -826,6 +832,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                                             decoration: TextDecoration.underline,
                                             decorationColor: AppColors.primary,
                                           ),
+                                          recognizer: _deliveryTermsRecognizer,
                                         ),
                                         TextSpan(
                                           text: loc.translate('viewDeliveryTermsSuffix'),

@@ -14,6 +14,7 @@ import 'package:sfa/utils/app_style.dart';
 import 'package:sfa/features/home/bloc/home_bloc.dart';
 import 'package:sfa/features/home/bloc/home_event.dart';
 import 'package:sfa/features/home/bloc/home_state.dart';
+import 'package:sfa/core/theme/app_palette.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -137,7 +138,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
                   // Saudi Brands Section
                   Container(
-                    color: Colors.white,
+                    color: context.palette.background,
                     width: double.infinity,
                     padding: const EdgeInsets.symmetric(
                       vertical: 24,
@@ -156,7 +157,7 @@ class _HomeScreenState extends State<HomeScreen> {
                             Text(
                               isAr ? 'البراندات السعودية' : 'Saudi Brands',
                               style: GoogleFonts.cairo(
-                                color: const Color(0xFF3A1E1A),
+                                color: context.palette.textPrimary,
                                 fontSize: 20,
                                 fontWeight: FontWeight.bold,
                               ),
@@ -173,7 +174,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                     Text(
                                       'عرض الكل',
                                       style: GoogleFonts.cairo(
-                                        color: Colors.grey[400],
+                                        color: context.palette.textMuted,
                                         fontSize: 14,
                                         fontWeight: FontWeight.w500,
                                       ),
@@ -182,13 +183,13 @@ class _HomeScreenState extends State<HomeScreen> {
                                     Icon(
                                       Icons.arrow_forward_ios,
                                       size: 12,
-                                      color: Colors.grey[400],
+                                      color: context.palette.textMuted,
                                     ),
                                   ] else ...[
                                     Text(
                                       'View All',
                                       style: GoogleFonts.cairo(
-                                        color: Colors.grey[400],
+                                        color: context.palette.textMuted,
                                         fontSize: 14,
                                         fontWeight: FontWeight.w500,
                                       ),
@@ -197,7 +198,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                     Icon(
                                       Icons.arrow_forward_ios,
                                       size: 12,
-                                      color: Colors.grey[400],
+                                      color: context.palette.textMuted,
                                     ),
                                   ],
                                 ],
@@ -206,7 +207,7 @@ class _HomeScreenState extends State<HomeScreen> {
                           ],
                         ),
                         const SizedBox(height: 8),
-                        Divider(color: Colors.grey[200], thickness: 1),
+                        Divider(color: context.palette.divider, thickness: 1),
                         const SizedBox(height: 12),
                         Align(
                           alignment: isAr ? Alignment.centerRight : Alignment.centerLeft,
@@ -215,7 +216,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                 ? 'علامات تجارية سعودية نفخر بها'
                                 : 'Saudi brands we are proud of',
                             style: AppStyle.labelText.copyWith(
-                              color: const Color(0xFF3A1E1A).withValues(alpha: 0.8),
+                              color: context.palette.textPrimary.withValues(alpha: 0.8),
                               fontSize: 14,
                               fontWeight: FontWeight.w500,
                             ),

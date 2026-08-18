@@ -17,6 +17,7 @@ import 'package:sfa/features/favorites/models/favorite_product.dart';
 import 'package:sfa/features/favorites/bloc/favorites_bloc.dart';
 import 'package:sfa/features/favorites/bloc/favorites_event.dart';
 import 'package:sfa/features/favorites/bloc/favorites_state.dart';
+import 'package:sfa/core/theme/app_palette.dart';
 
 class RelatedProductItem {
   final String imageUrl;
@@ -144,9 +145,9 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
         final resolvedBrandName = loc.translate(brandNameKey);
 
         return Scaffold(
-          backgroundColor: Colors.white,
+          backgroundColor: context.palette.background,
           appBar: AppBar(
-            backgroundColor: Colors.white,
+            backgroundColor: context.palette.background,
             elevation: 0.5,
             scrolledUnderElevation: 0.5,
             automaticallyImplyLeading: false,
@@ -160,7 +161,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                   icon: SvgPicture.asset(
                     AssetsConstants.shoppingBag2,
                     colorFilter: ColorFilter.mode(
-                      AppColors.textcolor,
+                      context.palette.textPrimary,
                       BlendMode.srcIn,
                     ),
                     width: 22,
@@ -186,7 +187,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                       icon: SvgPicture.asset(
                         isFav ? AssetsConstants.heartFilled : AssetsConstants.heart2,
                         colorFilter: ColorFilter.mode(
-                          isFav ? AppColors.primary : AppColors.textcolor,
+                          isFav ? AppColors.primary : context.palette.textPrimary,
                           BlendMode.srcIn,
                         ),
                         width: 22,
@@ -205,7 +206,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
               style: AppStyle.headerHeading.copyWith(
                 fontSize: 18,
                 fontWeight: FontWeight.bold,
-                color: AppColors.textcolor,
+                color: context.palette.textPrimary,
               ),
             ),
             actions: [
@@ -213,7 +214,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                 icon: SvgPicture.asset(
                   AssetsConstants.search3,
                   colorFilter: ColorFilter.mode(
-                    AppColors.textcolor,
+                    context.palette.textPrimary,
                     BlendMode.srcIn,
                   ),
                   width: 22,
@@ -225,7 +226,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                 icon: SvgPicture.asset(
                   AssetsConstants.back2,
                   colorFilter: ColorFilter.mode(
-                    AppColors.textcolor,
+                    context.palette.textPrimary,
                     BlendMode.srcIn,
                   ),
                   width: 20,
@@ -254,9 +255,9 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                       width: double.infinity,
                       fit: BoxFit.cover,
                       placeholder: (_, __) =>
-                          Container(color: Colors.grey[200]),
+                          Container(color: context.palette.surfaceMuted),
                       errorWidget: (_, __, ___) =>
-                          Container(color: Colors.grey[200]),
+                          Container(color: context.palette.surfaceMuted),
                     ),
                     Positioned(
                       bottom: 16,
@@ -298,7 +299,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                           style: AppStyle.headerHeading.copyWith(
                             fontSize: 18,
                             fontWeight: FontWeight.bold,
-                            color: AppColors.textcolor,
+                            color: context.palette.textPrimary,
                           ),
                         ),
                       ),
@@ -323,7 +324,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                   padding: const EdgeInsets.symmetric(horizontal: 16),
                   child: Container(
                     decoration: BoxDecoration(
-                      color: Colors.white,
+                      color: context.palette.background,
                       borderRadius: BorderRadius.circular(20),
                       border: Border.all(
                         color: const Color(0xFFE57373),
@@ -371,7 +372,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                         children: [
                           Container(
                             decoration: BoxDecoration(
-                              color: const Color(0xFFFAF2E6),
+                              color: context.palette.surfaceAlt,
                               borderRadius: BorderRadius.circular(6),
                               border: Border.all(
                                 color: const Color(0xFFD49E4B),
@@ -395,7 +396,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                             style: AppStyle.bodyText.copyWith(
                               fontWeight: FontWeight.bold,
                               fontSize: 13,
-                              color: AppColors.textcolor,
+                              color: context.palette.textPrimary,
                             ),
                           ),
                         ],
@@ -413,7 +414,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                               productRating,
                               style: AppStyle.bodyText.copyWith(
                                 fontSize: 11.5,
-                                color: AppColors.textcolor_50,
+                                color: context.palette.textMuted,
                               ),
                             ),
                           ],
@@ -424,12 +425,12 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                 ),
 
                 const SizedBox(height: 16),
-                const Divider(
+                Divider(
                   indent: 16,
                   endIndent: 16,
                   height: 1,
                   thickness: 0.5,
-                  color: Color(0xFFEFEFEF),
+                  color: context.palette.divider,
                 ),
 
                 // 5. Color Selection
@@ -446,7 +447,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                         style: AppStyle.bodyText.copyWith(
                           fontWeight: FontWeight.bold,
                           fontSize: 14,
-                          color: AppColors.textcolor,
+                          color: context.palette.textPrimary,
                         ),
                       ),
                       const SizedBox(height: 10),
@@ -483,12 +484,12 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                 ),
 
                 const SizedBox(height: 8),
-                const Divider(
+                Divider(
                   indent: 16,
                   endIndent: 16,
                   height: 1,
                   thickness: 0.5,
-                  color: Color(0xFFEFEFEF),
+                  color: context.palette.divider,
                 ),
 
                 // Shipping details widget
@@ -529,7 +530,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                               style: AppStyle.bodyText.copyWith(
                                 fontSize: 15,
                                 fontWeight: FontWeight.w600,
-                                color: AppColors.textcolor,
+                                color: context.palette.textPrimary,
                               ),
                             ),
                             const SizedBox(height: 4),
@@ -542,7 +543,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                                   style: AppStyle.bodyText.copyWith(
                                     fontSize: 13,
                                     fontWeight: FontWeight.w300,
-                                    color: AppColors.textcolor.withOpacity(0.60),
+                                    color: context.palette.textPrimary.withOpacity(0.60),
                                   ),
                                 ),
                                 Text(
@@ -551,17 +552,17 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                                   style: AppStyle.bodyText.copyWith(
                                     fontSize: 13,
                                     fontWeight: FontWeight.w300,
-                                    color: AppColors.textcolor.withOpacity(0.60),
+                                    color: context.palette.textPrimary.withOpacity(0.60),
                                   ),
                                 ),
                                 const SizedBox(width: 4),
                                 Theme(
                                   data: Theme.of(context).copyWith(
-                                    cardColor: Colors.white,
+                                    cardColor: context.palette.surface,
                                   ),
                                   child: PopupMenuButton<String>(
                                     offset: const Offset(0, 24),
-                                    color: Colors.white,
+                                    color: context.palette.surface,
                                     elevation: 2,
                                     onSelected: (String newValue) {
                                       _productDetailBloc.add(SelectCityEvent(newValue));
@@ -581,7 +582,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                                             loc.translate(value),
                                             style: AppStyle.bodyText.copyWith(
                                               fontSize: 13,
-                                              color: AppColors.textcolor,
+                                              color: context.palette.textPrimary,
                                             ),
                                           ),
                                         );
@@ -607,12 +608,12 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                 ),
 
                 const SizedBox(height: 8),
-                const Divider(
+                Divider(
                   indent: 16,
                   endIndent: 16,
                   height: 1,
                   thickness: 0.5,
-                  color: Color(0xFFEFEFEF),
+                  color: context.palette.divider,
                 ),
 
                 // 6. Size Selection
@@ -629,7 +630,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                         style: AppStyle.bodyText.copyWith(
                           fontWeight: FontWeight.bold,
                           fontSize: 14,
-                          color: AppColors.textcolor,
+                          color: context.palette.textPrimary,
                         ),
                       ),
                       const SizedBox(height: 10),
@@ -646,7 +647,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                               decoration: BoxDecoration(
                                 color: isSelected
                                     ? AppColors.primary
-                                    : Colors.grey[100],
+                                    : context.palette.surfaceMuted,
                                 borderRadius: BorderRadius.circular(10),
                               ),
                               child: Center(
@@ -659,7 +660,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                                         : FontWeight.normal,
                                     color: isSelected
                                         ? Colors.white
-                                        : AppColors.textcolor,
+                                        : context.palette.textPrimary,
                                   ),
                                 ),
                               ),
@@ -672,12 +673,12 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                 ),
 
                 const SizedBox(height: 8),
-                const Divider(
+                Divider(
                   indent: 16,
                   endIndent: 16,
                   height: 1,
                   thickness: 0.5,
-                  color: Color(0xFFEFEFEF),
+                  color: context.palette.divider,
                 ),
 
                 // 7. Product Description
@@ -694,7 +695,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                         style: AppStyle.bodyText.copyWith(
                           fontWeight: FontWeight.bold,
                           fontSize: 14,
-                          color: AppColors.textcolor,
+                          color: context.palette.textPrimary,
                         ),
                       ),
                       const SizedBox(height: 8),
@@ -703,7 +704,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                         textAlign: TextAlign.start,
                         style: AppStyle.bodyText.copyWith(
                           fontSize: 13,
-                          color: AppColors.textcolor.withOpacity(0.70),
+                          color: context.palette.textPrimary.withOpacity(0.70),
                           height: 1.5,
                         ),
                       ),
@@ -712,12 +713,12 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                 ),
 
                 const SizedBox(height: 8),
-                const Divider(
+                Divider(
                   indent: 16,
                   endIndent: 16,
                   height: 1,
                   thickness: 0.5,
-                  color: Color(0xFFEFEFEF),
+                  color: context.palette.divider,
                 ),
 
                 // 8. Care Instructions
@@ -734,7 +735,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                         style: AppStyle.bodyText.copyWith(
                           fontWeight: FontWeight.bold,
                           fontSize: 14,
-                          color: AppColors.textcolor,
+                          color: context.palette.textPrimary,
                         ),
                       ),
                       const SizedBox(height: 8),
@@ -746,7 +747,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                             width: 14,
                             height: 14,
                             colorFilter: ColorFilter.mode(
-                              AppColors.textcolor.withOpacity(0.70),
+                              context.palette.textPrimary.withOpacity(0.70),
                               BlendMode.srcIn,
                             ),
                           ),
@@ -755,7 +756,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                             careText,
                             style: AppStyle.bodyText.copyWith(
                               fontSize: 12,
-                              color: AppColors.textcolor.withOpacity(0.70),
+                              color: context.palette.textPrimary.withOpacity(0.70),
                             ),
                           ),
                         ],
@@ -765,12 +766,12 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                 ),
 
                 const SizedBox(height: 8),
-                const Divider(
+                Divider(
                   indent: 16,
                   endIndent: 16,
                   height: 1,
                   thickness: 0.5,
-                  color: Color(0xFFEFEFEF),
+                  color: context.palette.divider,
                 ),
 
                 // Free Delivery & Return widget
@@ -787,7 +788,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                         style: AppStyle.bodyText.copyWith(
                           fontWeight: FontWeight.bold,
                           fontSize: 14,
-                          color: AppColors.textcolor,
+                          color: context.palette.textPrimary,
                         ),
                       ),
                       const SizedBox(height: 8),
@@ -800,7 +801,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                                   width: 14,
                                   height: 14,
                                   colorFilter: ColorFilter.mode(
-                                    AppColors.textcolor.withOpacity(0.70),
+                                    context.palette.textPrimary.withOpacity(0.70),
                                     BlendMode.srcIn,
                                   ),
                                 ),
@@ -813,7 +814,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                                           text: loc.translate('viewDeliveryTermsPrefix'),
                                           style: AppStyle.bodyText.copyWith(
                                             fontSize: 12,
-                                            color: AppColors.textcolor.withOpacity(0.70),
+                                            color: context.palette.textPrimary.withOpacity(0.70),
                                           ),
                                         ),
                                         TextSpan(
@@ -830,7 +831,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                                           text: loc.translate('viewDeliveryTermsSuffix'),
                                           style: AppStyle.bodyText.copyWith(
                                             fontSize: 12,
-                                            color: AppColors.textcolor.withOpacity(0.70),
+                                            color: context.palette.textPrimary.withOpacity(0.70),
                                           ),
                                         ),
                                       ],
@@ -902,7 +903,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                       style: AppStyle.bodyText.copyWith(
                         fontWeight: FontWeight.bold,
                         fontSize: 16,
-                        color: AppColors.textcolor,
+                        color: context.palette.textPrimary,
                       ),
                     ),
                   ),
@@ -956,9 +957,9 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                                       height: double.infinity,
                                       fit: BoxFit.cover,
                                       placeholder: (_, __) =>
-                                          Container(color: Colors.grey[100]),
+                                          Container(color: context.palette.surfaceMuted),
                                       errorWidget: (_, __, ___) =>
-                                          Container(color: Colors.grey[100]),
+                                          Container(color: context.palette.surfaceMuted),
                                     ),
                                   ),
                                   Positioned(
@@ -978,7 +979,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                                           width: 16,
                                           height: 16,
                                           colorFilter: ColorFilter.mode(
-                                            AppColors.textcolor,
+                                            context.palette.textPrimary,
                                             BlendMode.srcIn,
                                           ),
                                         ),
@@ -995,7 +996,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                               item.brandName,
                               style: AppStyle.bodyText.copyWith(
                                 fontSize: 12,
-                                color: AppColors.textcolor.withOpacity(0.60),
+                                color: context.palette.textPrimary.withOpacity(0.60),
                               ),
                             ),
                             const SizedBox(height: 2),
@@ -1007,7 +1008,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                               style: AppStyle.bodyText.copyWith(
                                 fontSize: 13.5,
                                 fontWeight: FontWeight.w600,
-                                color: AppColors.textcolor,
+                                color: context.palette.textPrimary,
                               ),
                             ),
                             const SizedBox(height: 2),
@@ -1017,7 +1018,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                               style: AppStyle.bodyText.copyWith(
                                 fontSize: 13,
                                 fontWeight: FontWeight.bold,
-                                color: AppColors.textcolor.withOpacity(0.80),
+                                color: context.palette.textPrimary.withOpacity(0.80),
                               ),
                             ),
                             const SizedBox(height: 2),
@@ -1034,7 +1035,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                                   item.rating,
                                   style: AppStyle.bodyText.copyWith(
                                     fontSize: 11,
-                                    color: AppColors.textcolor_50,
+                                    color: context.palette.textMuted,
                                   ),
                                 ),
                               ],

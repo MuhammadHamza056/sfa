@@ -10,6 +10,7 @@ import 'package:sfa/features/orders/bloc/orders_bloc.dart';
 import 'package:sfa/features/orders/bloc/orders_event.dart';
 import 'package:sfa/features/orders/bloc/orders_state.dart';
 import 'package:sfa/features/dashboard/presentation/screens/dashboard_screen.dart';
+import 'package:sfa/core/theme/app_palette.dart';
 
 class PreviousOrdersScreen extends StatefulWidget {
   const PreviousOrdersScreen({super.key});
@@ -51,11 +52,11 @@ class _PreviousOrdersScreenState extends State<PreviousOrdersScreen>
           return Directionality(
             textDirection: textDir,
             child: Scaffold(
-              backgroundColor: Colors.white,
+              backgroundColor: context.palette.background,
 
               // ─── Top App Bar ──────────────────────────────────────────────
               appBar: AppBar(
-                backgroundColor: Colors.white,
+                backgroundColor: context.palette.background,
                 elevation: 0,
                 scrolledUnderElevation: 0,
                 automaticallyImplyLeading: false,
@@ -71,7 +72,7 @@ class _PreviousOrdersScreenState extends State<PreviousOrdersScreen>
                           AssetsConstants.shoppingBag2,
                           width: 22,
                           colorFilter: ColorFilter.mode(
-                            AppColors.textcolor,
+                            context.palette.textPrimary,
                             BlendMode.srcIn,
                           ),
                         ),
@@ -83,7 +84,7 @@ class _PreviousOrdersScreenState extends State<PreviousOrdersScreen>
                           AssetsConstants.heart,
                           width: 22,
                           colorFilter: ColorFilter.mode(
-                            AppColors.textcolor,
+                            context.palette.textPrimary,
                             BlendMode.srcIn,
                           ),
                         ),
@@ -96,7 +97,7 @@ class _PreviousOrdersScreenState extends State<PreviousOrdersScreen>
                   style: AppStyle.welcomeTitle.copyWith(
                     fontSize: 22,
                     fontWeight: FontWeight.bold,
-                    color: AppColors.textcolor,
+                    color: context.palette.textPrimary,
                   ),
                 ),
                 centerTitle: true,
@@ -107,7 +108,7 @@ class _PreviousOrdersScreenState extends State<PreviousOrdersScreen>
                       AssetsConstants.search,
                       width: 22,
                       colorFilter: ColorFilter.mode(
-                        AppColors.textcolor,
+                        context.palette.textPrimary,
                         BlendMode.srcIn,
                       ),
                     ),
@@ -149,7 +150,7 @@ class _PreviousOrdersScreenState extends State<PreviousOrdersScreen>
                       width: 22,
                       matchTextDirection: true,
                       colorFilter: ColorFilter.mode(
-                        AppColors.textcolor,
+                        context.palette.textPrimary,
                         BlendMode.srcIn,
                       ),
                     ),
@@ -180,7 +181,7 @@ class _PreviousOrdersScreenState extends State<PreviousOrdersScreen>
                               decoration: BoxDecoration(
                                 color: selectedTab == 0
                                     ? AppColors.goldAccent
-                                    : AppColors.grey,
+                                    : context.palette.surfaceMuted,
                                 borderRadius: BorderRadius.circular(12),
                               ),
                               alignment: Alignment.center,
@@ -189,7 +190,7 @@ class _PreviousOrdersScreenState extends State<PreviousOrdersScreen>
                                 style: TextStyle(
                                   color: selectedTab == 0
                                       ? Colors.white
-                                      : AppColors.textcolor.withValues(alpha: 0.6),
+                                      : context.palette.textPrimary.withValues(alpha: 0.6),
                                   fontWeight: FontWeight.bold,
                                   fontSize: 14,
                                 ),
@@ -213,7 +214,7 @@ class _PreviousOrdersScreenState extends State<PreviousOrdersScreen>
                               decoration: BoxDecoration(
                                 color: selectedTab == 1
                                     ? AppColors.goldAccent
-                                    : AppColors.grey,
+                                    : context.palette.surfaceMuted,
                                 borderRadius: BorderRadius.circular(12),
                               ),
                               alignment: Alignment.center,
@@ -222,7 +223,7 @@ class _PreviousOrdersScreenState extends State<PreviousOrdersScreen>
                                 style: TextStyle(
                                   color: selectedTab == 1
                                       ? Colors.white
-                                      : AppColors.textcolor.withValues(alpha: 0.6),
+                                      : context.palette.textPrimary.withValues(alpha: 0.6),
                                   fontWeight: FontWeight.bold,
                                   fontSize: 14,
                                 ),
@@ -267,7 +268,7 @@ class _PreviousOrdersScreenState extends State<PreviousOrdersScreen>
         Container(
           margin: const EdgeInsets.only(bottom: 16),
           decoration: BoxDecoration(
-            color: const Color(0xFFF9F9F9),
+            color: context.palette.backgroundSubtle,
             borderRadius: BorderRadius.circular(20),
           ),
           child: Column(
@@ -302,14 +303,14 @@ class _PreviousOrdersScreenState extends State<PreviousOrdersScreen>
                   children: [
                     Text(
                       loc.translate('orderNumberPrefix'),
-                      style: const TextStyle(fontSize: 14, color: Colors.grey),
+                      style: TextStyle(fontSize: 14, color: context.palette.textMuted),
                     ),
                     Text(
                       '#123456889',
                       style: TextStyle(
                         fontSize: 15,
                         fontWeight: FontWeight.bold,
-                        color: AppColors.textcolor,
+                        color: context.palette.textPrimary,
                         decoration: TextDecoration.underline,
                       ),
                     ),
@@ -322,9 +323,9 @@ class _PreviousOrdersScreenState extends State<PreviousOrdersScreen>
                     children: [
                       Text(
                         loc.translate('totalAmountPrefix'),
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 14,
-                          color: Colors.grey,
+                          color: context.palette.textMuted,
                         ),
                       ),
                       Text(
@@ -346,7 +347,7 @@ class _PreviousOrdersScreenState extends State<PreviousOrdersScreen>
                       AssetsConstants.chevronLeft,
                       width: 14,
                       colorFilter: ColorFilter.mode(
-                        AppColors.textcolor,
+                        context.palette.textPrimary,
                         BlendMode.srcIn,
                       ),
                     ),
@@ -390,7 +391,7 @@ class _PreviousOrdersScreenState extends State<PreviousOrdersScreen>
         Container(
           margin: const EdgeInsets.only(bottom: 16),
           decoration: BoxDecoration(
-            color: const Color(0xFFF9F9F9),
+            color: context.palette.backgroundSubtle,
             borderRadius: BorderRadius.circular(20),
           ),
           child: Column(
@@ -425,14 +426,14 @@ class _PreviousOrdersScreenState extends State<PreviousOrdersScreen>
                   children: [
                     Text(
                       loc.translate('orderNumberPrefix'),
-                      style: const TextStyle(fontSize: 14, color: Colors.grey),
+                      style: TextStyle(fontSize: 14, color: context.palette.textMuted),
                     ),
                     Text(
                       '#234558',
                       style: TextStyle(
                         fontSize: 15,
                         fontWeight: FontWeight.bold,
-                        color: AppColors.textcolor,
+                        color: context.palette.textPrimary,
                         decoration: TextDecoration.underline,
                       ),
                     ),
@@ -445,9 +446,9 @@ class _PreviousOrdersScreenState extends State<PreviousOrdersScreen>
                     children: [
                       Text(
                         loc.translate('totalAmountPrefix'),
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 14,
-                          color: Colors.grey,
+                          color: context.palette.textMuted,
                         ),
                       ),
                       Text(
@@ -468,6 +469,10 @@ class _PreviousOrdersScreenState extends State<PreviousOrdersScreen>
                     child: SvgPicture.asset(
                       AssetsConstants.chevronLeft,
                       width: 14,
+                      colorFilter: ColorFilter.mode(
+                        context.palette.icon,
+                        BlendMode.srcIn,
+                      ),
                     ),
                   ),
                   onPressed: () {
@@ -559,7 +564,7 @@ class _PreviousOrdersScreenState extends State<PreviousOrdersScreen>
                           Text(
                             '02/08/26 12:00',
                             style: AppStyle.infoChipText.copyWith(
-                              color: Colors.grey,
+                              color: context.palette.textMuted,
                             ),
                           ),
                         ],
@@ -570,7 +575,7 @@ class _PreviousOrdersScreenState extends State<PreviousOrdersScreen>
               ),
 
               // Vertical line connector separating the two milestones
-              Container(width: 1, height: 32, color: Colors.grey.shade300),
+              Container(width: 1, height: 32, color: context.palette.divider),
               const SizedBox(width: 16),
 
               // Left/Right: "تم التوصيل"
@@ -617,7 +622,7 @@ class _PreviousOrdersScreenState extends State<PreviousOrdersScreen>
                           Text(
                             deliveredTime,
                             style: AppStyle.infoChipText.copyWith(
-                              color: Colors.grey,
+                              color: context.palette.textMuted,
                             ),
                           ),
                         ],
@@ -682,7 +687,7 @@ class _PreviousOrdersScreenState extends State<PreviousOrdersScreen>
         Container(
           margin: const EdgeInsets.only(bottom: 16),
           decoration: BoxDecoration(
-            color: const Color(0xFFF9F9F9),
+            color: context.palette.backgroundSubtle,
             borderRadius: BorderRadius.circular(20),
           ),
           child: Column(
@@ -717,14 +722,14 @@ class _PreviousOrdersScreenState extends State<PreviousOrdersScreen>
                   children: [
                     Text(
                       loc.translate('orderNumberPrefix'),
-                      style: const TextStyle(fontSize: 14, color: Colors.grey),
+                      style: TextStyle(fontSize: 14, color: context.palette.textMuted),
                     ),
                     Text(
                       '#123456889',
                       style: TextStyle(
                         fontSize: 15,
                         fontWeight: FontWeight.bold,
-                        color: AppColors.textcolor,
+                        color: context.palette.textPrimary,
                         decoration: TextDecoration.underline,
                       ),
                     ),
@@ -737,9 +742,9 @@ class _PreviousOrdersScreenState extends State<PreviousOrdersScreen>
                     children: [
                       Text(
                         loc.translate('totalAmountPrefix'),
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 14,
-                          color: Colors.grey,
+                          color: context.palette.textMuted,
                         ),
                       ),
                       Text(
@@ -761,7 +766,7 @@ class _PreviousOrdersScreenState extends State<PreviousOrdersScreen>
                       AssetsConstants.chevronLeft,
                       width: 14,
                       colorFilter: ColorFilter.mode(
-                        AppColors.textcolor,
+                        context.palette.textPrimary,
                         BlendMode.srcIn,
                       ),
                     ),
@@ -805,7 +810,7 @@ class _PreviousOrdersScreenState extends State<PreviousOrdersScreen>
         Container(
           margin: const EdgeInsets.only(bottom: 16),
           decoration: BoxDecoration(
-            color: const Color(0xFFF9F9F9),
+            color: context.palette.backgroundSubtle,
             borderRadius: BorderRadius.circular(20),
           ),
           child: Column(
@@ -840,14 +845,14 @@ class _PreviousOrdersScreenState extends State<PreviousOrdersScreen>
                   children: [
                     Text(
                       loc.translate('orderNumberPrefix'),
-                      style: const TextStyle(fontSize: 14, color: Colors.grey),
+                      style: TextStyle(fontSize: 14, color: context.palette.textMuted),
                     ),
                     Text(
                       '#234558',
                       style: TextStyle(
                         fontSize: 15,
                         fontWeight: FontWeight.bold,
-                        color: AppColors.textcolor,
+                        color: context.palette.textPrimary,
                         decoration: TextDecoration.underline,
                       ),
                     ),
@@ -860,9 +865,9 @@ class _PreviousOrdersScreenState extends State<PreviousOrdersScreen>
                     children: [
                       Text(
                         loc.translate('totalAmountPrefix'),
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 14,
-                          color: Colors.grey,
+                          color: context.palette.textMuted,
                         ),
                       ),
                       Text(
@@ -883,6 +888,10 @@ class _PreviousOrdersScreenState extends State<PreviousOrdersScreen>
                     child: SvgPicture.asset(
                       AssetsConstants.chevronLeft,
                       width: 14,
+                      colorFilter: ColorFilter.mode(
+                        context.palette.icon,
+                        BlendMode.srcIn,
+                      ),
                     ),
                   ),
                   onPressed: () {

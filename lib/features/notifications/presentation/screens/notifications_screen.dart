@@ -3,6 +3,7 @@ import 'package:sfa/core/localization/app_localizations.dart';
 import 'package:sfa/utils/assets_constants.dart';
 import 'package:sfa/utils/color_constants.dart';
 import 'package:sfa/utils/app_style.dart';
+import 'package:sfa/core/theme/app_palette.dart';
 import '../widgets/order_stats_card.dart';
 import '../widgets/promo_card.dart';
 import '../widgets/notification_item_tile.dart';
@@ -14,8 +15,30 @@ class NotificationsScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final loc = AppLocalizations.of(context);
 
+    // Order-stat tiles: the design keeps the "active" tile a warm cream in
+    // light and a deeper red-maroon in dark, with the rest on the neutral
+    // raised surface.
+    final Color statActiveBg = context.isDarkMode
+        ? const Color(0xFF631731)
+        : const Color(0xFFF4ECE1);
+    final Color statBg = context.isDarkMode
+        ? context.palette.surfaceAlt
+        : const Color(0xFFF8F8F8);
+
+    // The two promo cards swap treatments between themes: whichever one is the
+    // soft card in light becomes the solid one in dark, and vice versa.
+    final Color promoSoftBg = context.isDarkMode
+        ? const Color(0xFF631731)
+        : const Color(0xFFF6F6F6);
+    final Color promoStrongBg = context.isDarkMode
+        ? Colors.white
+        : const Color(0xFF3F1B24);
+    final Color promoStrongText = context.isDarkMode
+        ? const Color(0xFF451425)
+        : Colors.white;
+
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: context.palette.background,
       body: SafeArea(
         child: Directionality(
           textDirection: loc.isArabic ? TextDirection.rtl : TextDirection.ltr,
@@ -36,7 +59,7 @@ class NotificationsScreen extends StatelessWidget {
                 Divider(
                   height: 1,
                   thickness: 0.5,
-                  color: AppColors.textcolor_40,
+                  color: context.palette.divider,
                 ),
                 const SizedBox(height: 16),
 
@@ -53,29 +76,29 @@ class NotificationsScreen extends StatelessWidget {
                       iconPath: AssetsConstants.package,
                       count: '3',
                       label: loc.translate('activeOrders'),
-                      backgroundColor: const Color(0xFFF4ECE1),
-                      iconColor: const Color(0xFF3F1B24),
+                      backgroundColor: statActiveBg,
+                      iconColor: context.palette.textPrimary,
                     ),
                     OrderStatsCard(
                       iconPath: AssetsConstants.circleCheckBig,
                       count: '12',
                       label: loc.translate('delivered'),
-                      backgroundColor: const Color(0xFFF8F8F8),
-                      iconColor: const Color(0xFF3F1B24),
+                      backgroundColor: statBg,
+                      iconColor: context.palette.textPrimary,
                     ),
                     OrderStatsCard(
                       iconPath: AssetsConstants.truck,
                       count: '2',
                       label: loc.translate('inShipping'),
-                      backgroundColor: const Color(0xFFF8F8F8),
-                      iconColor: const Color(0xFF3F1B24),
+                      backgroundColor: statBg,
+                      iconColor: context.palette.textPrimary,
                     ),
                     OrderStatsCard(
                       iconPath: AssetsConstants.rotateCcw,
                       count: '1',
                       label: loc.translate('returned'),
-                      backgroundColor: const Color(0xFFF8F8F8),
-                      iconColor: const Color(0xFF3F1B24),
+                      backgroundColor: statBg,
+                      iconColor: context.palette.textPrimary,
                     ),
                   ],
                 ),
@@ -100,7 +123,7 @@ class NotificationsScreen extends StatelessWidget {
                             loc.translate('viewAll'),
                             style: AppStyle.subtitleDesc.copyWith(
                               fontSize: 13,
-                              color: AppColors.textcolor_40,
+                              color: context.palette.divider,
                             ),
                           ),
                           const SizedBox(width: 4),
@@ -111,7 +134,7 @@ class NotificationsScreen extends StatelessWidget {
                                   ? Icons.arrow_back_ios_new
                                   : Icons.arrow_forward_ios,
                               size: 12,
-                              color: AppColors.textcolor_40,
+                              color: context.palette.divider,
                             ),
                           ),
                         ],
@@ -123,7 +146,7 @@ class NotificationsScreen extends StatelessWidget {
                 Divider(
                   height: 1,
                   thickness: 0.5,
-                  color: AppColors.textcolor_40,
+                  color: context.palette.divider,
                 ),
                 const SizedBox(height: 16),
 
@@ -141,11 +164,11 @@ class NotificationsScreen extends StatelessWidget {
                         titleText: loc.isArabic
                             ? 'اشتري ٢ واحصلي على ١ مجاناً'
                             : 'Buy 2 Get 1 Free',
-                        backgroundColor: AppColors.grey,
+                        backgroundColor: promoSoftBg,
                         badgeColor: AppColors.primary,
-                        titleColor: AppColors.textcolor,
+                        titleColor: context.palette.textPrimary,
                         border: Border.all(
-                          color: Colors.grey.shade200,
+                          color: context.palette.divider,
                           width: 1.2,
                         ),
                       ),
@@ -155,9 +178,9 @@ class NotificationsScreen extends StatelessWidget {
                         titleText: loc.isArabic
                             ? 'تخفيضات نهاية الموسم'
                             : 'End of Season Sale',
-                        backgroundColor: const Color(0xFF3F1B24),
+                        backgroundColor: promoStrongBg,
                         badgeColor: const Color(0xFFC5A880),
-                        titleColor: Colors.white,
+                        titleColor: promoStrongText,
                       ),
                     ],
                   ),
@@ -176,7 +199,7 @@ class NotificationsScreen extends StatelessWidget {
                 Divider(
                   height: 1,
                   thickness: 0.5,
-                  color: AppColors.textcolor_40,
+                  color: context.palette.divider,
                 ),
                 const SizedBox(height: 16),
 
@@ -199,7 +222,7 @@ class NotificationsScreen extends StatelessWidget {
                     Divider(
                       height: 1,
                       thickness: 0.5,
-                      color: AppColors.textcolor_40,
+                      color: context.palette.divider,
                     ),
                     NotificationItemTile(
                       iconPath: AssetsConstants.truck,
@@ -215,7 +238,7 @@ class NotificationsScreen extends StatelessWidget {
                     Divider(
                       height: 1,
                       thickness: 0.5,
-                      color: AppColors.textcolor_40,
+                      color: context.palette.divider,
                     ),
                     NotificationItemTile(
                       iconPath: AssetsConstants.frame,
@@ -231,7 +254,7 @@ class NotificationsScreen extends StatelessWidget {
                     Divider(
                       height: 1,
                       thickness: 0.5,
-                      color: AppColors.textcolor_40,
+                      color: context.palette.divider,
                     ),
                     NotificationItemTile(
                       iconPath: AssetsConstants.frame2,

@@ -4,6 +4,7 @@ import 'package:sfa/core/localization/app_localizations.dart';
 import 'package:sfa/utils/app_style.dart';
 import 'package:sfa/utils/assets_constants.dart';
 import 'package:sfa/utils/color_constants.dart';
+import 'package:sfa/core/theme/app_palette.dart';
 
 class AIChatScreen extends StatefulWidget {
   const AIChatScreen({super.key});
@@ -43,9 +44,9 @@ class _AIChatScreenState extends State<AIChatScreen> {
     ];
 
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: context.palette.background,
       appBar: AppBar(
-        backgroundColor: Colors.white,
+        backgroundColor: context.palette.background,
         elevation: 0,
         scrolledUnderElevation: 0,
         automaticallyImplyLeading: false,
@@ -66,7 +67,7 @@ class _AIChatScreenState extends State<AIChatScreen> {
                       width: 22,
                       height: 22,
                       colorFilter: ColorFilter.mode(
-                        AppColors.textcolor,
+                        context.palette.textPrimary,
                         BlendMode.srcIn,
                       ),
                     ),
@@ -81,7 +82,7 @@ class _AIChatScreenState extends State<AIChatScreen> {
                     width: 20,
                     height: 20,
                     colorFilter: ColorFilter.mode(
-                      AppColors.textcolor,
+                      context.palette.textPrimary,
                       BlendMode.srcIn,
                     ),
                   ),
@@ -108,7 +109,7 @@ class _AIChatScreenState extends State<AIChatScreen> {
                     width: 20,
                     height: 20,
                     colorFilter: ColorFilter.mode(
-                      AppColors.textcolor,
+                      context.palette.textPrimary,
                       BlendMode.srcIn,
                     ),
                   ),
@@ -122,7 +123,7 @@ class _AIChatScreenState extends State<AIChatScreen> {
                     width: 20,
                     height: 20,
                     colorFilter: ColorFilter.mode(
-                      AppColors.textcolor,
+                      context.palette.textPrimary,
                       BlendMode.srcIn,
                     ),
                   ),
@@ -192,7 +193,7 @@ class _AIChatScreenState extends State<AIChatScreen> {
                           style: AppStyle.subtitleDesc.copyWith(
                             fontSize: 24,
                             fontWeight: FontWeight.bold,
-                            color: AppColors.textcolor.withValues(alpha: 0.9),
+                            color: context.palette.textPrimary.withValues(alpha: 0.9),
                             height: 1.4,
                           ),
                           textAlign: TextAlign.center,
@@ -214,7 +215,7 @@ class _AIChatScreenState extends State<AIChatScreen> {
                 left: 0,
                 right: 0,
                 child: Container(
-                  color: Colors.white.withValues(alpha: 0.95),
+                  color: context.palette.background.withValues(alpha: 0.95),
                   padding: const EdgeInsets.only(bottom: 16, top: 8),
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
@@ -237,15 +238,15 @@ class _AIChatScreenState extends State<AIChatScreen> {
                               ),
                               padding: const EdgeInsets.all(12),
                               decoration: BoxDecoration(
-                                color: Colors.white,
+                                color: context.palette.surface,
                                 borderRadius: BorderRadius.circular(16),
                                 border: Border.all(
-                                  color: const Color(0xFFF3EFE9),
+                                  color: context.palette.divider,
                                   width: 1,
                                 ),
                                 boxShadow: [
                                   BoxShadow(
-                                    color: Colors.black.withValues(alpha: 0.02),
+                                    color: context.palette.shadow,
                                     blurRadius: 10,
                                     offset: const Offset(0, 4),
                                   ),
@@ -263,6 +264,10 @@ class _AIChatScreenState extends State<AIChatScreen> {
                                       item['icon'],
                                       width: 24,
                                       height: 24,
+                                      colorFilter: ColorFilter.mode(
+                                        context.palette.icon,
+                                        BlendMode.srcIn,
+                                      ),
                                     ),
                                   ),
                                   const SizedBox(height: 8),
@@ -294,10 +299,10 @@ class _AIChatScreenState extends State<AIChatScreen> {
                         padding: const EdgeInsets.symmetric(horizontal: 16),
                         child: Container(
                           decoration: BoxDecoration(
-                            color: const Color(0xFFFAF9F6),
+                            color: context.palette.backgroundSubtle,
                             borderRadius: BorderRadius.circular(10),
                             border: Border.all(
-                              color: const Color(0xFFEFECE6),
+                              color: context.palette.divider,
                               width: 1,
                             ),
                           ),
@@ -312,6 +317,10 @@ class _AIChatScreenState extends State<AIChatScreen> {
                                 AssetsConstants.mic,
                                 width: 22,
                                 height: 22,
+                                colorFilter: ColorFilter.mode(
+                                  context.palette.icon,
+                                  BlendMode.srcIn,
+                                ),
                               ),
                               const SizedBox(width: 8),
 

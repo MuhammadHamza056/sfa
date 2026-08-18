@@ -12,6 +12,7 @@ import 'package:sfa/features/auth/bloc/auth_bloc.dart';
 import 'package:sfa/features/auth/bloc/auth_event.dart';
 import 'package:sfa/features/auth/bloc/auth_state.dart';
 import 'package:sfa/features/auth/presentation/widgets/phone_input_field.dart';
+import 'package:sfa/core/theme/app_palette.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -87,7 +88,7 @@ class _LoginScreenState extends State<LoginScreen> {
       },
       style: OutlinedButton.styleFrom(
         padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 20),
-        side: BorderSide(color: AppColors.textcolor, width: 1.2),
+        side: BorderSide(color: context.palette.outlineStrong, width: 1.2),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(30),
         ),
@@ -110,7 +111,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 AssetsConstants.moveLeft,
                 width: 18,
                 colorFilter: ColorFilter.mode(
-                  AppColors.textcolor,
+                  context.palette.textPrimary,
                   BlendMode.srcIn,
                 ),
               ),
@@ -120,7 +121,7 @@ class _LoginScreenState extends State<LoginScreen> {
               AssetsConstants.moveLeft,
               width: 18,
               colorFilter: ColorFilter.mode(
-                AppColors.textcolor,
+                context.palette.textPrimary,
                 BlendMode.srcIn,
               ),
             ),
@@ -131,7 +132,7 @@ class _LoginScreenState extends State<LoginScreen> {
     return BlocProvider(
       create: (context) => AuthBloc(),
       child: Scaffold(
-        backgroundColor: AppColors.grey, // Background color 0xffF6F6F6 from AppColors.grey
+        backgroundColor: context.palette.backgroundSubtle,
         body: BlocConsumer<AuthBloc, AuthState>(
           listener: (context, state) {
             if (state.status == AuthStatus.success) {
@@ -167,7 +168,7 @@ class _LoginScreenState extends State<LoginScreen> {
                         ),
                       ),
                       const SizedBox(height: 16),
-                      const Divider(thickness: 1, color: Colors.black12),
+                      Divider(thickness: 1, color: context.palette.divider),
                       const SizedBox(height: 24),
 
                       // Welcome Subtitle Section
@@ -178,7 +179,7 @@ class _LoginScreenState extends State<LoginScreen> {
                       const SizedBox(height: 8),
                       Text(
                         loc.translate('loginSubtitle'),
-                        style: AppStyle.subtitleDesc,
+                        style: AppStyle.subtitleDesc.copyWith(color: context.palette.textPrimary.withValues(alpha: 0.7)),
                       ),
                       const SizedBox(height: 28),
 
@@ -191,7 +192,7 @@ class _LoginScreenState extends State<LoginScreen> {
                               onPressed: () {},
                               style: OutlinedButton.styleFrom(
                                 padding: const EdgeInsets.symmetric(vertical: 14),
-                                side: BorderSide(color: AppColors.textcolor, width: 1.2),
+                                side: BorderSide(color: context.palette.outlineStrong, width: 1.2),
                                 shape: RoundedRectangleBorder(
                                   borderRadius: BorderRadius.circular(30),
                                 ),
@@ -221,7 +222,7 @@ class _LoginScreenState extends State<LoginScreen> {
                               onPressed: () {},
                               style: OutlinedButton.styleFrom(
                                 padding: const EdgeInsets.symmetric(vertical: 14),
-                                side: BorderSide(color: AppColors.textcolor, width: 1.2),
+                                side: BorderSide(color: context.palette.outlineStrong, width: 1.2),
                                 shape: RoundedRectangleBorder(
                                   borderRadius: BorderRadius.circular(30),
                                 ),
@@ -250,7 +251,7 @@ class _LoginScreenState extends State<LoginScreen> {
                       // Sub-label Or Phone Login
                       Text(
                         loc.translate('orPhoneLogin'),
-                        style: AppStyle.inputLabelSub,
+                        style: AppStyle.inputLabelSub.copyWith(color: context.palette.textPrimary.withValues(alpha: 0.7)),
                       ),
                       const SizedBox(height: 16),
 
@@ -289,7 +290,7 @@ class _LoginScreenState extends State<LoginScreen> {
                       ),
                       const SizedBox(height: 28),
 
-                      const Divider(thickness: 1, color: Colors.black12),
+                      Divider(thickness: 1, color: context.palette.divider),
                       const SizedBox(height: 24),
 
                       // Create Account Pill Button

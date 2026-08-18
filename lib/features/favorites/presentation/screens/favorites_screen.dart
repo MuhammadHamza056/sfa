@@ -11,6 +11,8 @@ import 'package:sfa/features/favorites/models/favorite_product.dart';
 import 'package:sfa/features/favorites/bloc/favorites_bloc.dart';
 import 'package:sfa/features/favorites/bloc/favorites_event.dart';
 import 'package:sfa/features/favorites/bloc/favorites_state.dart';
+import 'package:sfa/core/theme/app_palette.dart';
+import 'package:sfa/core/theme/always_light.dart';
 
 class FavoritesScreen extends StatefulWidget {
   const FavoritesScreen({super.key});
@@ -48,7 +50,7 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
     ];
 
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: context.palette.background,
       body: BlocBuilder<FavoritesBloc, FavoritesState>(
         builder: (context, state) {
           final selectedTab = state.selectedTab;
@@ -58,21 +60,26 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
               children: [
                 // Tabs Header
                 Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 16,
+                  ),
                   child: Row(
                     children: [
                       // Wishlists Tab
                       Expanded(
                         child: GestureDetector(
                           onTap: () {
-                            context.read<FavoritesBloc>().add(const ChangeFavoritesTabEvent(0));
+                            context.read<FavoritesBloc>().add(
+                              const ChangeFavoritesTabEvent(0),
+                            );
                           },
                           child: Container(
                             padding: const EdgeInsets.symmetric(vertical: 12),
                             decoration: BoxDecoration(
                               color: selectedTab == 0
                                   ? AppColors.primary
-                                  : const Color(0xFFF6F6F6),
+                                  : context.palette.surfaceMuted,
                               borderRadius: BorderRadius.circular(8),
                             ),
                             alignment: Alignment.center,
@@ -83,7 +90,7 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
                                 fontWeight: FontWeight.bold,
                                 color: selectedTab == 0
                                     ? Colors.white
-                                    : AppColors.textcolor_50,
+                                    : context.palette.textMuted,
                               ),
                             ),
                           ),
@@ -94,14 +101,16 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
                       Expanded(
                         child: GestureDetector(
                           onTap: () {
-                            context.read<FavoritesBloc>().add(const ChangeFavoritesTabEvent(1));
+                            context.read<FavoritesBloc>().add(
+                              const ChangeFavoritesTabEvent(1),
+                            );
                           },
                           child: Container(
                             padding: const EdgeInsets.symmetric(vertical: 12),
                             decoration: BoxDecoration(
                               color: selectedTab == 1
                                   ? AppColors.primary
-                                  : const Color(0xFFF6F6F6),
+                                  : context.palette.surfaceMuted,
                               borderRadius: BorderRadius.circular(8),
                             ),
                             alignment: Alignment.center,
@@ -112,7 +121,7 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
                                 fontWeight: FontWeight.bold,
                                 color: selectedTab == 1
                                     ? Colors.white
-                                    : AppColors.textcolor_50,
+                                    : context.palette.textMuted,
                               ),
                             ),
                           ),
@@ -124,7 +133,9 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
 
                 // Content Title
                 Align(
-                  alignment: isAr ? Alignment.centerRight : Alignment.centerLeft,
+                  alignment: isAr
+                      ? Alignment.centerRight
+                      : Alignment.centerLeft,
                   child: Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 20),
                     child: Text(
@@ -134,7 +145,7 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
                       style: GoogleFonts.cairo(
                         fontSize: 20,
                         fontWeight: FontWeight.bold,
-                        color: AppColors.textcolor,
+                        color: context.palette.textPrimary,
                       ),
                     ),
                   ),
@@ -159,10 +170,12 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
                     if (favoriteProducts.isEmpty) {
                       return Center(
                         child: Text(
-                          isAr ? 'لا توجد منتجات مفضلة بعد' : 'No favorite products yet',
+                          isAr
+                              ? 'لا توجد منتجات مفضلة بعد'
+                              : 'No favorite products yet',
                           style: GoogleFonts.cairo(
                             fontSize: 16,
-                            color: AppColors.textcolor_50,
+                            color: context.palette.textMuted,
                           ),
                         ),
                       );
@@ -194,7 +207,9 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
                       onPressed: () {},
                       style: OutlinedButton.styleFrom(
                         side: BorderSide(
-                          color: AppColors.textcolor.withValues(alpha: 0.3),
+                          color: context.palette.textPrimary.withValues(
+                            alpha: 0.3,
+                          ),
                           width: 1,
                         ),
                         shape: const StadiumBorder(),
@@ -203,7 +218,7 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
                           horizontal: 24,
                         ),
                         minimumSize: const Size(double.infinity, 50),
-                        backgroundColor: Colors.white,
+                        backgroundColor: context.palette.background,
                       ),
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -213,10 +228,14 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
                             style: GoogleFonts.cairo(
                               fontSize: 16,
                               fontWeight: FontWeight.bold,
-                              color: AppColors.textcolor,
+                              color: context.palette.textPrimary,
                             ),
                           ),
-                          Icon(Icons.add, color: AppColors.textcolor, size: 20),
+                          Icon(
+                            Icons.add,
+                            color: context.palette.textPrimary,
+                            size: 20,
+                          ),
                         ],
                       ),
                     ),
@@ -237,173 +256,182 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
     final List<String> images = wishlist['images'];
     final loc = AppLocalizations.of(context);
 
-    return Container(
-      margin: const EdgeInsets.only(bottom: 16),
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: const Color(0xFFFDFDFD),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFFF3EFE9), width: 1),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.02),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Column(
-        children: [
-          // Three images row
-          Row(
-            children: List.generate(3, (imgIndex) {
-              return Expanded(
-                child: Padding(
-                  padding: EdgeInsets.only(
-                    left: imgIndex == 2 ? 0 : 8.0,
-                    right: imgIndex == 0 ? 0 : 8.0,
-                  ),
-                  child: Stack(
-                    children: [
-                      AspectRatio(
-                        aspectRatio: 0.9,
-                        child: ClipRRect(
-                          borderRadius: BorderRadius.circular(12),
-                          child: Image.network(
-                            images[imgIndex],
-                            fit: BoxFit.cover,
-                            errorBuilder: (context, error, stackTrace) =>
-                                Container(color: Colors.grey.shade200),
-                          ),
-                        ),
-                      ),
-                      // Heart button badge
-                      Positioned(
-                        top: 8,
-                        right: 8,
-                        child: Container(
-                          padding: const EdgeInsets.all(6),
-                          decoration: const BoxDecoration(
-                            color: Colors.white,
-                            shape: BoxShape.circle,
-                          ),
-                          child: SvgPicture.asset(
-                            AssetsConstants.heart,
-                            width: 14,
-                            height: 14,
-                            colorFilter: ColorFilter.mode(
-                              AppColors.primary,
-                              BlendMode.srcIn,
+    return AlwaysLight(
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 16),
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: const Color(0xFFFDFDFD),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: const Color(0xFFF3EFE9), width: 1),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.02),
+              blurRadius: 10,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: Column(
+          children: [
+            // Three images row
+            Row(
+              children: List.generate(3, (imgIndex) {
+                return Expanded(
+                  child: Padding(
+                    padding: EdgeInsets.only(
+                      left: imgIndex == 2 ? 0 : 8.0,
+                      right: imgIndex == 0 ? 0 : 8.0,
+                    ),
+                    child: Stack(
+                      children: [
+                        AspectRatio(
+                          aspectRatio: 0.9,
+                          child: ClipRRect(
+                            borderRadius: BorderRadius.circular(12),
+                            child: Image.network(
+                              images[imgIndex],
+                              fit: BoxFit.cover,
+                              errorBuilder: (context, error, stackTrace) =>
+                                  Container(color: Colors.grey.shade200),
                             ),
                           ),
+                        ),
+                        // Heart button badge
+                        Positioned(
+                          top: 8,
+                          right: 8,
+                          child: Container(
+                            padding: const EdgeInsets.all(6),
+                            decoration: const BoxDecoration(
+                              color: Colors.white,
+                              shape: BoxShape.circle,
+                            ),
+                            child: SvgPicture.asset(
+                              AssetsConstants.heart,
+                              width: 14,
+                              height: 14,
+                              colorFilter: ColorFilter.mode(
+                                AppColors.primary,
+                                BlendMode.srcIn,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                );
+              }),
+            ),
+            const SizedBox(height: 14),
+
+            // Title + Count & Share Button Row
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                // Title and Product Count
+                Column(
+                  crossAxisAlignment: isAr
+                      ? CrossAxisAlignment.end
+                      : CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      wishlist['title'],
+                      style: GoogleFonts.cairo(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                        color: context.palette.textPrimary,
+                      ),
+                    ),
+                    Text(
+                      '${wishlist['count']} ${loc.translate('productsCount')}',
+                      style: GoogleFonts.cairo(
+                        fontSize: 12,
+                        color: context.palette.textMuted,
+                      ),
+                    ),
+                  ],
+                ),
+
+                // Share Button
+                Theme(
+                  data: Theme.of(context).copyWith(
+                    cardColor: const Color(
+                      0xFFF5EFEB,
+                    ), // beige background matching screenshot
+                  ),
+                  child: PopupMenuButton<int>(
+                    offset: const Offset(0, 40),
+                    elevation: 4,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    icon: Container(
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        border: Border.all(
+                          color: context.palette.textPrimary.withValues(
+                            alpha: 0.1,
+                          ),
+                          width: 1,
+                        ),
+                      ),
+                      padding: const EdgeInsets.all(8),
+                      child: SvgPicture.asset(
+                        AssetsConstants.iconShare2,
+                        width: 18,
+                        height: 18,
+                        colorFilter: ColorFilter.mode(
+                          context.palette.textPrimary,
+                          BlendMode.srcIn,
+                        ),
+                      ),
+                    ),
+                    padding: EdgeInsets.zero,
+                    constraints: const BoxConstraints(),
+                    onSelected: (val) {
+                      if (val == 1) {
+                        final link =
+                            'https://sfa.sa/wishlist/${wishlist['title'].hashCode}';
+                        Clipboard.setData(ClipboardData(text: link));
+                        Share.share(
+                          isAr
+                              ? 'ألقِ نظرة على قائمة أمنياتي: $link'
+                              : 'Check out my wishlist: $link',
+                        );
+                      }
+                    },
+                    itemBuilder: (context) => [
+                      PopupMenuItem(
+                        value: 1,
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              Icons.copy_rounded,
+                              color: context.palette.textPrimary,
+                              size: 18,
+                            ),
+                            const SizedBox(width: 8),
+                            Text(
+                              loc.translate('copyShareLink'),
+                              style: GoogleFonts.cairo(
+                                fontSize: 13,
+                                fontWeight: FontWeight.bold,
+                                color: context.palette.textPrimary,
+                              ),
+                            ),
+                          ],
                         ),
                       ),
                     ],
                   ),
                 ),
-              );
-            }),
-          ),
-          const SizedBox(height: 14),
-
-          // Title + Count & Share Button Row
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              // Title and Product Count
-              Column(
-                crossAxisAlignment: isAr ? CrossAxisAlignment.end : CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    wishlist['title'],
-                    style: GoogleFonts.cairo(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                      color: AppColors.textcolor,
-                    ),
-                  ),
-                  Text(
-                    '${wishlist['count']} ${loc.translate('productsCount')}',
-                    style: GoogleFonts.cairo(
-                      fontSize: 12,
-                      color: AppColors.textcolor_50,
-                    ),
-                  ),
-                ],
-              ),
-
-              // Share Button
-              Theme(
-                data: Theme.of(context).copyWith(
-                  cardColor: const Color(0xFFF5EFEB), // beige background matching screenshot
-                ),
-                child: PopupMenuButton<int>(
-                  offset: const Offset(0, 40),
-                  elevation: 4,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  icon: Container(
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      border: Border.all(
-                        color: AppColors.textcolor.withValues(alpha: 0.1),
-                        width: 1,
-                      ),
-                    ),
-                    padding: const EdgeInsets.all(8),
-                    child: SvgPicture.asset(
-                      AssetsConstants.iconShare2,
-                      width: 18,
-                      height: 18,
-                      colorFilter: ColorFilter.mode(
-                        AppColors.textcolor,
-                        BlendMode.srcIn,
-                      ),
-                    ),
-                  ),
-                  padding: EdgeInsets.zero,
-                  constraints: const BoxConstraints(),
-                  onSelected: (val) {
-                    if (val == 1) {
-                      final link = 'https://sfa.sa/wishlist/${wishlist['title'].hashCode}';
-                      Clipboard.setData(ClipboardData(text: link));
-                      Share.share(
-                        isAr
-                            ? 'ألقِ نظرة على قائمة أمنياتي: $link'
-                            : 'Check out my wishlist: $link',
-                      );
-                    }
-                  },
-                  itemBuilder: (context) => [
-                    PopupMenuItem(
-                      value: 1,
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(
-                            Icons.copy_rounded,
-                            color: AppColors.textcolor,
-                            size: 18,
-                          ),
-                          const SizedBox(width: 8),
-                          Text(
-                            loc.translate('copyShareLink'),
-                            style: GoogleFonts.cairo(
-                              fontSize: 13,
-                              fontWeight: FontWeight.bold,
-                              color: AppColors.textcolor,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        ],
+              ],
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -415,139 +443,146 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
     final loc = AppLocalizations.of(context);
     final isAr = loc.isArabic;
 
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: const Color(0xFFF3EFE9)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Expanded(
-            child: Stack(
-              children: [
-                Positioned.fill(
-                  child: ClipRRect(
-                    borderRadius: const BorderRadius.vertical(
-                      top: Radius.circular(12),
-                    ),
-                    child: Image.network(
-                      product.imageUrl,
-                      fit: BoxFit.cover,
+    return AlwaysLight(
+      child: Container(
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: const Color(0xFFF3EFE9)),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Expanded(
+              child: Stack(
+                children: [
+                  Positioned.fill(
+                    child: ClipRRect(
+                      borderRadius: const BorderRadius.vertical(
+                        top: Radius.circular(12),
+                      ),
+                      child: Image.network(product.imageUrl, fit: BoxFit.cover),
                     ),
                   ),
-                ),
 
-                // Heart Button Badge
-                Positioned(
-                  top: 8,
-                  right: 8,
-                  child: GestureDetector(
-                    onTap: () {
-                      context.read<FavoritesBloc>().add(ToggleFavoriteEvent(product));
-                    },
-                    child: Container(
-                      padding: const EdgeInsets.all(6),
-                      decoration: const BoxDecoration(
-                        color: Colors.white,
-                        shape: BoxShape.circle,
-                      ),
-                      child: SvgPicture.asset(
-                        AssetsConstants.heartFilled,
-                        colorFilter: ColorFilter.mode(
-                          AppColors.primary,
-                          BlendMode.srcIn,
+                  // Heart Button Badge
+                  Positioned(
+                    top: 8,
+                    right: 8,
+                    child: GestureDetector(
+                      onTap: () {
+                        context.read<FavoritesBloc>().add(
+                          ToggleFavoriteEvent(product),
+                        );
+                      },
+                      child: Container(
+                        padding: const EdgeInsets.all(6),
+                        decoration: const BoxDecoration(
+                          color: Colors.white,
+                          shape: BoxShape.circle,
                         ),
-                        width: 16,
-                        height: 16,
+                        child: SvgPicture.asset(
+                          AssetsConstants.heartFilled,
+                          colorFilter: ColorFilter.mode(
+                            AppColors.primary,
+                            BlendMode.srcIn,
+                          ),
+                          width: 16,
+                          height: 16,
+                        ),
                       ),
                     ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
-          ),
-          Padding(
-            padding: const EdgeInsets.all(8.0),
-            child: Column(
-              crossAxisAlignment: isAr
-                  ? CrossAxisAlignment.end
-                  : CrossAxisAlignment.start,
-              children: [
-                Align(
-                  alignment: isAr ? Alignment.centerRight : Alignment.centerLeft,
-                  child: Text(
-                    product.title,
-                    style: GoogleFonts.cairo(
-                      fontSize: 13,
-                      fontWeight: FontWeight.bold,
-                      color: AppColors.textcolor,
+            Padding(
+              padding: const EdgeInsets.all(8.0),
+              child: Column(
+                crossAxisAlignment: isAr
+                    ? CrossAxisAlignment.end
+                    : CrossAxisAlignment.start,
+                children: [
+                  Align(
+                    alignment: isAr
+                        ? Alignment.centerRight
+                        : Alignment.centerLeft,
+                    child: Text(
+                      product.title,
+                      style: GoogleFonts.cairo(
+                        fontSize: 13,
+                        fontWeight: FontWeight.bold,
+                        color: context.palette.textPrimary,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      textAlign: isAr ? TextAlign.right : TextAlign.left,
                     ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    textAlign: isAr ? TextAlign.right : TextAlign.left,
                   ),
-                ),
-                const SizedBox(height: 2),
-                Align(
-                  alignment: isAr ? Alignment.centerRight : Alignment.centerLeft,
-                  child: Text(
-                    product.price,
-                    style: GoogleFonts.cairo(
-                      fontSize: 13,
-                      fontWeight: FontWeight.bold,
-                      color: AppColors.primary,
+                  const SizedBox(height: 2),
+                  Align(
+                    alignment: isAr
+                        ? Alignment.centerRight
+                        : Alignment.centerLeft,
+                    child: Text(
+                      product.price,
+                      style: GoogleFonts.cairo(
+                        fontSize: 13,
+                        fontWeight: FontWeight.bold,
+                        color: AppColors.primary,
+                      ),
+                      textAlign: isAr ? TextAlign.right : TextAlign.left,
                     ),
-                    textAlign: isAr ? TextAlign.right : TextAlign.left,
                   ),
-                ),
-                const SizedBox(height: 2),
-                // Rating row
-                Align(
-                  alignment: isAr ? Alignment.centerRight : Alignment.centerLeft,
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    mainAxisAlignment: isAr
-                        ? MainAxisAlignment.end
-                        : MainAxisAlignment.start,
-                    children: [
-                      if (isAr) ...[
-                        Text(
-                          '85 ${loc.translate('reviewsCount').replaceAll('{count}', '').trim()}  •  4.9',
-                          style: GoogleFonts.cairo(
-                            fontSize: 11,
-                            color: AppColors.textcolor_50,
+                  const SizedBox(height: 2),
+                  // Rating row
+                  Align(
+                    alignment: isAr
+                        ? Alignment.centerRight
+                        : Alignment.centerLeft,
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      mainAxisAlignment: isAr
+                          ? MainAxisAlignment.end
+                          : MainAxisAlignment.start,
+                      children: [
+                        if (isAr) ...[
+                          Text(
+                            '85 ${loc.translate('reviewsCount').replaceAll('{count}', '').trim()}  •  4.9',
+                            style: GoogleFonts.cairo(
+                              fontSize: 11,
+                              color: context.palette.textMuted,
+                            ),
                           ),
-                        ),
-                        const SizedBox(width: 4),
-                        const Icon(
-                          Icons.star_rounded,
-                           color: Color(0xFFFBC02D),
-                          size: 15,
-                        ),
-                      ] else ...[
-                        const Icon(
-                          Icons.star_rounded,
-                          color: Color(0xFFFBC02D),
-                          size: 15,
-                        ),
-                        const SizedBox(width: 4),
-                        Text(
-                          '4.9  •  85 ${loc.translate('reviewsCount').replaceAll('{count}', '').trim()}',
-                          style: GoogleFonts.cairo(
-                            fontSize: 11,
-                            color: AppColors.textcolor_50,
+                          const SizedBox(width: 4),
+                          const Icon(
+                            Icons.star_rounded,
+                            color: Color(0xFFFBC02D),
+                            size: 15,
                           ),
-                        ),
+                        ] else ...[
+                          const Icon(
+                            Icons.star_rounded,
+                            color: Color(0xFFFBC02D),
+                            size: 15,
+                          ),
+                          const SizedBox(width: 4),
+                          Text(
+                            '4.9  •  85 ${loc.translate('reviewsCount').replaceAll('{count}', '').trim()}',
+                            style: GoogleFonts.cairo(
+                              fontSize: 11,
+                              color: context.palette.textMuted,
+                            ),
+                          ),
+                        ],
                       ],
-                    ],
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

@@ -9,6 +9,7 @@ import 'package:sfa/utils/color_constants.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:sfa/features/orders/bloc/order_tracking_bloc.dart';
 import 'package:sfa/features/orders/bloc/order_tracking_state.dart';
+import 'package:sfa/core/theme/app_palette.dart';
 
 class OrderTrackingScreen extends StatefulWidget {
   const OrderTrackingScreen({super.key});
@@ -31,11 +32,11 @@ class _OrderTrackingScreenState extends State<OrderTrackingScreen> {
           return Directionality(
             textDirection: textDir,
             child: Scaffold(
-              backgroundColor: Colors.white,
+              backgroundColor: context.palette.background,
 
               // ─── AppBar ───────────────────────────────────────────────────
               appBar: AppBar(
-                backgroundColor: Colors.white,
+                backgroundColor: context.palette.background,
                 elevation: 0,
                 scrolledUnderElevation: 0,
                 automaticallyImplyLeading: false,
@@ -52,7 +53,7 @@ class _OrderTrackingScreenState extends State<OrderTrackingScreen> {
                             AssetsConstants.shoppingBag,
                             width: 22,
                             colorFilter: ColorFilter.mode(
-                              AppColors.textcolor,
+                              context.palette.textPrimary,
                               BlendMode.srcIn,
                             ),
                           ),
@@ -89,7 +90,7 @@ class _OrderTrackingScreenState extends State<OrderTrackingScreen> {
                         AssetsConstants.heart2,
                         width: 22,
                         colorFilter: ColorFilter.mode(
-                          AppColors.textcolor,
+                          context.palette.textPrimary,
                           BlendMode.srcIn,
                         ),
                       ),
@@ -108,7 +109,7 @@ class _OrderTrackingScreenState extends State<OrderTrackingScreen> {
                       AssetsConstants.search,
                       width: 22,
                       colorFilter: ColorFilter.mode(
-                        AppColors.textcolor,
+                        context.palette.textPrimary,
                         BlendMode.srcIn,
                       ),
                     ),
@@ -127,7 +128,7 @@ class _OrderTrackingScreenState extends State<OrderTrackingScreen> {
                       width: 22,
                       matchTextDirection: true,
                       colorFilter: ColorFilter.mode(
-                        AppColors.textcolor,
+                        context.palette.textPrimary,
                         BlendMode.srcIn,
                       ),
                     ),
@@ -156,7 +157,7 @@ class _OrderTrackingScreenState extends State<OrderTrackingScreen> {
                       ),
                     ),
                     const SizedBox(height: 6),
-                    Divider(color: AppColors.textcolor_40, thickness: 0.8),
+                    Divider(color: context.palette.divider, thickness: 0.8),
                     const SizedBox(height: 24),
                     _buildInfoRow(
                       loc.translate('orderNumberLabel'),
@@ -190,7 +191,7 @@ class _OrderTrackingScreenState extends State<OrderTrackingScreen> {
                       ),
                     ),
                     const SizedBox(height: 6),
-                    Divider(color: AppColors.textcolor_40, thickness: 0.8),
+                    Divider(color: context.palette.divider, thickness: 0.8),
                     const SizedBox(height: 24),
 
                     // ─── Vertical Timeline (Right-aligned tracker for Arabic, Left-aligned for English) ───
@@ -251,7 +252,7 @@ class _OrderTrackingScreenState extends State<OrderTrackingScreen> {
                       ),
                     ),
                     const SizedBox(height: 6),
-                    Divider(color: AppColors.textcolor_40, thickness: 0.8),
+                    Divider(color: context.palette.divider, thickness: 0.8),
                     const SizedBox(height: 24),
 
                     // ─── Expected Delivery ───
@@ -293,7 +294,7 @@ class _OrderTrackingScreenState extends State<OrderTrackingScreen> {
         Text(
           label,
           style: AppStyle.labelText.copyWith(
-            color: AppColors.textcolor.withValues(alpha: 0.6),
+            color: context.palette.textPrimary.withValues(alpha: 0.6),
           ),
         ),
         forceValueLtr
@@ -302,14 +303,14 @@ class _OrderTrackingScreenState extends State<OrderTrackingScreen> {
                 child: Text(
                   value,
                   style: AppStyle.valueText.copyWith(
-                    color: valueColor ?? AppColors.textcolor,
+                    color: valueColor ?? context.palette.textPrimary,
                   ),
                 ),
               )
             : Text(
                 value,
                 style: AppStyle.valueText.copyWith(
-                  color: valueColor ?? AppColors.textcolor,
+                  color: valueColor ?? context.palette.textPrimary,
                 ),
               ),
       ],
@@ -327,7 +328,7 @@ class _OrderTrackingScreenState extends State<OrderTrackingScreen> {
       },
       style: OutlinedButton.styleFrom(
         minimumSize: const Size(double.infinity, 54),
-        side: BorderSide(color: AppColors.textcolor_40),
+        side: BorderSide(color: context.palette.divider),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
       ),
       child: Row(
@@ -350,7 +351,7 @@ class _OrderTrackingScreenState extends State<OrderTrackingScreen> {
                     width: 18,
                     height: 18,
                     colorFilter: ColorFilter.mode(
-                      AppColors.textcolor,
+                      context.palette.textPrimary,
                       BlendMode.srcIn,
                     ),
                   ),
@@ -360,7 +361,7 @@ class _OrderTrackingScreenState extends State<OrderTrackingScreen> {
                   width: 18,
                   height: 18,
                   colorFilter: ColorFilter.mode(
-                    AppColors.textcolor,
+                    context.palette.textPrimary,
                     BlendMode.srcIn,
                   ),
                 ),
@@ -422,7 +423,7 @@ class _OrderTrackingScreenState extends State<OrderTrackingScreen> {
           height: 28,
           decoration: BoxDecoration(
             shape: BoxShape.circle,
-            color: Colors.white,
+            color: context.palette.background,
             border: Border.all(
               color: step.isCompleted
                   ? const Color(0xFF5CC0A7)
@@ -459,7 +460,7 @@ class _OrderTrackingScreenState extends State<OrderTrackingScreen> {
         Text(
           step.subtitle,
           style: AppStyle.timelineSubtitle.copyWith(
-            color: AppColors.textcolor.withValues(alpha: 0.5),
+            color: context.palette.textPrimary.withValues(alpha: 0.5),
           ),
         ),
       ],

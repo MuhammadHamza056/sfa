@@ -4,6 +4,7 @@ import 'package:sfa/core/localization/app_localizations.dart';
 import 'package:sfa/utils/assets_constants.dart';
 import 'package:sfa/utils/color_constants.dart';
 import 'package:sfa/utils/app_style.dart';
+import 'package:sfa/core/theme/app_palette.dart';
 
 class CartItemCard extends StatelessWidget {
   final String imageUrl;
@@ -105,7 +106,7 @@ class CartItemCard extends StatelessWidget {
                         const SizedBox(height: 8),
                       ],
 
-                      const Divider(height: 1, thickness: 0.5, color: Color(0xFFECECEC)),
+                      Divider(height: 1, thickness: 0.5, color: context.palette.divider),
 
                       // Color Row
                       _buildAttributeRow(
@@ -119,7 +120,7 @@ class CartItemCard extends StatelessWidget {
                           ),
                         ),
                       ),
-                      const Divider(height: 1, thickness: 0.5, color: Color(0xFFECECEC)),
+                      Divider(height: 1, thickness: 0.5, color: context.palette.divider),
 
                       // Size Row
                       _buildAttributeRow(
@@ -127,7 +128,7 @@ class CartItemCard extends StatelessWidget {
                         valueWidget: Container(
                           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                           decoration: BoxDecoration(
-                            color: const Color(0xFFF7F7F7),
+                            color: context.palette.surfaceMuted,
                             borderRadius: BorderRadius.circular(4),
                           ),
                           child: Text(
@@ -139,7 +140,7 @@ class CartItemCard extends StatelessWidget {
                           ),
                         ),
                       ),
-                      const Divider(height: 1, thickness: 0.5, color: Color(0xFFECECEC)),
+                      Divider(height: 1, thickness: 0.5, color: context.palette.divider),
 
                       // Quantity Row
                       _buildAttributeRow(
@@ -147,7 +148,7 @@ class CartItemCard extends StatelessWidget {
                         valueWidget: Container(
                           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                           decoration: BoxDecoration(
-                            color: const Color(0xFFF7F7F7),
+                            color: context.palette.surfaceMuted,
                             borderRadius: BorderRadius.circular(4),
                           ),
                           child: Row(
@@ -164,7 +165,7 @@ class CartItemCard extends StatelessWidget {
                               Icon(
                                 Icons.keyboard_arrow_down,
                                 size: 14,
-                                color: AppColors.textcolor,
+                                color: context.palette.textPrimary,
                               ),
                             ],
                           ),
@@ -184,7 +185,7 @@ class CartItemCard extends StatelessWidget {
                     fit: BoxFit.cover,
                     errorBuilder: (context, error, stackTrace) => Container(
                       width: 120,
-                      color: Colors.grey.shade200,
+                      color: context.palette.surfaceMuted,
                       child: const Icon(Icons.broken_image, color: Colors.grey),
                     ),
                   ),
@@ -203,7 +204,7 @@ class CartItemCard extends StatelessWidget {
                   onPressed: onFavorite,
                   style: OutlinedButton.styleFrom(
                     padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 12),
-                    side: const BorderSide(color: Color(0x80220D1D), width: 1.2),
+                    side: BorderSide(color: context.palette.divider, width: 1.2),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(30),
                     ),
@@ -215,8 +216,8 @@ class CartItemCard extends StatelessWidget {
                         AssetsConstants.heartPlus,
                         width: 22,
                         height: 22,
-                        colorFilter: const ColorFilter.mode(
-                          Color(0x80220D1D),
+                        colorFilter: ColorFilter.mode(
+                          context.palette.textMuted,
                           BlendMode.srcIn,
                         ),
                       ),
@@ -225,7 +226,7 @@ class CartItemCard extends StatelessWidget {
                           loc.translate('favorite'),
                           textAlign: TextAlign.right,
                           style: AppStyle.fieldLabel.copyWith(
-                            color: const Color(0x80220D1D),
+                            color: context.palette.textMuted,
                             fontSize: 13,
                             fontWeight: FontWeight.w600,
                           ),
@@ -243,7 +244,7 @@ class CartItemCard extends StatelessWidget {
                   onPressed: onDelete,
                   style: OutlinedButton.styleFrom(
                     padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 12),
-                    side: const BorderSide(color: Color(0x80220D1D), width: 1.2),
+                    side: BorderSide(color: context.palette.divider, width: 1.2),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(30),
                     ),
@@ -255,8 +256,8 @@ class CartItemCard extends StatelessWidget {
                         AssetsConstants.trash,
                         width: 22,
                         height: 22,
-                        colorFilter: const ColorFilter.mode(
-                          Color(0x80220D1D),
+                        colorFilter: ColorFilter.mode(
+                          context.palette.textMuted,
                           BlendMode.srcIn,
                         ),
                       ),
@@ -265,7 +266,7 @@ class CartItemCard extends StatelessWidget {
                           loc.translate('delete'),
                           textAlign: TextAlign.right,
                           style: AppStyle.fieldLabel.copyWith(
-                            color: const Color(0x80220D1D),
+                            color: context.palette.textMuted,
                             fontSize: 13,
                             fontWeight: FontWeight.w600,
                           ),

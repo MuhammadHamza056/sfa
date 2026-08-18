@@ -5,6 +5,7 @@ import 'package:sfa/core/localization/app_localizations.dart';
 import 'package:sfa/utils/assets_constants.dart';
 import 'package:sfa/utils/color_constants.dart';
 import 'package:sfa/utils/app_style.dart';
+import 'package:sfa/core/theme/app_palette.dart';
 import '../widgets/cart_item_card.dart';
 import '../widgets/coupon_code_field.dart';
 import '../widgets/pricing_summary.dart';
@@ -58,7 +59,7 @@ class _CartScreenState extends State<CartScreen> {
     ];
 
     return Container(
-      color: Colors.white,
+      color: context.palette.background,
       child: SafeArea(
         child: Directionality(
           textDirection: loc.isArabic ? TextDirection.rtl : TextDirection.ltr,
@@ -89,7 +90,7 @@ class _CartScreenState extends State<CartScreen> {
                         Divider(
                           height: 24,
                           thickness: 0.5,
-                          color: AppColors.textcolor_40,
+                          color: context.palette.divider,
                         ),
                     ],
                   );
@@ -148,13 +149,13 @@ class _CartScreenState extends State<CartScreen> {
                             border: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(8),
                               borderSide: BorderSide(
-                                color: AppColors.textcolor_40,
+                                color: context.palette.divider,
                               ),
                             ),
                             enabledBorder: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(8),
                               borderSide: BorderSide(
-                                color: AppColors.textcolor_40,
+                                color: context.palette.divider,
                               ),
                             ),
                             focusedBorder: OutlineInputBorder(
@@ -172,7 +173,7 @@ class _CartScreenState extends State<CartScreen> {
                 Divider(
                   height: 1,
                   thickness: 0.5,
-                  color: AppColors.textcolor_40,
+                  color: context.palette.divider,
                 ),
                 const SizedBox(height: 12),
 
@@ -202,7 +203,7 @@ class _CartScreenState extends State<CartScreen> {
                 Divider(
                   height: 1,
                   thickness: 0.5,
-                  color: AppColors.textcolor_40,
+                  color: context.palette.divider,
                 ),
                 const SizedBox(height: 16),
 
@@ -297,7 +298,7 @@ class _CartCheckboxRow extends StatelessWidget {
       svgPath,
       width: 22,
       height: 22,
-      colorFilter: ColorFilter.mode(AppColors.textcolor, BlendMode.srcIn),
+      colorFilter: ColorFilter.mode(context.palette.textPrimary, BlendMode.srcIn),
     );
 
     final labelWidgets = <Widget>[
@@ -332,7 +333,7 @@ class _CartCheckboxRow extends StatelessWidget {
         onChanged: onChanged,
         activeColor: AppColors.primary,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
-        side: BorderSide(color: AppColors.textcolor_40, width: 1.5),
+        side: BorderSide(color: context.palette.divider, width: 1.5),
         materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
         visualDensity: VisualDensity.compact,
       ),
@@ -383,13 +384,13 @@ class _BulletText extends StatelessWidget {
 
     final dot = Padding(
       padding: const EdgeInsets.only(top: 6),
-      child: Icon(Icons.circle, size: 6, color: AppColors.textcolor),
+      child: Icon(Icons.circle, size: 6, color: context.palette.textPrimary),
     );
 
     final label = Expanded(
       child: Text(
         text,
-        style: AppStyle.subtitleDesc,
+        style: AppStyle.subtitleDesc.copyWith(color: context.palette.textPrimary.withValues(alpha: 0.7)),
         textDirection: isArabic ? TextDirection.rtl : TextDirection.ltr,
         textAlign: isArabic ? TextAlign.right : TextAlign.left,
       ),

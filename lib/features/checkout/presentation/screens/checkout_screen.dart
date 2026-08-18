@@ -15,6 +15,7 @@ import 'package:sfa/utils/phone_number_formatter.dart';
 import 'package:sfa/features/checkout/bloc/checkout_bloc.dart';
 import 'package:sfa/features/checkout/bloc/checkout_event.dart';
 import 'package:sfa/features/checkout/bloc/checkout_state.dart';
+import 'package:sfa/core/theme/app_palette.dart';
 
 class CheckoutScreen extends StatefulWidget {
   const CheckoutScreen({super.key});
@@ -61,13 +62,13 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
             child: GestureDetector(
               onTap: () => FocusScope.of(context).unfocus(),
               child: Scaffold(
-                backgroundColor: Colors.white,
+                backgroundColor: context.palette.background,
 
                 // ──────────────────────────────────────────────────────────────
                 // AppBar — same style as DashboardScreen
                 // ──────────────────────────────────────────────────────────────
                 appBar: AppBar(
-                  backgroundColor: Colors.white,
+                  backgroundColor: context.palette.background,
                   elevation: 0,
                   scrolledUnderElevation: 0,
                   automaticallyImplyLeading: false,
@@ -85,7 +86,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                               AssetsConstants.shoppingBag,
                               width: 22,
                               colorFilter: ColorFilter.mode(
-                                AppColors.textcolor,
+                                context.palette.textPrimary,
                                 BlendMode.srcIn,
                               ),
                             ),
@@ -122,7 +123,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                           AssetsConstants.heart2,
                           width: 22,
                           colorFilter: ColorFilter.mode(
-                            AppColors.textcolor,
+                            context.palette.textPrimary,
                             BlendMode.srcIn,
                           ),
                         ),
@@ -143,7 +144,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                         AssetsConstants.search,
                         width: 22,
                         colorFilter: ColorFilter.mode(
-                          AppColors.textcolor,
+                          context.palette.textPrimary,
                           BlendMode.srcIn,
                         ),
                       ),
@@ -156,7 +157,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                         width: 22,
                         matchTextDirection: true,
                         colorFilter: ColorFilter.mode(
-                          AppColors.textcolor,
+                          context.palette.textPrimary,
                           BlendMode.srcIn,
                         ),
                       ),
@@ -189,7 +190,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                           ),
                         ),
                         const SizedBox(height: 6),
-                        Divider(color: AppColors.textcolor_40, thickness: 0.8),
+                        Divider(color: context.palette.divider, thickness: 0.8),
                         const SizedBox(height: 12),
                         Align(
                           alignment: isAr
@@ -197,7 +198,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                               : Alignment.centerLeft,
                           child: Text(
                             loc.translate('fillFormToReceive'),
-                            style: AppStyle.inputHint,
+                            style: AppStyle.inputHint.copyWith(color: context.palette.textPrimary.withValues(alpha: 0.4)),
                           ),
                         ),
                         const SizedBox(height: 16),
@@ -285,7 +286,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                                                   BorderRadius.circular(4),
                                             ),
                                             side: BorderSide(
-                                              color: AppColors.textcolor_40,
+                                              color: context.palette.divider,
                                               width: 1.5,
                                             ),
                                             materialTapTargetSize:
@@ -324,7 +325,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                                                   BorderRadius.circular(4),
                                             ),
                                             side: BorderSide(
-                                              color: AppColors.textcolor_40,
+                                              color: context.palette.divider,
                                               width: 1.5,
                                             ),
                                             materialTapTargetSize:
@@ -352,7 +353,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                           style: AppStyle.sectionHeader,
                         ),
                         const SizedBox(height: 16),
-                        Divider(color: AppColors.textcolor_40, thickness: 0.8),
+                        Divider(color: context.palette.divider, thickness: 0.8),
                         const SizedBox(height: 16),
 
                         // ─── Pricing Summary ──────────────────────────────────
@@ -373,7 +374,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
 
                         Text(
                           loc.translate('choosePayment'),
-                          style: AppStyle.inputHint,
+                          style: AppStyle.inputHint.copyWith(color: context.palette.textPrimary.withValues(alpha: 0.4)),
                         ),
                         const SizedBox(height: 12),
 
@@ -433,7 +434,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                           onPressed: () => context.pop(),
                           style: OutlinedButton.styleFrom(
                             minimumSize: const Size(double.infinity, 54),
-                            side: BorderSide(color: AppColors.textcolor_40),
+                            side: BorderSide(color: context.palette.divider),
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(30),
                             ),
@@ -458,7 +459,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                                         width: 18,
                                         height: 18,
                                         colorFilter: ColorFilter.mode(
-                                          AppColors.textcolor,
+                                          context.palette.textPrimary,
                                           BlendMode.srcIn,
                                         ),
                                       ),
@@ -468,7 +469,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                                       width: 18,
                                       height: 18,
                                       colorFilter: ColorFilter.mode(
-                                        AppColors.textcolor,
+                                        context.palette.textPrimary,
                                         BlendMode.srcIn,
                                       ),
                                     ),
@@ -517,10 +518,10 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
             vertical: 14,
           ),
           filled: true,
-          fillColor: Colors.white,
+          fillColor: context.palette.backgroundSubtle,
           enabledBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(12),
-            borderSide: BorderSide(color: AppColors.textcolor_40),
+            borderSide: BorderSide(color: context.palette.divider),
           ),
           focusedBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(12),
@@ -561,10 +562,10 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
             vertical: 14,
           ),
           filled: true,
-          fillColor: Colors.white,
+          fillColor: context.palette.backgroundSubtle,
           enabledBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(12),
-            borderSide: BorderSide(color: AppColors.textcolor_40),
+            borderSide: BorderSide(color: context.palette.divider),
           ),
           focusedBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(12),
@@ -587,7 +588,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                 const SizedBox(width: 4),
                 Text('+966', style: AppStyle.inputText),
                 const SizedBox(width: 4),
-                Container(width: 1, height: 24, color: AppColors.textcolor_40),
+                Container(width: 1, height: 24, color: context.palette.divider),
               ],
             ),
           ),
@@ -625,7 +626,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                   // Selected: subtle grey background, no border
                   // Unselected: fully transparent, no border
                   color: isSelected
-                      ? const Color(0xFFF0F0F0)
+                      ? context.palette.surfaceMuted
                       : Colors.transparent,
                   borderRadius: BorderRadius.circular(10),
                 ),
@@ -656,7 +657,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
         Text(
           label,
           style: AppStyle.pricingLabel.copyWith(
-            color: AppColors.textcolor.withValues(alpha: 0.6),
+            color: context.palette.textPrimary.withValues(alpha: 0.6),
           ),
         ),
         Directionality(
@@ -688,9 +689,9 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
         duration: const Duration(milliseconds: 200),
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: context.palette.background,
           // Same border color for both states — no color change on selection
-          border: Border.all(color: AppColors.textcolor_40, width: 1),
+          border: Border.all(color: context.palette.divider, width: 1),
           borderRadius: BorderRadius.circular(30),
         ),
         child: Row(
@@ -708,7 +709,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                 shape: BoxShape.circle,
                 color: isSelected
                     ? Colors.transparent
-                    : const Color(0xFFF0F0F0),
+                    : context.palette.surfaceMuted,
                 border: isSelected
                     ? Border.all(color: AppColors.primary, width: 1.5)
                     : null,

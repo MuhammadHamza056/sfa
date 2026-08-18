@@ -14,6 +14,7 @@ import 'package:sfa/features/favorites/models/favorite_product.dart';
 import 'package:sfa/features/favorites/bloc/favorites_bloc.dart';
 import 'package:sfa/features/favorites/bloc/favorites_event.dart';
 import 'package:sfa/features/favorites/bloc/favorites_state.dart';
+import 'package:sfa/core/theme/app_palette.dart';
 
 class ReviewItem {
   final String nameAr;
@@ -110,7 +111,7 @@ class _ProductReviewsScreenState extends State<ProductReviewsScreen> {
         return Directionality(
           textDirection: isAr ? TextDirection.rtl : TextDirection.ltr,
           child: Scaffold(
-            backgroundColor: Colors.white,
+            backgroundColor: context.palette.background,
             appBar: null,
             body: SingleChildScrollView(
               child: Column(
@@ -133,7 +134,7 @@ class _ProductReviewsScreenState extends State<ProductReviewsScreen> {
                               resolvedBrandName,
                               style: AppStyle.bodyText.copyWith(
                                 fontSize: 24,
-                                color: const Color(0xFF4E1D2D),
+                                color: context.palette.textPrimary,
                                 height: 1.1,
                               ),
                             ),
@@ -143,7 +144,7 @@ class _ProductReviewsScreenState extends State<ProductReviewsScreen> {
                               style: AppStyle.bodyText.copyWith(
                                 fontSize: 20,
                                 fontWeight: FontWeight.bold,
-                                color: AppColors.textcolor,
+                                color: context.palette.textPrimary,
                               ),
                             ),
                             const SizedBox(height: 6),
@@ -151,7 +152,7 @@ class _ProductReviewsScreenState extends State<ProductReviewsScreen> {
                               productPrice,
                               style: AppStyle.bodyText.copyWith(
                                 fontSize: 18,
-                                color: AppColors.textcolor.withValues(
+                                color: context.palette.textPrimary.withValues(
                                   alpha: 0.8,
                                 ),
                               ),
@@ -169,7 +170,7 @@ class _ProductReviewsScreenState extends State<ProductReviewsScreen> {
                                   isAr ? '4.9 · 85 تقييماً' : '4.9 · 85 reviews',
                                   style: AppStyle.bodyText.copyWith(
                                     fontSize: 13.5,
-                                    color: Colors.grey[400],
+                                    color: context.palette.textMuted,
                                   ),
                                 ),
                               ],
@@ -230,7 +231,7 @@ class _ProductReviewsScreenState extends State<ProductReviewsScreen> {
                                         colorFilter: ColorFilter.mode(
                                           isFav
                                               ? AppColors.primary
-                                              : AppColors.textcolor,
+                                              : context.palette.textPrimary,
                                           BlendMode.srcIn,
                                         ),
                                       ),
@@ -296,10 +297,10 @@ class _ProductReviewsScreenState extends State<ProductReviewsScreen> {
                                   child: LinearProgressIndicator(
                                     value: percentage,
                                     minHeight: 6,
-                                    backgroundColor: const Color(0xFFF5F5F5),
+                                    backgroundColor: context.palette.surfaceMuted,
                                     valueColor:
-                                        const AlwaysStoppedAnimation<Color>(
-                                          Color(0xFF4E1D2D),
+                                        AlwaysStoppedAnimation<Color>(
+                                          context.palette.textPrimary,
                                         ),
                                   ),
                                 ),
@@ -314,7 +315,7 @@ class _ProductReviewsScreenState extends State<ProductReviewsScreen> {
                                       '$stars',
                                       style: AppStyle.bodyText.copyWith(
                                         fontSize: 13,
-                                        color: Colors.grey[400],
+                                        color: context.palette.textMuted,
                                       ),
                                     ),
                                     const SizedBox(width: 2),
@@ -397,14 +398,14 @@ class _ProductReviewsScreenState extends State<ProductReviewsScreen> {
                           style: AppStyle.bodyText.copyWith(
                             fontSize: 18,
                             fontWeight: FontWeight.bold,
-                            color: const Color(0xFF4E1D2D),
+                            color: context.palette.textPrimary,
                           ),
                         ),
                         const SizedBox(height: 8),
-                        const Divider(
+                        Divider(
                           height: 1,
                           thickness: 1,
-                          color: Color(0xFFEEEEEE),
+                          color: context.palette.divider,
                         ),
                       ],
                     ),
@@ -432,7 +433,7 @@ class _ProductReviewsScreenState extends State<ProductReviewsScreen> {
                                     style: AppStyle.bodyText.copyWith(
                                       fontWeight: FontWeight.bold,
                                       fontSize: 14,
-                                      color: const Color(0xFF4E1D2D),
+                                      color: context.palette.textPrimary,
                                     ),
                                   ),
                                   const SizedBox(width: 8),
@@ -461,7 +462,7 @@ class _ProductReviewsScreenState extends State<ProductReviewsScreen> {
                                 isAr ? review.dateAr : review.dateEn,
                                 style: AppStyle.bodyText.copyWith(
                                   fontSize: 12,
-                                  color: Colors.grey[400],
+                                  color: context.palette.textMuted,
                                 ),
                               ),
                             ],
@@ -474,7 +475,7 @@ class _ProductReviewsScreenState extends State<ProductReviewsScreen> {
                                 size: 14,
                                 color: starIdx < review.rating
                                     ? Colors.amber
-                                    : Colors.grey[300],
+                                    : context.palette.divider,
                               );
                             }),
                           ),
@@ -483,7 +484,7 @@ class _ProductReviewsScreenState extends State<ProductReviewsScreen> {
                             isAr ? review.reviewAr : review.reviewEn,
                             style: AppStyle.bodyText.copyWith(
                               fontSize: 13,
-                              color: Colors.grey[700],
+                              color: context.palette.textMuted,
                               height: 1.5,
                             ),
                           ),
@@ -499,7 +500,7 @@ class _ProductReviewsScreenState extends State<ProductReviewsScreen> {
                               decoration: BoxDecoration(
                                 borderRadius: BorderRadius.circular(20),
                                 border: Border.all(
-                                  color: const Color(0xFFF0F0F0),
+                                  color: context.palette.surfaceMuted,
                                 ),
                               ),
                               child: Row(
@@ -509,7 +510,7 @@ class _ProductReviewsScreenState extends State<ProductReviewsScreen> {
                                     '${review.helpfulCount} ${loc.translate('helpful')}',
                                     style: AppStyle.bodyText.copyWith(
                                       fontSize: 11,
-                                      color: Colors.grey[600],
+                                      color: context.palette.textMuted,
                                     ),
                                   ),
                                   const SizedBox(width: 6),
@@ -518,7 +519,7 @@ class _ProductReviewsScreenState extends State<ProductReviewsScreen> {
                                     width: 12,
                                     height: 12,
                                     colorFilter: ColorFilter.mode(
-                                      Colors.grey[600]!,
+                                      context.palette.textMuted,
                                       BlendMode.srcIn,
                                     ),
                                   ),

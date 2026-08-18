@@ -4,6 +4,7 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:go_router/go_router.dart';
 import 'package:sfa/core/localization/app_localizations.dart';
+import 'package:sfa/core/theme/app_palette.dart';
 import 'package:sfa/utils/app_style.dart';
 import 'package:sfa/utils/assets_constants.dart';
 import 'package:sfa/utils/color_constants.dart';
@@ -168,15 +169,17 @@ class _DashboardScreenState extends State<DashboardScreen>
               if (isReel) {
                 return isSelected
                     ? Colors.white
-                    : Colors.white.withOpacity(0.5);
+                    : Colors.white.withValues(alpha: 0.5);
               }
-              return isSelected ? AppColors.textcolor : AppColors.textcolor_50;
+              return isSelected
+                  ? context.palette.textPrimary
+                  : context.palette.textMuted;
             }
 
             return Directionality(
               textDirection: isAr ? TextDirection.rtl : TextDirection.ltr,
               child: Scaffold(
-                backgroundColor: Colors.white,
+                backgroundColor: context.palette.background,
                 extendBody: state.currentIndex == 2 && !state.drawerOpen,
                   appBar: (() {
                     if (widget.body != null) {
@@ -195,7 +198,7 @@ class _DashboardScreenState extends State<DashboardScreen>
                       ? PreferredSize(
                          preferredSize: const Size.fromHeight(56),
                          child: Container(
-                           color: Colors.white,
+                           color: context.palette.background,
                            child: SafeArea(
                              bottom: false,
                              child: Container(
@@ -233,7 +236,7 @@ class _DashboardScreenState extends State<DashboardScreen>
                                                widget.body is WriteReviewScreen)
                                            ? 0
                                            : 2.0,
-                                       color: AppColors.textcolor,
+                                       color: context.palette.textPrimary,
                                      ),
                                    ),
                                   // Left & Right Controls
@@ -262,7 +265,7 @@ class _DashboardScreenState extends State<DashboardScreen>
                                                 AssetsConstants.shoppingBag,
                                                 width: 22,
                                                 colorFilter: ColorFilter.mode(
-                                                  AppColors.textcolor,
+                                                  context.palette.icon,
                                                   BlendMode.srcIn,
                                                 ),
                                               ),
@@ -286,7 +289,7 @@ class _DashboardScreenState extends State<DashboardScreen>
                                                 AssetsConstants.heart,
                                                 width: 22,
                                                 colorFilter: ColorFilter.mode(
-                                                  AppColors.textcolor,
+                                                  context.palette.icon,
                                                   BlendMode.srcIn,
                                                 ),
                                               ),
@@ -306,7 +309,7 @@ class _DashboardScreenState extends State<DashboardScreen>
                                                 AssetsConstants.search,
                                                 width: 22,
                                                 colorFilter: ColorFilter.mode(
-                                                  AppColors.textcolor,
+                                                  context.palette.icon,
                                                   BlendMode.srcIn,
                                                 ),
                                               ),
@@ -334,7 +337,7 @@ class _DashboardScreenState extends State<DashboardScreen>
                                                     : AssetsConstants.menu,
                                                 width: 22,
                                                 colorFilter: ColorFilter.mode(
-                                                  AppColors.textcolor,
+                                                  context.palette.icon,
                                                   BlendMode.srcIn,
                                                 ),
                                               ),
@@ -418,23 +421,23 @@ class _DashboardScreenState extends State<DashboardScreen>
                   },
                   type: BottomNavigationBarType.fixed,
                   backgroundColor: isReel
-                      ? Colors.white.withOpacity(0.05)
-                      : Colors.white,
+                      ? Colors.white.withValues(alpha: 0.05)
+                      : context.palette.surface,
                   elevation: isReel ? 0 : 8,
                   selectedItemColor: isReel
                       ? Colors.white
-                      : AppColors.textcolor,
+                      : context.palette.textPrimary,
                   unselectedItemColor: isReel
-                      ? Colors.white.withOpacity(0.5)
-                      : AppColors.textcolor_50,
+                      ? Colors.white.withValues(alpha: 0.5)
+                      : context.palette.textMuted,
                   selectedLabelStyle: AppStyle.navLabel.copyWith(
-                    color: isReel ? Colors.white : AppColors.textcolor,
+                    color: isReel ? Colors.white : context.palette.textPrimary,
                   ),
                   unselectedLabelStyle: AppStyle.navLabel.copyWith(
                     fontWeight: FontWeight.normal,
                     color: isReel
-                        ? Colors.white.withOpacity(0.5)
-                        : AppColors.textcolor_50,
+                        ? Colors.white.withValues(alpha: 0.5)
+                        : context.palette.textMuted,
                   ),
                   items: [
                     BottomNavigationBarItem(
@@ -521,9 +524,8 @@ class AppDrawer extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(
-        0xFFF5F0EA,
-      ), // warm off-white matching design
+      // warm off-white in light, raised maroon in dark
+      backgroundColor: context.palette.surfaceWarm,
       body: SafeArea(
         child: Directionality(
           textDirection: isAr ? TextDirection.rtl : TextDirection.ltr,
@@ -542,7 +544,7 @@ class AppDrawer extends StatelessWidget {
                   context.push('/login');
                 },
               ),
-              _buildDivider(),
+              _buildDivider(context),
 
               _DrawerItem(
                 icon: AssetsConstants.globe,
@@ -557,7 +559,7 @@ class AppDrawer extends StatelessWidget {
                   localeNotifier.toggleLanguage();
                 },
               ),
-              _buildDivider(),
+              _buildDivider(context),
 
               _DrawerItem(
                 icon: AssetsConstants.shoppingBag2,
@@ -567,7 +569,7 @@ class AppDrawer extends StatelessWidget {
                   onClose();
                 },
               ),
-              _buildDivider(),
+              _buildDivider(context),
 
               _DrawerItem(
                 icon: AssetsConstants.trackOrder,
@@ -578,7 +580,7 @@ class AppDrawer extends StatelessWidget {
                   context.push('/order-tracking');
                 },
               ),
-              _buildDivider(),
+              _buildDivider(context),
 
               _DrawerItem(
                 icon: AssetsConstants.mapPin,
@@ -589,7 +591,7 @@ class AppDrawer extends StatelessWidget {
                   context.push('/addresses');
                 },
               ),
-              _buildDivider(),
+              _buildDivider(context),
 
               _DrawerItem(
                 icon: AssetsConstants.walletCards,
@@ -600,7 +602,7 @@ class AppDrawer extends StatelessWidget {
                   context.push('/wallet');
                 },
               ),
-              _buildDivider(),
+              _buildDivider(context),
 
               const Spacer(),
             ],
@@ -610,8 +612,8 @@ class AppDrawer extends StatelessWidget {
     );
   }
 
-  Widget _buildDivider() => Divider(
-    color: AppColors.textcolor.withValues(alpha: 0.12),
+  Widget _buildDivider(BuildContext context) => Divider(
+    color: context.palette.divider,
     thickness: 0.8,
     height: 0,
   );
@@ -644,7 +646,7 @@ class _DrawerItem extends StatelessWidget {
       textDirection: TextDirection.ltr,
       child: Icon(
         isAr ? Icons.chevron_left_rounded : Icons.chevron_right_rounded,
-        color: AppColors.textcolor.withValues(alpha: 0.5),
+        color: context.palette.textMuted,
         size: 22,
       ),
     );
@@ -653,7 +655,7 @@ class _DrawerItem extends StatelessWidget {
       icon,
       width: 22,
       height: 22,
-      colorFilter: ColorFilter.mode(AppColors.textcolor, BlendMode.srcIn),
+      colorFilter: ColorFilter.mode(context.palette.icon, BlendMode.srcIn),
     );
 
     return InkWell(

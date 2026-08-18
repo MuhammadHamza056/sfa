@@ -10,6 +10,7 @@ import 'package:sfa/features/orders/bloc/orders_bloc.dart';
 import 'package:sfa/features/orders/bloc/orders_event.dart';
 import 'package:sfa/features/orders/bloc/orders_state.dart';
 import 'package:sfa/utils/loader.dart';
+import 'package:sfa/core/theme/app_palette.dart';
 
 class RefundRequestScreen extends StatefulWidget {
   final String orderId;
@@ -92,11 +93,11 @@ class _RefundRequestScreenState extends State<RefundRequestScreen> {
         return Directionality(
           textDirection: textDir,
           child: Scaffold(
-            backgroundColor: Colors.white,
+            backgroundColor: context.palette.background,
 
             // ─── Top App Bar ──────────────────────────────────────────────
             appBar: AppBar(
-              backgroundColor: Colors.white,
+              backgroundColor: context.palette.background,
               elevation: 0,
               scrolledUnderElevation: 0,
               automaticallyImplyLeading: false,
@@ -112,7 +113,7 @@ class _RefundRequestScreenState extends State<RefundRequestScreen> {
                         AssetsConstants.shoppingBag2,
                         width: 22,
                         colorFilter: ColorFilter.mode(
-                          AppColors.textcolor,
+                          context.palette.textPrimary,
                           BlendMode.srcIn,
                         ),
                       ),
@@ -124,7 +125,7 @@ class _RefundRequestScreenState extends State<RefundRequestScreen> {
                         AssetsConstants.heart,
                         width: 22,
                         colorFilter: ColorFilter.mode(
-                          AppColors.textcolor,
+                          context.palette.textPrimary,
                           BlendMode.srcIn,
                         ),
                       ),
@@ -137,7 +138,7 @@ class _RefundRequestScreenState extends State<RefundRequestScreen> {
                 style: AppStyle.welcomeTitle.copyWith(
                   fontSize: 24,
                   fontWeight: FontWeight.bold,
-                  color: AppColors.textcolor,
+                  color: context.palette.textPrimary,
                   letterSpacing: 2,
                 ),
               ),
@@ -149,7 +150,7 @@ class _RefundRequestScreenState extends State<RefundRequestScreen> {
                     AssetsConstants.search,
                     width: 22,
                     colorFilter: ColorFilter.mode(
-                      AppColors.textcolor,
+                      context.palette.textPrimary,
                       BlendMode.srcIn,
                     ),
                   ),
@@ -162,7 +163,7 @@ class _RefundRequestScreenState extends State<RefundRequestScreen> {
                     width: 22,
                     matchTextDirection: true,
                     colorFilter: ColorFilter.mode(
-                      AppColors.textcolor,
+                      context.palette.textPrimary,
                       BlendMode.srcIn,
                     ),
                   ),
@@ -181,12 +182,12 @@ class _RefundRequestScreenState extends State<RefundRequestScreen> {
                   style: TextStyle(
                     fontSize: 22,
                     fontWeight: FontWeight.bold,
-                    color: AppColors.textcolor,
+                    color: context.palette.textPrimary,
                   ),
                   textAlign: isAr ? TextAlign.right : TextAlign.left,
                 ),
                 const SizedBox(height: 8),
-                const Divider(thickness: 1, color: Color(0xFFF1F1F1)),
+                Divider(thickness: 1, color: context.palette.divider),
                 const SizedBox(height: 12),
 
                 // Order Info Grid (Order Number & Date)
@@ -198,14 +199,14 @@ class _RefundRequestScreenState extends State<RefundRequestScreen> {
                       style: TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.bold,
-                        color: AppColors.textcolor,
+                        color: context.palette.textPrimary,
                       ),
                     ),
                     Text(
                       orderNumLabel,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 14,
-                        color: Colors.grey,
+                        color: context.palette.textMuted,
                       ),
                     ),
                   ],
@@ -219,14 +220,14 @@ class _RefundRequestScreenState extends State<RefundRequestScreen> {
                       style: TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.bold,
-                        color: AppColors.textcolor,
+                        color: context.palette.textPrimary,
                       ),
                     ),
                     Text(
                       orderDateLabel,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 14,
-                        color: Colors.grey,
+                        color: context.palette.textMuted,
                       ),
                     ),
                   ],
@@ -246,7 +247,7 @@ class _RefundRequestScreenState extends State<RefundRequestScreen> {
                         style: TextStyle(
                           fontSize: 18,
                           fontWeight: FontWeight.bold,
-                          color: AppColors.textcolor,
+                          color: context.palette.textPrimary,
                         ),
                       ),
                       Row(
@@ -257,7 +258,7 @@ class _RefundRequestScreenState extends State<RefundRequestScreen> {
                                   productsCountText,
                                   style: TextStyle(
                                     fontSize: 14,
-                                    color: Colors.grey.shade600,
+                                    color: context.palette.textMuted,
                                   ),
                                 ),
                                 const SizedBox(width: 8),
@@ -265,7 +266,7 @@ class _RefundRequestScreenState extends State<RefundRequestScreen> {
                                   state.isProductsExpanded
                                       ? Icons.keyboard_arrow_up
                                       : Icons.keyboard_arrow_down,
-                                  color: AppColors.textcolor,
+                                  color: context.palette.textPrimary,
                                 ),
                               ]
                             : [
@@ -273,7 +274,7 @@ class _RefundRequestScreenState extends State<RefundRequestScreen> {
                                   productsCountText,
                                   style: TextStyle(
                                     fontSize: 14,
-                                    color: Colors.grey.shade600,
+                                    color: context.palette.textMuted,
                                   ),
                                 ),
                                 const SizedBox(width: 8),
@@ -281,7 +282,7 @@ class _RefundRequestScreenState extends State<RefundRequestScreen> {
                                   state.isProductsExpanded
                                       ? Icons.keyboard_arrow_up
                                       : Icons.keyboard_arrow_down,
-                                  color: AppColors.textcolor,
+                                  color: context.palette.textPrimary,
                                 ),
                               ],
                       ),
@@ -300,7 +301,7 @@ class _RefundRequestScreenState extends State<RefundRequestScreen> {
                       margin: const EdgeInsets.only(bottom: 16),
                       padding: const EdgeInsets.all(12),
                       decoration: BoxDecoration(
-                        color: const Color(0xFFF9F9F9),
+                        color: context.palette.backgroundSubtle,
                         borderRadius: BorderRadius.circular(20),
                         border: Border.all(
                           color: isProductSelected
@@ -321,7 +322,7 @@ class _RefundRequestScreenState extends State<RefundRequestScreen> {
                                     borderRadius: BorderRadius.circular(4),
                                   ),
                                   side: BorderSide(
-                                    color: Colors.grey.shade400,
+                                    color: context.palette.textMuted,
                                     width: 1.5,
                                   ),
                                   onChanged: (val) {
@@ -337,7 +338,7 @@ class _RefundRequestScreenState extends State<RefundRequestScreen> {
                                         product['brand'] as String,
                                         style: TextStyle(
                                           fontSize: 13,
-                                          color: Colors.grey.shade600,
+                                          color: context.palette.textMuted,
                                         ),
                                       ),
                                       const SizedBox(height: 4),
@@ -346,7 +347,7 @@ class _RefundRequestScreenState extends State<RefundRequestScreen> {
                                         style: TextStyle(
                                           fontSize: 15,
                                           fontWeight: FontWeight.bold,
-                                          color: AppColors.textcolor,
+                                          color: context.palette.textPrimary,
                                         ),
                                         textAlign: TextAlign.right,
                                       ),
@@ -369,7 +370,7 @@ class _RefundRequestScreenState extends State<RefundRequestScreen> {
                                               vertical: 4,
                                             ),
                                             decoration: BoxDecoration(
-                                              color: const Color(0xFFF1F1F1),
+                                              color: context.palette.divider,
                                               borderRadius:
                                                   BorderRadius.circular(6),
                                             ),
@@ -378,7 +379,7 @@ class _RefundRequestScreenState extends State<RefundRequestScreen> {
                                               style: TextStyle(
                                                 fontSize: 13,
                                                 fontWeight: FontWeight.bold,
-                                                color: AppColors.textcolor,
+                                                color: context.palette.textPrimary,
                                               ),
                                             ),
                                           ),
@@ -418,7 +419,7 @@ class _RefundRequestScreenState extends State<RefundRequestScreen> {
                                         product['brandEn'] as String,
                                         style: TextStyle(
                                           fontSize: 13,
-                                          color: Colors.grey.shade600,
+                                          color: context.palette.textMuted,
                                         ),
                                       ),
                                       const SizedBox(height: 4),
@@ -427,7 +428,7 @@ class _RefundRequestScreenState extends State<RefundRequestScreen> {
                                         style: TextStyle(
                                           fontSize: 15,
                                           fontWeight: FontWeight.bold,
-                                          color: AppColors.textcolor,
+                                          color: context.palette.textPrimary,
                                         ),
                                       ),
                                       const SizedBox(height: 8),
@@ -448,7 +449,7 @@ class _RefundRequestScreenState extends State<RefundRequestScreen> {
                                               vertical: 4,
                                             ),
                                             decoration: BoxDecoration(
-                                              color: const Color(0xFFF1F1F1),
+                                              color: context.palette.divider,
                                               borderRadius:
                                                   BorderRadius.circular(6),
                                             ),
@@ -457,7 +458,7 @@ class _RefundRequestScreenState extends State<RefundRequestScreen> {
                                               style: TextStyle(
                                                 fontSize: 13,
                                                 fontWeight: FontWeight.bold,
-                                                color: AppColors.textcolor,
+                                                color: context.palette.textPrimary,
                                               ),
                                             ),
                                           ),
@@ -474,7 +475,7 @@ class _RefundRequestScreenState extends State<RefundRequestScreen> {
                                     borderRadius: BorderRadius.circular(4),
                                   ),
                                   side: BorderSide(
-                                    color: Colors.grey.shade400,
+                                    color: context.palette.textMuted,
                                     width: 1.5,
                                   ),
                                   onChanged: (val) {
@@ -494,10 +495,10 @@ class _RefundRequestScreenState extends State<RefundRequestScreen> {
                   alignment: isAr ? Alignment.centerRight : Alignment.centerLeft,
                   child: Text(
                     reasonLabel,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.bold,
-                      color: Colors.black,
+                      color: context.palette.textPrimary,
                     ),
                   ),
                 ),
@@ -508,12 +509,12 @@ class _RefundRequestScreenState extends State<RefundRequestScreen> {
                     alignment: isAr ? Alignment.centerRight : Alignment.centerLeft,
                     child: Text(
                       loc.translate('reasonPlaceholder'),
-                      style: TextStyle(color: Colors.grey.shade500),
+                      style: TextStyle(color: context.palette.textMuted),
                     ),
                   ),
-                  icon: const Icon(
+                  icon: Icon(
                     Icons.keyboard_arrow_down,
-                    color: Colors.black,
+                    color: context.palette.textPrimary,
                   ),
                   decoration: InputDecoration(
                     contentPadding: const EdgeInsets.symmetric(
@@ -522,22 +523,22 @@ class _RefundRequestScreenState extends State<RefundRequestScreen> {
                     ),
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(16),
-                      borderSide: const BorderSide(
-                        color: Colors.black12,
+                      borderSide: BorderSide(
+                        color: context.palette.divider,
                         width: 1.5,
                       ),
                     ),
                     enabledBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(16),
-                      borderSide: const BorderSide(
-                        color: Colors.black26,
+                      borderSide: BorderSide(
+                        color: context.palette.textMuted,
                         width: 1.5,
                       ),
                     ),
                     focusedBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(16),
-                      borderSide: const BorderSide(
-                        color: Colors.black,
+                      borderSide: BorderSide(
+                        color: context.palette.textPrimary,
                         width: 1.5,
                       ),
                     ),
@@ -562,10 +563,10 @@ class _RefundRequestScreenState extends State<RefundRequestScreen> {
                   alignment: isAr ? Alignment.centerRight : Alignment.centerLeft,
                   child: Text(
                     loc.translate('additionalNotesOptional'),
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.bold,
-                      color: Colors.black,
+                      color: context.palette.textPrimary,
                     ),
                   ),
                 ),
@@ -581,22 +582,22 @@ class _RefundRequestScreenState extends State<RefundRequestScreen> {
                     ),
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(16),
-                      borderSide: const BorderSide(
-                        color: Colors.black12,
+                      borderSide: BorderSide(
+                        color: context.palette.divider,
                         width: 1.5,
                       ),
                     ),
                     enabledBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(16),
-                      borderSide: const BorderSide(
-                        color: Colors.black26,
+                      borderSide: BorderSide(
+                        color: context.palette.textMuted,
                         width: 1.5,
                       ),
                     ),
                     focusedBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(16),
-                      borderSide: const BorderSide(
-                        color: Colors.black,
+                      borderSide: BorderSide(
+                        color: context.palette.textPrimary,
                         width: 1.5,
                       ),
                     ),
@@ -654,14 +655,14 @@ class _RefundRequestScreenState extends State<RefundRequestScreen> {
                   onPressed: () => context.pop(),
                   style: OutlinedButton.styleFrom(
                     minimumSize: const Size(double.infinity, 56),
-                    side: const BorderSide(
-                      color: Colors.black26,
+                    side: BorderSide(
+                      color: context.palette.textMuted,
                       width: 1.5,
                     ),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(30),
                     ),
-                    backgroundColor: Colors.white,
+                    backgroundColor: context.palette.background,
                   ),
                   child: Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 16.0),
@@ -670,15 +671,15 @@ class _RefundRequestScreenState extends State<RefundRequestScreen> {
                       children: [
                         Text(
                           loc.translate('cancel'),
-                          style: const TextStyle(
-                            color: Colors.black,
+                          style: TextStyle(
+                            color: context.palette.textPrimary,
                             fontSize: 16,
                             fontWeight: FontWeight.bold,
                           ),
                         ),
                         Icon(
                           isAr ? Icons.west : Icons.east,
-                          color: Colors.black,
+                          color: context.palette.textPrimary,
                           size: 20,
                         ),
                       ],

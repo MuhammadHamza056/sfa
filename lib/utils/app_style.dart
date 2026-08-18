@@ -2,6 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:sfa/utils/color_constants.dart';
 
+/// Shared text styles.
+///
+/// Styles that carry ordinary body/heading text deliberately leave [TextStyle.color]
+/// null so they inherit the active theme's colour via `DefaultTextStyle`.
+/// Colours are only pinned here when they are theme-independent by design:
+/// brand gold, and white text that always sits on top of an image or a gold
+/// button. Muted variants take their colour from `context.palette.textMuted`
+/// at the call site.
 class AppStyle {
   BuildContext context;
   AppStyle(this.context);
@@ -15,12 +23,10 @@ class AppStyle {
   static TextStyle bodyText = GoogleFonts.cairo(
     fontSize: 15,
     fontWeight: FontWeight.w300,
-    color: AppColors.textcolor,
   );
 
   static TextStyle bodyTextBoldUnderline = GoogleFonts.cairo(
     fontSize: 15,
-    color: AppColors.textcolor,
     fontWeight: FontWeight.w600,
     decoration: TextDecoration.underline,
   );
@@ -56,23 +62,19 @@ class AppStyle {
   static TextStyle screenTitle = GoogleFonts.cairo(
     fontSize: 26,
     fontWeight: FontWeight.bold,
-    color: AppColors.textcolor,
   );
 
   static TextStyle welcomeTitle = GoogleFonts.cairo(
     fontSize: 22,
     fontWeight: FontWeight.bold,
-    color: AppColors.textcolor,
   );
 
   static TextStyle subtitleDesc = GoogleFonts.cairo(
     fontSize: 13,
-    color: AppColors.textcolor.withValues(alpha: 0.7),
     height: 1.5,
   );
 
   static TextStyle buttonTextSocial = GoogleFonts.cairo(
-    color: AppColors.textcolor,
     fontWeight: FontWeight.w400,
     fontSize: 18,
   );
@@ -85,17 +87,14 @@ class AppStyle {
 
   static TextStyle buttonTextSecondary = GoogleFonts.cairo(
     fontSize: 16,
-    color: AppColors.textcolor,
     fontWeight: FontWeight.bold,
   );
 
   static TextStyle inputLabelSub = GoogleFonts.cairo(
     fontSize: 13,
-    color: AppColors.textcolor.withValues(alpha: 0.7),
   );
 
   static TextStyle switchTextLink = GoogleFonts.cairo(
-    color: AppColors.textcolor,
     fontWeight: FontWeight.bold,
     fontSize: 13,
     decoration: TextDecoration.underline,
@@ -104,22 +103,18 @@ class AppStyle {
   static TextStyle fieldLabel = GoogleFonts.cairo(
     fontSize: 14,
     fontWeight: FontWeight.bold,
-    color: AppColors.textcolor,
   );
 
   static TextStyle checkboxText = GoogleFonts.cairo(
     fontSize: 15,
     fontWeight: FontWeight.w300,
-    color: AppColors.textcolor,
   );
 
   static TextStyle inputText = GoogleFonts.cairo(
-    color: AppColors.textcolor,
     fontSize: 15,
   );
 
   static TextStyle inputHint = GoogleFonts.cairo(
-    color: AppColors.textcolor.withValues(alpha: 0.4),
     fontSize: 14,
   );
 
@@ -159,25 +154,21 @@ class AppStyle {
   static TextStyle sectionHeader = GoogleFonts.cairo(
     fontSize: 22,
     fontWeight: FontWeight.w700,
-    color: AppColors.textcolor,
   );
 
   static TextStyle labelText = GoogleFonts.cairo(
     fontSize: 14,
     fontWeight: FontWeight.w400,
-    color: AppColors.textcolor,
   );
 
   static TextStyle labelTextMuted = GoogleFonts.cairo(
     fontSize: 14,
     fontWeight: FontWeight.w400,
-    color: AppColors.textcolor,
   );
 
   static TextStyle valueText = GoogleFonts.cairo(
     fontSize: 15,
     fontWeight: FontWeight.w600,
-    color: AppColors.textcolor,
   );
 
   static TextStyle valuePrimary = GoogleFonts.cairo(
@@ -189,19 +180,16 @@ class AppStyle {
   static TextStyle timelineTitle = GoogleFonts.cairo(
     fontSize: 16,
     fontWeight: FontWeight.w700,
-    color: AppColors.textcolor,
   );
 
   static TextStyle timelineSubtitle = GoogleFonts.cairo(
     fontSize: 13,
     fontWeight: FontWeight.w400,
-    color: AppColors.textcolor,
   );
 
   static TextStyle cardTitle = GoogleFonts.cairo(
     fontSize: 16,
     fontWeight: FontWeight.w700,
-    color: AppColors.textcolor,
   );
 
   static TextStyle cardSubtitle = GoogleFonts.cairo(
@@ -213,25 +201,21 @@ class AppStyle {
   static TextStyle chipLabel = GoogleFonts.cairo(
     fontSize: 13,
     fontWeight: FontWeight.w600,
-    color: AppColors.textcolor,
   );
 
   static TextStyle navLabel = GoogleFonts.cairo(
     fontSize: 12,
     fontWeight: FontWeight.bold,
-    color: AppColors.textcolor,
   );
 
   static TextStyle infoChipText = GoogleFonts.cairo(
     fontSize: 11,
     fontWeight: FontWeight.w500,
-    color: AppColors.textcolor,
   );
 
   static TextStyle productTitle = GoogleFonts.cairo(
     fontSize: 13,
     fontWeight: FontWeight.w600,
-    color: AppColors.textcolor,
   );
 
   static TextStyle productPrice = GoogleFonts.cairo(
@@ -254,7 +238,6 @@ class AppStyle {
   static TextStyle drawerItemLabel = GoogleFonts.cairo(
     fontSize: 15,
     fontWeight: FontWeight.w500,
-    color: AppColors.textcolor,
   );
 
   static TextStyle drawerLanguageTag = GoogleFonts.cairo(
@@ -321,43 +304,36 @@ class AppStyle {
   static TextStyle paymentOption = GoogleFonts.cairo(
     fontSize: 15,
     fontWeight: FontWeight.w400,
-    color: AppColors.textcolor,
   );
 
   static TextStyle regionChip = GoogleFonts.cairo(
     fontSize: 13,
     fontWeight: FontWeight.w400,
-    color: AppColors.textcolor,
   );
 
   static TextStyle pricingLabel = GoogleFonts.cairo(
     fontSize: 14,
     fontWeight: FontWeight.w400,
-    color: AppColors.textcolor,
   );
 
   static TextStyle pricingLabelLight = GoogleFonts.cairo(
     fontSize: 15,
     fontWeight: FontWeight.w300,
-    color: AppColors.textcolor,
   );
 
   static TextStyle pricingValue = GoogleFonts.cairo(
     fontSize: 15,
     fontWeight: FontWeight.w600,
-    color: AppColors.textcolor,
   );
 
   static TextStyle notificationTitle = GoogleFonts.cairo(
     fontSize: 14,
     fontWeight: FontWeight.w600,
-    color: AppColors.textcolor,
   );
 
   static TextStyle notificationBody = GoogleFonts.cairo(
     fontSize: 13,
     fontWeight: FontWeight.w300,
-    color: AppColors.textcolor,
   );
 
   // ── Wallet / Refund Screen Styles ──────────────────────────────────────────
@@ -388,7 +364,6 @@ class AppStyle {
   static TextStyle walletSectionHeader = GoogleFonts.cairo(
     fontSize: 20,
     fontWeight: FontWeight.bold,
-    color: AppColors.textcolor,
   );
 
   static TextStyle walletTxAmount = GoogleFonts.cairo(
@@ -399,13 +374,11 @@ class AppStyle {
   static TextStyle walletTxTitle = GoogleFonts.cairo(
     fontSize: 15,
     fontWeight: FontWeight.w300,
-    color: AppColors.textcolor,
   );
 
   static TextStyle walletTxDate = GoogleFonts.cairo(
     fontSize: 15,
     fontWeight: FontWeight.w300,
-    color: Colors.grey.shade500,
   );
 
   static TextStyle walletViewAll = GoogleFonts.cairo(

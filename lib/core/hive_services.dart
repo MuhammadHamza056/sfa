@@ -13,6 +13,7 @@ class SecureStorage {
   static const String login = "ISLOGIN";
   static const String role = "ROLE";
   static const String code = "CODE";
+  static const String darkMode = "DARKMODE";
 
   static const FlutterSecureStorage _storage = FlutterSecureStorage(
     aOptions: AndroidOptions(encryptedSharedPreferences: true),
@@ -35,6 +36,7 @@ class SecureStorage {
       login,
       role,
       code,
+      darkMode,
     ];
 
     for (String key in keys) {
@@ -142,6 +144,14 @@ class SecureStorage {
 
   static bool getRemember() {
     return _cache[rememberMe] == 'true';
+  }
+
+  static Future<void> putDarkMode(bool value) async {
+    await _write(darkMode, value.toString());
+  }
+
+  static bool getDarkMode() {
+    return _cache[darkMode] == 'true';
   }
 
   static bool getUserLogin() {

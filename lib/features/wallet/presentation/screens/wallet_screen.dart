@@ -5,6 +5,7 @@ import 'package:sfa/core/localization/app_localizations.dart';
 import 'package:sfa/utils/app_style.dart';
 import 'package:sfa/utils/assets_constants.dart';
 import 'package:sfa/utils/color_constants.dart';
+import 'package:sfa/core/theme/app_palette.dart';
 
 class WalletScreen extends StatelessWidget {
   const WalletScreen({super.key});
@@ -50,7 +51,7 @@ class WalletScreen extends StatelessWidget {
     ];
 
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: context.palette.background,
       body: Directionality(
         textDirection: isAr ? TextDirection.rtl : TextDirection.ltr,
         child: SingleChildScrollView(
@@ -98,7 +99,7 @@ class WalletScreen extends StatelessWidget {
 
                     // Dark Strip button
                     Material(
-                      color: AppColors.textcolor, // #451425 brand text color
+                      color: context.palette.textPrimary, // #451425 brand text color
                       borderRadius: BorderRadius.circular(20),
                       clipBehavior: Clip.antiAlias,
                       child: InkWell(
@@ -155,10 +156,10 @@ class WalletScreen extends StatelessWidget {
                   margin: const EdgeInsets.only(bottom: 16),
                   padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
-                    color: const Color(0xFFF9F9F9),
+                    color: context.palette.backgroundSubtle,
                     borderRadius: BorderRadius.circular(18),
                     border: Border.all(
-                      color: const Color(0xFFF1F1F1),
+                      color: context.palette.divider,
                       width: 1,
                     ),
                   ),
@@ -188,7 +189,7 @@ class WalletScreen extends StatelessWidget {
                               const SizedBox(height: 4),
                               Text(
                                 date as String,
-                                style: AppStyle.walletTxDate,
+                                style: AppStyle.walletTxDate.copyWith(color: context.palette.textMuted),
                               ),
                             ],
                           ),

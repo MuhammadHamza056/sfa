@@ -4,6 +4,7 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 import 'package:sfa/core/localization/app_localizations.dart';
 import 'package:sfa/utils/assets_constants.dart';
+import 'package:sfa/core/theme/app_palette.dart';
 import 'package:sfa/utils/color_constants.dart';
 import 'package:sfa/utils/app_style.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -21,7 +22,6 @@ class ProfileScreen extends StatefulWidget {
 }
 
 class _ProfileScreenState extends State<ProfileScreen> {
-
   @override
   Widget build(BuildContext context) {
     final loc = AppLocalizations.of(context);
@@ -31,7 +31,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
       child: Icon(
         loc.isArabic ? Icons.arrow_back_ios_new : Icons.arrow_forward_ios,
         size: 14,
-        color: AppColors.textcolor,
+        color: context.palette.icon,
       ),
     );
 
@@ -59,7 +59,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
         const SizedBox(height: 4),
         Text(
           'sara.abdulaziz@example.com',
-          style: AppStyle.subtitleDesc.copyWith(color: AppColors.text2color),
+          style: AppStyle.subtitleDesc.copyWith(
+            color: context.palette.textMuted,
+          ),
         ),
       ],
     );
@@ -70,15 +72,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
       return Container(
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: AppColors.membershipBg,
+          color: context.palette.surfaceAlt,
           borderRadius: BorderRadius.circular(20),
-          border: Border.all(
-            color: AppColors.primary_25,
-            width: 1,
-          ),
+          border: Border.all(color: context.palette.border, width: 1),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withValues(alpha: 0.02),
+              color: context.palette.shadow,
               blurRadius: 10,
               offset: const Offset(0, 4),
             ),
@@ -106,7 +105,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       Text(
                         'العضوية البرونزية',
                         style: AppStyle.fieldLabel.copyWith(
-                          color: AppColors.textcolor,
+                          color: context.palette.textPrimary,
                           fontSize: 15,
                         ),
                       ),
@@ -134,7 +133,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       Text(
                         'Bronze Membership',
                         style: AppStyle.fieldLabel.copyWith(
-                          color: AppColors.textcolor,
+                          color: context.palette.textPrimary,
                           fontSize: 15,
                         ),
                       ),
@@ -165,7 +164,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     Container(
                       height: 8,
                       decoration: BoxDecoration(
-                        color: Colors.grey.shade200,
+                        color: context.palette.surfaceMuted,
                         borderRadius: BorderRadius.circular(4),
                       ),
                     ),
@@ -273,6 +272,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
             Container(
               height: 54,
               decoration: BoxDecoration(
+                // Fixed brand maroon: this pill sits on the gold card, so it
+                // stays dark in both themes.
                 color: AppColors.textcolor,
                 borderRadius: BorderRadius.circular(27),
               ),
@@ -289,14 +290,19 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         Text(
-                          isAr ? 'سحب إلى الحساب البنكي' : 'Withdraw to bank account',
+                          isAr
+                              ? 'سحب إلى الحساب البنكي'
+                              : 'Withdraw to bank account',
                           style: AppStyle.walletTransferButton,
                         ),
                         SvgPicture.asset(
                           AssetsConstants.landmark,
                           width: 18,
                           height: 18,
-                          colorFilter: const ColorFilter.mode(Colors.white, BlendMode.srcIn),
+                          colorFilter: const ColorFilter.mode(
+                            Colors.white,
+                            BlendMode.srcIn,
+                          ),
                         ),
                       ],
                     ),
@@ -332,6 +338,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   AssetsConstants.astroid,
                   width: 18,
                   colorFilter: ColorFilter.mode(
+                    // The gradient behind this button is light in both themes.
                     AppColors.textcolor,
                     BlendMode.srcIn,
                   ),
@@ -339,7 +346,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 const SizedBox(width: 8),
                 Text(
                   loc.translate('aiAgent'),
-                  style: AppStyle.buttonTextSecondary,
+                  style: AppStyle.buttonTextSecondary.copyWith(
+                    color: AppColors.textcolor,
+                  ),
                 ),
               ],
             ),
@@ -363,7 +372,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
         children: [
           Text(
             loc.translate('logout'),
-            style: AppStyle.buttonTextSecondary.copyWith(color: AppColors.redcolor),
+            style: AppStyle.buttonTextSecondary.copyWith(
+              color: AppColors.redcolor,
+            ),
           ),
           SvgPicture.asset(
             AssetsConstants.logOut,
@@ -379,12 +390,17 @@ class _ProfileScreenState extends State<ProfileScreen> {
       child: BlocBuilder<ProfileBloc, ProfileState>(
         builder: (context, state) {
           return Scaffold(
-            backgroundColor: AppColors.grey,
+            backgroundColor: context.palette.backgroundSubtle,
             body: SafeArea(
               child: SingleChildScrollView(
-                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 24,
+                  vertical: 20,
+                ),
                 child: Directionality(
-                  textDirection: loc.isArabic ? TextDirection.rtl : TextDirection.ltr,
+                  textDirection: loc.isArabic
+                      ? TextDirection.rtl
+                      : TextDirection.ltr,
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
@@ -421,38 +437,51 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                         width: 10,
                                         height: 10,
                                         decoration: BoxDecoration(
-                                          color: Colors.white,
+                                          color: context.palette.surface,
                                           border: Border(
-                                            top: BorderSide(color: Colors.grey.shade200, width: 0.8),
-                                            left: BorderSide(color: Colors.grey.shade200, width: 0.8),
+                                            top: BorderSide(
+                                              color: context.palette.divider,
+                                              width: 0.8,
+                                            ),
+                                            left: BorderSide(
+                                              color: context.palette.divider,
+                                              width: 0.8,
+                                            ),
                                           ),
                                         ),
                                       ),
                                     ),
                                   ),
                                   Container(
-                                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 14,
+                                      vertical: 8,
+                                    ),
                                     decoration: BoxDecoration(
-                                      color: Colors.white,
+                                      color: context.palette.surface,
                                       borderRadius: BorderRadius.circular(12),
                                       boxShadow: [
                                         BoxShadow(
-                                          color: Colors.black.withValues(alpha: 0.08),
+                                          color: context.palette.shadow,
                                           blurRadius: 8,
                                           offset: const Offset(0, 4),
                                         ),
                                       ],
                                       border: Border.all(
-                                        color: Colors.grey.shade200,
+                                        color: context.palette.divider,
                                         width: 0.8,
                                       ),
                                     ),
                                     child: Column(
                                       mainAxisSize: MainAxisSize.min,
-                                      crossAxisAlignment: loc.isArabic ? CrossAxisAlignment.end : CrossAxisAlignment.start,
+                                      crossAxisAlignment: loc.isArabic
+                                          ? CrossAxisAlignment.end
+                                          : CrossAxisAlignment.start,
                                       children: [
                                         Text(
-                                          loc.isArabic ? '1000 نقطة' : '1000 Points',
+                                          loc.isArabic
+                                              ? '1000 نقطة'
+                                              : '1000 Points',
                                           style: GoogleFonts.cairo(
                                             color: AppColors.primary,
                                             fontSize: 12,
@@ -460,9 +489,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                           ),
                                         ),
                                         Text(
-                                          loc.isArabic ? 'العضوية الذهبية' : 'Golden Membership',
+                                          loc.isArabic
+                                              ? 'العضوية الذهبية'
+                                              : 'Golden Membership',
                                           style: GoogleFonts.cairo(
-                                            color: AppColors.textcolor,
+                                            color: context.palette.textPrimary,
                                             fontSize: 12,
                                             fontWeight: FontWeight.bold,
                                           ),
@@ -501,7 +532,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         title: loc.translate('favorites'),
                         trailing: tileArrow,
                         onTap: () {
-                          context.read<DashboardBloc>().add(const ChangeTabEvent(8));
+                          context.read<DashboardBloc>().add(
+                            const ChangeTabEvent(8),
+                          );
                         },
                       ),
                       _buildMenuTile(
@@ -513,9 +546,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           activeColor: Colors.white,
                           inactiveThumbColor: Colors.white,
                           inactiveTrackColor: Colors.grey.shade200,
-                          trackOutlineColor: const WidgetStatePropertyAll(Colors.transparent),
+                          trackOutlineColor: const WidgetStatePropertyAll(
+                            Colors.transparent,
+                          ),
                           onChanged: (val) {
-                            context.read<ProfileBloc>().add(ToggleDarkModeEvent(val));
+                            context.read<ProfileBloc>().add(
+                              ToggleDarkModeEvent(val),
+                            );
                           },
                         ),
                         onTap: () {},
@@ -547,15 +584,18 @@ class _ProfileScreenState extends State<ProfileScreen> {
         ListTile(
           onTap: onTap,
           contentPadding: const EdgeInsets.symmetric(vertical: 4),
-          leading: SvgPicture.asset(icon, width: 22),
+          leading: SvgPicture.asset(
+            icon,
+            width: 22,
+            colorFilter: ColorFilter.mode(
+              context.palette.icon,
+              BlendMode.srcIn,
+            ),
+          ),
           title: Text(title, style: AppStyle.fieldLabel.copyWith(fontSize: 15)),
           trailing: trailing,
         ),
-        Divider(
-          height: 1,
-          thickness: 0.5,
-          color: AppColors.text2color_40,
-        ),
+        Divider(height: 1, thickness: 0.5, color: context.palette.divider),
       ],
     );
   }

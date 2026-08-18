@@ -13,6 +13,7 @@ import 'package:sfa/features/favorites/models/favorite_product.dart';
 import 'package:sfa/features/favorites/bloc/favorites_bloc.dart';
 import 'package:sfa/features/favorites/bloc/favorites_event.dart';
 import 'package:sfa/features/favorites/bloc/favorites_state.dart';
+import 'package:sfa/core/theme/app_palette.dart';
 
 class WriteReviewScreen extends StatefulWidget {
   const WriteReviewScreen({super.key});
@@ -60,7 +61,7 @@ class _WriteReviewScreenState extends State<WriteReviewScreen> {
               resolvedBrandName,
               style: AppStyle.bodyText.copyWith(
                 fontSize: 24,
-                color: const Color(0xFF4E1D2D),
+                color: context.palette.textPrimary,
                 height: 1.1,
               ),
             ),
@@ -70,7 +71,7 @@ class _WriteReviewScreenState extends State<WriteReviewScreen> {
               style: AppStyle.bodyText.copyWith(
                 fontSize: 20,
                 fontWeight: FontWeight.bold,
-                color: AppColors.textcolor,
+                color: context.palette.textPrimary,
               ),
             ),
             const SizedBox(height: 6),
@@ -78,7 +79,7 @@ class _WriteReviewScreenState extends State<WriteReviewScreen> {
               productPrice,
               style: AppStyle.bodyText.copyWith(
                 fontSize: 18,
-                color: AppColors.textcolor.withOpacity(0.8),
+                color: context.palette.textPrimary.withOpacity(0.8),
               ),
             ),
             const SizedBox(height: 10),
@@ -90,7 +91,7 @@ class _WriteReviewScreenState extends State<WriteReviewScreen> {
                   isAr ? '4.9 · 85 تقييماً' : '4.9 · 85 reviews',
                   style: AppStyle.bodyText.copyWith(
                     fontSize: 13.5,
-                    color: Colors.grey[400],
+                    color: context.palette.textMuted,
                   ),
                 ),
               ],
@@ -145,7 +146,7 @@ class _WriteReviewScreenState extends State<WriteReviewScreen> {
                         width: 18,
                         height: 18,
                         colorFilter: ColorFilter.mode(
-                          isFav ? AppColors.primary : AppColors.textcolor,
+                          isFav ? AppColors.primary : context.palette.textPrimary,
                           BlendMode.srcIn,
                         ),
                       ),
@@ -165,7 +166,7 @@ class _WriteReviewScreenState extends State<WriteReviewScreen> {
         return Directionality(
           textDirection: isAr ? TextDirection.rtl : TextDirection.ltr,
           child: Scaffold(
-            backgroundColor: Colors.white,
+            backgroundColor: context.palette.background,
             appBar: null,
             body: SingleChildScrollView(
               padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
@@ -191,7 +192,7 @@ class _WriteReviewScreenState extends State<WriteReviewScreen> {
                     textAlign: TextAlign.start,
                     style: AppStyle.bodyText.copyWith(
                       fontSize: 16,
-                      color: AppColors.textcolor.withOpacity(0.7),
+                      color: context.palette.textPrimary.withOpacity(0.7),
                     ),
                   ),
 
@@ -204,7 +205,7 @@ class _WriteReviewScreenState extends State<WriteReviewScreen> {
                     style: AppStyle.bodyText.copyWith(
                       fontSize: 16,
                       fontWeight: FontWeight.bold,
-                      color: AppColors.textcolor,
+                      color: context.palette.textPrimary,
                     ),
                   ),
                   const SizedBox(height: 12),
@@ -240,7 +241,7 @@ class _WriteReviewScreenState extends State<WriteReviewScreen> {
                     style: AppStyle.bodyText.copyWith(
                       fontSize: 16,
                       fontWeight: FontWeight.bold,
-                      color: AppColors.textcolor,
+                      color: context.palette.textPrimary,
                     ),
                   ),
                   const SizedBox(height: 12),
@@ -252,7 +253,7 @@ class _WriteReviewScreenState extends State<WriteReviewScreen> {
                       contentPadding: const EdgeInsets.all(16),
                       enabledBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
-                        borderSide: const BorderSide(color: Color(0xFFD0D0D0)),
+                        borderSide: BorderSide(color: context.palette.divider),
                       ),
                       focusedBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),

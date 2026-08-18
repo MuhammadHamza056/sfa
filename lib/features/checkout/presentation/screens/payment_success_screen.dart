@@ -5,6 +5,7 @@ import 'package:sfa/core/localization/app_localizations.dart';
 import 'package:sfa/utils/app_style.dart';
 import 'package:sfa/utils/assets_constants.dart';
 import 'package:sfa/utils/color_constants.dart';
+import 'package:sfa/core/theme/app_palette.dart';
 
 class PaymentSuccessScreen extends StatelessWidget {
   const PaymentSuccessScreen({super.key});
@@ -17,7 +18,7 @@ class PaymentSuccessScreen extends StatelessWidget {
     return Directionality(
       textDirection: isAr ? TextDirection.rtl : TextDirection.ltr,
       child: Scaffold(
-        backgroundColor: AppColors.grey,
+        backgroundColor: context.palette.backgroundSubtle,
         body: SafeArea(
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
@@ -34,7 +35,7 @@ class PaymentSuccessScreen extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: 16),
-                Divider(thickness: 0.8, color: AppColors.textcolor_40),
+                Divider(thickness: 0.8, color: context.palette.divider),
                 const SizedBox(height: 60),
 
                 // ── Thumbs-up SVG icon ───────────────────────────────

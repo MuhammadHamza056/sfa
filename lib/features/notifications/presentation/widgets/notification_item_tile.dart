@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:sfa/utils/app_style.dart';
 import 'package:sfa/utils/color_constants.dart';
+import 'package:sfa/core/theme/app_palette.dart';
 
 class NotificationItemTile extends StatelessWidget {
   final String iconPath;
@@ -28,8 +29,8 @@ class NotificationItemTile extends StatelessWidget {
         children: [
           Container(
             padding: const EdgeInsets.all(10),
-            decoration: const BoxDecoration(
-              color: Color(0xFFF4EDE4),
+            decoration: BoxDecoration(
+              color: context.palette.surfaceAlt,
               shape: BoxShape.circle,
             ),
             child: SvgPicture.asset(
@@ -66,7 +67,7 @@ class NotificationItemTile extends StatelessWidget {
                       time,
                       style: AppStyle.subtitleDesc.copyWith(
                         fontSize: 11,
-                        color: AppColors.text2color,
+                        color: context.palette.textSecondary,
                       ),
                     ),
                   ],
@@ -75,7 +76,7 @@ class NotificationItemTile extends StatelessWidget {
                 Text(
                   body,
                   style: AppStyle.notificationBody.copyWith(
-                    color: AppColors.text2color,
+                    color: context.palette.textSecondary,
                     height: 1.4,
                   ),
                 ),

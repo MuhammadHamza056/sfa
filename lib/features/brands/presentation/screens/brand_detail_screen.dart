@@ -13,6 +13,7 @@ import 'package:sfa/features/favorites/models/favorite_product.dart';
 import 'package:sfa/features/favorites/bloc/favorites_bloc.dart';
 import 'package:sfa/features/favorites/bloc/favorites_event.dart';
 import 'package:sfa/features/favorites/bloc/favorites_state.dart';
+import 'package:sfa/core/theme/app_palette.dart';
 
 class ProductItem {
   final String imageUrl;
@@ -87,9 +88,9 @@ class BrandDetailScreen extends StatelessWidget {
         final resolvedBrandName = loc.translate(brandNameKey);
 
         return Scaffold(
-          backgroundColor: Colors.white,
+          backgroundColor: context.palette.background,
           appBar: AppBar(
-            backgroundColor: Colors.white,
+            backgroundColor: context.palette.background,
             elevation: 0.5,
             scrolledUnderElevation: 0.5,
             automaticallyImplyLeading: false,
@@ -103,7 +104,7 @@ class BrandDetailScreen extends StatelessWidget {
                   icon: SvgPicture.asset(
                     AssetsConstants.shoppingBag2,
                     colorFilter: ColorFilter.mode(
-                      AppColors.textcolor,
+                      context.palette.textPrimary,
                       BlendMode.srcIn,
                     ),
                     width: 22,
@@ -118,7 +119,7 @@ class BrandDetailScreen extends StatelessWidget {
                   icon: SvgPicture.asset(
                     AssetsConstants.heart,
                     colorFilter: ColorFilter.mode(
-                      AppColors.textcolor,
+                      context.palette.textPrimary,
                       BlendMode.srcIn,
                     ),
                     width: 22,
@@ -136,7 +137,7 @@ class BrandDetailScreen extends StatelessWidget {
               style: AppStyle.headerHeading.copyWith(
                 fontSize: 19,
                 fontWeight: FontWeight.bold,
-                color: AppColors.textcolor,
+                color: context.palette.textPrimary,
               ),
             ),
             actions: [
@@ -144,7 +145,7 @@ class BrandDetailScreen extends StatelessWidget {
                 icon: SvgPicture.asset(
                   AssetsConstants.search3,
                   colorFilter: ColorFilter.mode(
-                    AppColors.textcolor,
+                    context.palette.textPrimary,
                     BlendMode.srcIn,
                   ),
                   width: 22,
@@ -156,7 +157,7 @@ class BrandDetailScreen extends StatelessWidget {
                 icon: SvgPicture.asset(
                   AssetsConstants.back2,
                   colorFilter: ColorFilter.mode(
-                    AppColors.textcolor,
+                    context.palette.textPrimary,
                     BlendMode.srcIn,
                   ),
                   width: 20,
@@ -178,8 +179,8 @@ class BrandDetailScreen extends StatelessWidget {
                   imageUrl: 'https://images.unsplash.com/photo-1490481651871-ab68de25d43d?w=1000&q=80',
                   height: 520,
                   fit: BoxFit.cover,
-                  placeholder: (_, __) => Container(color: Colors.grey[200]),
-                  errorWidget: (_, __, ___) => Container(color: Colors.grey[200]),
+                  placeholder: (_, __) => Container(color: context.palette.surfaceMuted),
+                  errorWidget: (_, __, ___) => Container(color: context.palette.surfaceMuted),
                 ),
 
                 // 2. Brand Description
@@ -190,7 +191,7 @@ class BrandDetailScreen extends StatelessWidget {
                     textAlign: TextAlign.start,
                     style: AppStyle.bodyText.copyWith(
                       fontSize: 13.5,
-                      color: AppColors.textcolor.withOpacity(0.80),
+                      color: context.palette.textPrimary.withOpacity(0.80),
                       height: 1.6,
                     ),
                   ),
@@ -207,13 +208,14 @@ class BrandDetailScreen extends StatelessWidget {
                         style: AppStyle.bodyText.copyWith(
                           fontSize: 15,
                           fontWeight: FontWeight.bold,
-                          color: AppColors.textcolor,
+                          color: context.palette.textPrimary,
                         ),
                       ),
                       const Spacer(),
 
                       // Sort options button
                       _buildFilterBtn(
+                        context,
                         label: sortLabel,
                         icon: AssetsConstants.arrowDownUp,
                       ),
@@ -221,6 +223,7 @@ class BrandDetailScreen extends StatelessWidget {
 
                       // Filter button
                       _buildFilterBtn(
+                        context,
                         label: filterLabel,
                         icon: AssetsConstants.settings2,
                       ),
@@ -269,8 +272,8 @@ class BrandDetailScreen extends StatelessWidget {
                                       width: double.infinity,
                                       height: double.infinity,
                                       fit: BoxFit.cover,
-                                      placeholder: (_, __) => Container(color: Colors.grey[100]),
-                                      errorWidget: (_, __, ___) => Container(color: Colors.grey[100]),
+                                      placeholder: (_, __) => Container(color: context.palette.surfaceMuted),
+                                      errorWidget: (_, __, ___) => Container(color: context.palette.surfaceMuted),
                                     ),
                                   ),
                                   Positioned(
@@ -299,7 +302,7 @@ class BrandDetailScreen extends StatelessWidget {
                                               width: 16,
                                               height: 16,
                                               colorFilter: ColorFilter.mode(
-                                                isFav ? AppColors.primary : AppColors.textcolor,
+                                                isFav ? AppColors.primary : context.palette.textPrimary,
                                                 BlendMode.srcIn,
                                               ),
                                             ),
@@ -322,7 +325,7 @@ class BrandDetailScreen extends StatelessWidget {
                               style: AppStyle.bodyText.copyWith(
                                 fontSize: 13.5,
                                 fontWeight: FontWeight.w600,
-                                color: AppColors.textcolor,
+                                color: context.palette.textPrimary,
                               ),
                             ),
                             const SizedBox(height: 2),
@@ -331,7 +334,7 @@ class BrandDetailScreen extends StatelessWidget {
                               style: AppStyle.bodyText.copyWith(
                                 fontSize: 13,
                                 fontWeight: FontWeight.bold,
-                                color: AppColors.textcolor.withOpacity(0.80),
+                                color: context.palette.textPrimary.withOpacity(0.80),
                               ),
                             ),
                             const SizedBox(height: 2),
@@ -347,7 +350,7 @@ class BrandDetailScreen extends StatelessWidget {
                                   product.rating,
                                   style: AppStyle.bodyText.copyWith(
                                     fontSize: 11,
-                                    color: AppColors.textcolor_50,
+                                    color: context.palette.textMuted,
                                   ),
                                 ),
                               ],
@@ -368,13 +371,17 @@ class BrandDetailScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildFilterBtn({required String label, required String icon}) {
+  Widget _buildFilterBtn(
+    BuildContext context, {
+    required String label,
+    required String icon,
+  }) {
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: context.palette.background,
         borderRadius: BorderRadius.circular(4),
         border: Border.all(
-          color: Colors.grey[300]!,
+          color: context.palette.divider,
           width: 0.8,
         ),
       ),
@@ -386,7 +393,7 @@ class BrandDetailScreen extends StatelessWidget {
             label,
             style: AppStyle.bodyText.copyWith(
               fontSize: 13,
-              color: AppColors.textcolor,
+              color: context.palette.textPrimary,
             ),
           ),
           const SizedBox(width: 6),
@@ -395,7 +402,7 @@ class BrandDetailScreen extends StatelessWidget {
             width: 14,
             height: 14,
             colorFilter: ColorFilter.mode(
-              AppColors.textcolor,
+              context.palette.textPrimary,
               BlendMode.srcIn,
             ),
           ),

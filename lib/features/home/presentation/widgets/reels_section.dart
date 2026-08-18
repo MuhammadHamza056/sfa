@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:sfa/utils/app_style.dart';
+import 'package:sfa/core/theme/app_palette.dart';
 import 'package:go_router/go_router.dart';
 
 class ReelsSection extends StatelessWidget {
@@ -13,7 +14,7 @@ class ReelsSection extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      color: Colors.white,
+      color: context.palette.background,
       width: double.infinity,
       padding: const EdgeInsets.symmetric(
         vertical: 24,
@@ -30,7 +31,7 @@ class ReelsSection extends StatelessWidget {
               Text(
                 isAr ? 'من الريلز' : 'From Reels',
                 style: AppStyle.sectionHeader.copyWith(
-                  color: const Color(0xFF3A1E1A),
+                  color: context.palette.textPrimary,
                   fontSize: 20,
                 ),
               ),
@@ -44,7 +45,7 @@ class ReelsSection extends StatelessWidget {
                       Text(
                         'عرض الكل',
                         style: AppStyle.labelTextMuted.copyWith(
-                          color: Colors.grey[400],
+                          color: context.palette.textMuted,
                           fontWeight: FontWeight.w500,
                         ),
                       ),
@@ -52,13 +53,13 @@ class ReelsSection extends StatelessWidget {
                       Icon(
                         Icons.arrow_forward_ios,
                         size: 12,
-                        color: Colors.grey[400],
+                        color: context.palette.textMuted,
                       ),
                     ] else ...[
                       Text(
                         'View All',
                         style: AppStyle.labelTextMuted.copyWith(
-                          color: Colors.grey[400],
+                          color: context.palette.textMuted,
                           fontWeight: FontWeight.w500,
                         ),
                       ),
@@ -66,7 +67,7 @@ class ReelsSection extends StatelessWidget {
                       Icon(
                         Icons.arrow_forward_ios,
                         size: 12,
-                        color: Colors.grey[400],
+                        color: context.palette.textMuted,
                       ),
                     ],
                   ],
@@ -75,7 +76,7 @@ class ReelsSection extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 8),
-          Divider(color: Colors.grey[200], thickness: 1),
+          Divider(color: context.palette.divider, thickness: 1),
           const SizedBox(height: 16),
           // Reels Horizontal List
           Directionality(
@@ -86,6 +87,7 @@ class ReelsSection extends StatelessWidget {
               child: Row(
                 children: [
                   _buildReelCard(
+                    context,
                     imageUrl: 'https://images.unsplash.com/photo-1529139574466-a303027c1d8b?w=400&q=80',
                     avatarUrl: 'https://images.unsplash.com/photo-1607990283143-e81e7a2c93ab?w=100&q=80',
                     name: isAr ? 'سمر_شوب' : 'Summer Shop',
@@ -93,6 +95,7 @@ class ReelsSection extends StatelessWidget {
                   ),
                   const SizedBox(width: 8),
                   _buildReelCard(
+                    context,
                     imageUrl: 'https://images.unsplash.com/photo-1607990283143-e81e7a2c93ab?w=400&q=80',
                     avatarUrl: 'https://images.unsplash.com/photo-1529139574466-a303027c1d8b?w=100&q=80',
                     name: isAr ? 'سمر_شوب' : 'Summer Shop',
@@ -100,6 +103,7 @@ class ReelsSection extends StatelessWidget {
                   ),
                   const SizedBox(width: 8),
                   _buildReelCard(
+                    context,
                     imageUrl: 'https://images.unsplash.com/photo-1609357605129-26f69add5d6e?w=400&q=80',
                     avatarUrl: 'https://images.unsplash.com/photo-1607990283143-e81e7a2c93ab?w=100&q=80',
                     name: isAr ? 'جوبا' : 'Juba',
@@ -107,6 +111,7 @@ class ReelsSection extends StatelessWidget {
                   ),
                   const SizedBox(width: 8),
                   _buildReelCard(
+                    context,
                     imageUrl: 'https://images.unsplash.com/photo-1529139574466-a303027c1d8b?w=400&q=80',
                     avatarUrl: 'https://images.unsplash.com/photo-1607990283143-e81e7a2c93ab?w=100&q=80',
                     name: isAr ? 'سمر_شوب' : 'Summer Shop',
@@ -121,7 +126,8 @@ class ReelsSection extends StatelessWidget {
     );
   }
 
-  Widget _buildReelCard({
+  Widget _buildReelCard(
+    BuildContext context, {
     required String imageUrl,
     required String avatarUrl,
     required String name,
@@ -202,7 +208,7 @@ class ReelsSection extends StatelessWidget {
                 child: CircleAvatar(
                   radius: 18,
                   backgroundImage: NetworkImage(avatarUrl),
-                  backgroundColor: Colors.grey[300],
+                  backgroundColor: context.palette.surfaceMuted,
                 ),
               ),
             ),

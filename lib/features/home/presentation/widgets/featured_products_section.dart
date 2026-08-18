@@ -13,6 +13,7 @@ import 'package:sfa/features/favorites/bloc/favorites_state.dart';
 import 'package:sfa/features/home/bloc/home_bloc.dart';
 import 'package:sfa/features/home/bloc/home_event.dart';
 import 'package:sfa/features/home/bloc/home_state.dart';
+import 'package:sfa/core/theme/app_palette.dart';
 
 class FeaturedProductsSection extends StatefulWidget {
   final bool isAr;
@@ -25,7 +26,6 @@ class FeaturedProductsSection extends StatefulWidget {
 }
 
 class _FeaturedProductsSectionState extends State<FeaturedProductsSection> {
-
   @override
   Widget build(BuildContext context) {
     final loc = AppLocalizations.of(context);
@@ -34,7 +34,8 @@ class _FeaturedProductsSectionState extends State<FeaturedProductsSection> {
     final Map<int, List<Map<String, String>>> productsData = {
       0: [
         {
-          'image': 'https://images.unsplash.com/photo-1529139574466-a303027c1d8b?w=400&q=80',
+          'image':
+              'https://images.unsplash.com/photo-1529139574466-a303027c1d8b?w=400&q=80',
           'brand': loc.translate('brandJuba'),
           'title': loc.translate('brandProductDesertRose'),
           'price': loc.translate('brandProductPrice1250'),
@@ -42,7 +43,8 @@ class _FeaturedProductsSectionState extends State<FeaturedProductsSection> {
           'reviews': widget.isAr ? '85 تقييمًا' : '85 reviews',
         },
         {
-          'image': 'https://images.unsplash.com/photo-1607990283143-e81e7a2c93ab?w=400&q=80',
+          'image':
+              'https://images.unsplash.com/photo-1607990283143-e81e7a2c93ab?w=400&q=80',
           'brand': loc.translate('brandAnbar'),
           'title': loc.translate('brandProductBlackSilk'),
           'price': loc.translate('brandProductPrice1250'),
@@ -50,7 +52,8 @@ class _FeaturedProductsSectionState extends State<FeaturedProductsSection> {
           'reviews': widget.isAr ? '85 تقييمًا' : '85 reviews',
         },
         {
-          'image': 'https://images.unsplash.com/photo-1529139574466-a303027c1d8b?w=400&q=80',
+          'image':
+              'https://images.unsplash.com/photo-1529139574466-a303027c1d8b?w=400&q=80',
           'brand': loc.translate('brandAnbar'),
           'title': loc.translate('brandProductLinenSet'),
           'price': loc.translate('brandProductPrice450'),
@@ -58,7 +61,8 @@ class _FeaturedProductsSectionState extends State<FeaturedProductsSection> {
           'reviews': widget.isAr ? '85 تقييمًا' : '85 reviews',
         },
         {
-          'image': 'https://images.unsplash.com/photo-1607990283143-e81e7a2c93ab?w=400&q=80',
+          'image':
+              'https://images.unsplash.com/photo-1607990283143-e81e7a2c93ab?w=400&q=80',
           'brand': loc.translate('brandJuba'),
           'title': loc.translate('brandProductCrepeAbaya'),
           'price': loc.translate('brandProductPrice780'),
@@ -68,7 +72,8 @@ class _FeaturedProductsSectionState extends State<FeaturedProductsSection> {
       ],
       1: [
         {
-          'image': 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=400&q=80',
+          'image':
+              'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=400&q=80',
           'brand': loc.translate('brandNaseej'),
           'title': widget.isAr ? 'ثوب سعودي كلاسيك' : 'Classic Saudi Thobe',
           'price': widget.isAr ? '350 ر.س.' : '350 SAR',
@@ -76,7 +81,8 @@ class _FeaturedProductsSectionState extends State<FeaturedProductsSection> {
           'reviews': widget.isAr ? '42 تقييمًا' : '42 reviews',
         },
         {
-          'image': 'https://images.unsplash.com/photo-1607990283143-e81e7a2c93ab?w=400&q=80',
+          'image':
+              'https://images.unsplash.com/photo-1607990283143-e81e7a2c93ab?w=400&q=80',
           'brand': widget.isAr ? 'الفارس' : 'Al Faris',
           'title': widget.isAr ? 'شماغ أحمر ملكي' : 'Royal Red Shemagh',
           'price': widget.isAr ? '220 ر.س.' : '220 SAR',
@@ -84,7 +90,8 @@ class _FeaturedProductsSectionState extends State<FeaturedProductsSection> {
           'reviews': widget.isAr ? '98 تقييمًا' : '98 reviews',
         },
         {
-          'image': 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=400&q=80',
+          'image':
+              'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=400&q=80',
           'brand': loc.translate('brandNaseej'),
           'title': widget.isAr ? 'بشت رسمي فاخر' : 'Luxury Official Bisht',
           'price': widget.isAr ? '1,800 ر.س.' : '1,800 SAR',
@@ -92,7 +99,8 @@ class _FeaturedProductsSectionState extends State<FeaturedProductsSection> {
           'reviews': widget.isAr ? '15 تقييمًا' : '15 reviews',
         },
         {
-          'image': 'https://images.unsplash.com/photo-1607990283143-e81e7a2c93ab?w=400&q=80',
+          'image':
+              'https://images.unsplash.com/photo-1607990283143-e81e7a2c93ab?w=400&q=80',
           'brand': loc.translate('brandAnbar'),
           'title': widget.isAr ? 'عطر رسمي رجالي' : 'Men\'s Signature Perfume',
           'price': widget.isAr ? '490 ر.س.' : '490 SAR',
@@ -102,7 +110,8 @@ class _FeaturedProductsSectionState extends State<FeaturedProductsSection> {
       ],
       2: [
         {
-          'image': 'https://images.unsplash.com/photo-1502086223501-7ea6ecd79368?w=400&q=80',
+          'image':
+              'https://images.unsplash.com/photo-1502086223501-7ea6ecd79368?w=400&q=80',
           'brand': widget.isAr ? 'صغارنا' : 'Sigharuna',
           'title': widget.isAr ? 'طقم ولادي قطني' : 'Boy\'s Cotton Set',
           'price': widget.isAr ? '180 ر.س.' : '180 SAR',
@@ -110,7 +119,8 @@ class _FeaturedProductsSectionState extends State<FeaturedProductsSection> {
           'reviews': widget.isAr ? '18 تقييمًا' : '18 reviews',
         },
         {
-          'image': 'https://images.unsplash.com/photo-1502086223501-7ea6ecd79368?w=400&q=80',
+          'image':
+              'https://images.unsplash.com/photo-1502086223501-7ea6ecd79368?w=400&q=80',
           'brand': widget.isAr ? 'جوبا جونيور' : 'Juba Junior',
           'title': widget.isAr ? 'فستان بناتي ربيعي' : 'Girl\'s Spring Dress',
           'price': widget.isAr ? '240 ر.س.' : '240 SAR',
@@ -118,7 +128,8 @@ class _FeaturedProductsSectionState extends State<FeaturedProductsSection> {
           'reviews': widget.isAr ? '27 تقييمًا' : '27 reviews',
         },
         {
-          'image': 'https://images.unsplash.com/photo-1502086223501-7ea6ecd79368?w=400&q=80',
+          'image':
+              'https://images.unsplash.com/photo-1502086223501-7ea6ecd79368?w=400&q=80',
           'brand': widget.isAr ? 'صغارنا' : 'Sigharuna',
           'title': widget.isAr ? 'ثوب أطفال مطرز' : 'Kid\'s Embroidered Thobe',
           'price': widget.isAr ? '150 ر.س.' : '150 SAR',
@@ -126,7 +137,8 @@ class _FeaturedProductsSectionState extends State<FeaturedProductsSection> {
           'reviews': widget.isAr ? '12 تقييمًا' : '12 reviews',
         },
         {
-          'image': 'https://images.unsplash.com/photo-1502086223501-7ea6ecd79368?w=400&q=80',
+          'image':
+              'https://images.unsplash.com/photo-1502086223501-7ea6ecd79368?w=400&q=80',
           'brand': widget.isAr ? 'جوبا جونيور' : 'Juba Junior',
           'title': widget.isAr ? 'طقم بناتي كاجوال' : 'Girl\'s Casual Set',
           'price': widget.isAr ? '195 ر.س.' : '195 SAR',
@@ -142,7 +154,7 @@ class _FeaturedProductsSectionState extends State<FeaturedProductsSection> {
         final currentProducts = productsData[selectedTab] ?? [];
 
         return Container(
-          color: Colors.white,
+          color: context.palette.background,
           width: double.infinity,
           padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 16),
           child: Column(
@@ -150,13 +162,15 @@ class _FeaturedProductsSectionState extends State<FeaturedProductsSection> {
             children: [
               // Title Row (Featured Products / منتجات مميزة)
               Row(
-                textDirection: widget.isAr ? TextDirection.rtl : TextDirection.ltr,
+                textDirection: widget.isAr
+                    ? TextDirection.rtl
+                    : TextDirection.ltr,
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Text(
                     loc.translate('featuredProducts'),
                     style: AppStyle.sectionHeader.copyWith(
-                      color: const Color(0xFF3A1E1A),
+                      color: context.palette.textPrimary,
                       fontSize: 20,
                     ),
                   ),
@@ -164,7 +178,9 @@ class _FeaturedProductsSectionState extends State<FeaturedProductsSection> {
                     onTap: () => context.push('/featured-products'),
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
-                      textDirection: widget.isAr ? TextDirection.rtl : TextDirection.ltr,
+                      textDirection: widget.isAr
+                          ? TextDirection.rtl
+                          : TextDirection.ltr,
                       children: [
                         if (widget.isAr) ...[
                           Text(
@@ -204,14 +220,31 @@ class _FeaturedProductsSectionState extends State<FeaturedProductsSection> {
 
               // Categories Selector Tabs (RTL aligned if Arabic)
               Directionality(
-                textDirection: widget.isAr ? TextDirection.rtl : TextDirection.ltr,
+                textDirection: widget.isAr
+                    ? TextDirection.rtl
+                    : TextDirection.ltr,
                 child: Row(
                   children: [
-                    _buildTabButton(context, 0, loc.translate('women'), selectedTab),
+                    _buildTabButton(
+                      context,
+                      0,
+                      loc.translate('women'),
+                      selectedTab,
+                    ),
                     const SizedBox(width: 12),
-                    _buildTabButton(context, 1, loc.translate('men'), selectedTab),
+                    _buildTabButton(
+                      context,
+                      1,
+                      loc.translate('men'),
+                      selectedTab,
+                    ),
                     const SizedBox(width: 12),
-                    _buildTabButton(context, 2, loc.translate('kids'), selectedTab),
+                    _buildTabButton(
+                      context,
+                      2,
+                      loc.translate('kids'),
+                      selectedTab,
+                    ),
                   ],
                 ),
               ),
@@ -219,7 +252,9 @@ class _FeaturedProductsSectionState extends State<FeaturedProductsSection> {
 
               // Products Grid (2 columns)
               Directionality(
-                textDirection: widget.isAr ? TextDirection.rtl : TextDirection.ltr,
+                textDirection: widget.isAr
+                    ? TextDirection.rtl
+                    : TextDirection.ltr,
                 child: GridView.builder(
                   shrinkWrap: true,
                   physics: const NeverScrollableScrollPhysics(),
@@ -244,7 +279,12 @@ class _FeaturedProductsSectionState extends State<FeaturedProductsSection> {
     );
   }
 
-  Widget _buildTabButton(BuildContext context, int index, String label, int selectedTab) {
+  Widget _buildTabButton(
+    BuildContext context,
+    int index,
+    String label,
+    int selectedTab,
+  ) {
     final isSelected = selectedTab == index;
     return GestureDetector(
       onTap: () {
@@ -253,17 +293,21 @@ class _FeaturedProductsSectionState extends State<FeaturedProductsSection> {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 10),
         decoration: BoxDecoration(
-          color: isSelected ? const Color(0xFF2B2B2B) : Colors.transparent,
+          color: isSelected
+              ? (context.isDarkMode
+                    ? context.palette.surfaceAlt
+                    : const Color(0xFF2B2B2B))
+              : Colors.transparent,
           borderRadius: BorderRadius.circular(6),
           border: Border.all(
-            color: isSelected ? Colors.transparent : Colors.grey[300]!,
+            color: isSelected ? Colors.transparent : context.palette.divider,
             width: 1,
           ),
         ),
         child: Text(
           label,
           style: AppStyle.chipLabel.copyWith(
-            color: isSelected ? Colors.white : Colors.grey[600],
+            color: isSelected ? Colors.white : context.palette.textMuted,
             fontSize: 14,
           ),
         ),
@@ -309,7 +353,9 @@ class _FeaturedProductsSectionState extends State<FeaturedProductsSection> {
                     final isFav = favState.favorites.contains(favProduct);
                     return GestureDetector(
                       onTap: () {
-                        context.read<FavoritesBloc>().add(ToggleFavoriteEvent(favProduct));
+                        context.read<FavoritesBloc>().add(
+                          ToggleFavoriteEvent(favProduct),
+                        );
                       },
                       child: Container(
                         height: 32,
@@ -320,11 +366,13 @@ class _FeaturedProductsSectionState extends State<FeaturedProductsSection> {
                         ),
                         alignment: Alignment.center,
                         child: SvgPicture.asset(
-                          isFav ? AssetsConstants.heartFilled : AssetsConstants.heart2,
+                          isFav
+                              ? AssetsConstants.heartFilled
+                              : AssetsConstants.heart2,
                           width: 16,
                           height: 16,
                           colorFilter: ColorFilter.mode(
-                            isFav ? AppColors.primary : AppColors.textcolor,
+                            isFav ? AppColors.primary : context.palette.textPrimary,
                             BlendMode.srcIn,
                           ),
                         ),
@@ -336,55 +384,65 @@ class _FeaturedProductsSectionState extends State<FeaturedProductsSection> {
             ],
           ),
         ),
-        const SizedBox(height: 8),
-
-        // Brand
-        Text(
-          product['brand']!,
-          style: AppStyle.productTitle.copyWith(
-            color: const Color(0xFF3A1E1A),
-            fontSize: 15,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-
-        // Product Title
-        Text(
-          product['title']!,
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-          style: AppStyle.productTitle.copyWith(
-            color: Colors.grey[800],
-            fontSize: 14,
-            fontWeight: FontWeight.w500,
-          ),
-        ),
-
-        // Price
-        Text(
-          product['price']!,
-          style: AppStyle.productPrice.copyWith(
-            color: Colors.grey[900],
-            fontSize: 14,
-          ),
-        ),
-        const SizedBox(height: 4),
-
-        // Rating
-        Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Icon(Icons.star, size: 14, color: Colors.amber),
-            const SizedBox(width: 4),
-            Text(
-              '${product['rating']} · ${product['reviews']}',
-              style: AppStyle.infoChipText.copyWith(
-                color: Colors.grey[500],
-                fontSize: 12,
-                fontWeight: FontWeight.w500,
+        // Info strip — the design keeps this white in both themes; in light it
+        // simply blends into the white section behind it.
+        Container(
+          color: Colors.white,
+          width: double.infinity,
+          padding: const EdgeInsets.only(top: 8),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Brand
+              Text(
+                product['brand']!,
+                style: AppStyle.productTitle.copyWith(
+                  color: const Color(0xFF3A1E1A),
+                  fontSize: 15,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
-            ),
-          ],
+
+              // Product Title
+              Text(
+                product['title']!,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: AppStyle.productTitle.copyWith(
+                  color: Colors.grey[800],
+                  fontSize: 14,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+
+              // Price
+              Text(
+                product['price']!,
+                style: AppStyle.productPrice.copyWith(
+                  color: Colors.grey[900],
+                  fontSize: 14,
+                ),
+              ),
+              const SizedBox(height: 4),
+
+              // Rating
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Icon(Icons.star, size: 14, color: Colors.amber),
+                  const SizedBox(width: 4),
+                  Text(
+                    '${product['rating']} · ${product['reviews']}',
+                    style: AppStyle.infoChipText.copyWith(
+                      color: Colors.grey[500],
+                      fontSize: 12,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
         ),
       ],
     );

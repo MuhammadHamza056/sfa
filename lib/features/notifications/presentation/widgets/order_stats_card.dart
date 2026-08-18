@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
-import 'package:sfa/utils/color_constants.dart';
 import 'package:sfa/utils/app_style.dart';
+import 'package:sfa/core/theme/app_palette.dart';
 
 class OrderStatsCard extends StatelessWidget {
   final String iconPath;
@@ -61,7 +61,7 @@ class OrderStatsCard extends StatelessWidget {
                     textAlign: TextAlign.end,
                     style: AppStyle.subtitleDesc.copyWith(
                       fontSize: 12,
-                      color: AppColors.text2color,
+                      color: context.palette.textSecondary,
                     ),
                   ),
                 ],

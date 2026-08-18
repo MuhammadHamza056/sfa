@@ -14,6 +14,7 @@ import 'package:sfa/features/dashboard/bloc/dashboard_event.dart';
 import 'package:sfa/features/reels/bloc/reels_bloc.dart';
 import 'package:sfa/features/reels/bloc/reels_event.dart';
 import 'package:sfa/features/reels/bloc/reels_state.dart';
+import 'package:sfa/core/theme/app_palette.dart';
 
 class ReelModel {
   final String videoUrl;
@@ -633,7 +634,7 @@ class _ReelPageItemState extends State<_ReelPageItem>
                           child: Text(
                             loc.translate('reelGoToProduct'),
                             style: AppStyle.bodyText.copyWith(
-                              color: AppColors.textcolor,
+                              color: context.palette.textPrimary,
                               fontWeight: FontWeight.bold,
                               fontSize: 11,
                             ),

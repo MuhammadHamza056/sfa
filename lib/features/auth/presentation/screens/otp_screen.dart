@@ -7,6 +7,7 @@ import 'package:sfa/core/localization/app_localizations.dart';
 import 'package:sfa/utils/assets_constants.dart';
 import 'package:sfa/utils/color_constants.dart';
 import 'package:sfa/utils/app_style.dart';
+import 'package:sfa/core/theme/app_palette.dart';
 
 class OtpScreen extends StatefulWidget {
   const OtpScreen({super.key});
@@ -34,9 +35,9 @@ class _OtpScreenState extends State<OtpScreen> {
       height: 58,
       textStyle: AppStyle.welcomeTitle.copyWith(fontSize: 20),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: context.palette.backgroundSubtle,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.grey.shade300, width: 1.2),
+        border: Border.all(color: context.palette.divider, width: 1.2),
       ),
     );
 
@@ -95,7 +96,7 @@ class _OtpScreenState extends State<OtpScreen> {
       },
       style: OutlinedButton.styleFrom(
         padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 20),
-        side: BorderSide(color: AppColors.textcolor, width: 1.2),
+        side: BorderSide(color: context.palette.outlineStrong, width: 1.2),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(30),
         ),
@@ -118,7 +119,7 @@ class _OtpScreenState extends State<OtpScreen> {
                 AssetsConstants.moveLeft,
                 width: 18,
                 colorFilter: ColorFilter.mode(
-                  AppColors.textcolor,
+                  context.palette.textPrimary,
                   BlendMode.srcIn,
                 ),
               ),
@@ -128,7 +129,7 @@ class _OtpScreenState extends State<OtpScreen> {
               AssetsConstants.moveLeft,
               width: 18,
               colorFilter: ColorFilter.mode(
-                AppColors.textcolor,
+                context.palette.textPrimary,
                 BlendMode.srcIn,
               ),
             ),
@@ -137,7 +138,7 @@ class _OtpScreenState extends State<OtpScreen> {
     );
 
     return Scaffold(
-      backgroundColor: AppColors.grey,
+      backgroundColor: context.palette.backgroundSubtle,
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
@@ -155,7 +156,7 @@ class _OtpScreenState extends State<OtpScreen> {
                   ),
                 ),
                 const SizedBox(height: 16),
-                const Divider(thickness: 1, color: Colors.black12),
+                Divider(thickness: 1, color: context.palette.divider),
                 const SizedBox(height: 32),
 
                 // OTP Title and Subtitle instruction
@@ -167,7 +168,7 @@ class _OtpScreenState extends State<OtpScreen> {
                 const SizedBox(height: 8),
                 Text(
                   loc.translate('otpSubtitle'),
-                  style: AppStyle.subtitleDesc,
+                  style: AppStyle.subtitleDesc.copyWith(color: context.palette.textPrimary.withValues(alpha: 0.7)),
                   textAlign: loc.isArabic ? TextAlign.right : TextAlign.left,
                 ),
                 const SizedBox(height: 32),
@@ -208,7 +209,7 @@ class _OtpScreenState extends State<OtpScreen> {
                 ),
                 const SizedBox(height: 20),
 
-                const Divider(thickness: 1, color: Colors.black12),
+                Divider(thickness: 1, color: context.palette.divider),
                 const SizedBox(height: 24),
 
                 loginBtn,

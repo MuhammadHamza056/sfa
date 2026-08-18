@@ -5,6 +5,7 @@ import 'package:sfa/core/localization/app_localizations.dart';
 import 'package:sfa/utils/assets_constants.dart';
 import 'package:sfa/utils/color_constants.dart';
 import 'package:sfa/utils/app_style.dart';
+import 'package:sfa/core/theme/app_palette.dart';
 
 class AddressScreen extends StatefulWidget {
   const AddressScreen({super.key});
@@ -42,7 +43,7 @@ class _AddressScreenState extends State<AddressScreen> {
     final isAr = loc.isArabic;
 
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: context.palette.background,
       body: Directionality(
         textDirection: isAr ? TextDirection.rtl : TextDirection.ltr,
         child: SingleChildScrollView(
@@ -118,7 +119,7 @@ class _AddressScreenState extends State<AddressScreen> {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: AppColors.grey,
+        color: context.palette.surfaceMuted,
         borderRadius: BorderRadius.circular(20),
       ),
       child: Row(
@@ -129,7 +130,7 @@ class _AddressScreenState extends State<AddressScreen> {
             width: 44,
             height: 44,
             decoration: BoxDecoration(
-              color: Colors.white,
+              color: context.palette.background,
               shape: BoxShape.circle,
               border: Border.all(
                 color: AppColors.primary,
@@ -156,7 +157,7 @@ class _AddressScreenState extends State<AddressScreen> {
                 Text(
                   isAr ? address['titleAr']! : address['titleEn']!,
                   style: GoogleFonts.cairo(
-                    color: AppColors.textcolor,
+                    color: context.palette.textPrimary,
                     fontSize: 15,
                     fontWeight: FontWeight.bold,
                   ),
@@ -165,14 +166,14 @@ class _AddressScreenState extends State<AddressScreen> {
                 Text(
                   isAr ? address['line1Ar']! : address['line1En']!,
                   style: AppStyle.subtitleDesc.copyWith(
-                    color: AppColors.textcolor_50,
+                    color: context.palette.textMuted,
                     fontSize: 13,
                   ),
                 ),
                 Text(
                   isAr ? address['line2Ar']! : address['line2En']!,
                   style: AppStyle.subtitleDesc.copyWith(
-                    color: AppColors.textcolor_50,
+                    color: context.palette.textMuted,
                     fontSize: 13,
                   ),
                 ),
@@ -191,7 +192,7 @@ class _AddressScreenState extends State<AddressScreen> {
                     Text(
                       address['phone']!,
                       style: GoogleFonts.cairo(
-                        color: AppColors.textcolor_50,
+                        color: context.palette.textMuted,
                         fontSize: 13,
                       ),
                       textDirection: TextDirection.ltr,
@@ -214,7 +215,7 @@ class _AddressScreenState extends State<AddressScreen> {
                   AssetsConstants.edit,
                   width: 20,
                   colorFilter: ColorFilter.mode(
-                    AppColors.textcolor,
+                    context.palette.textPrimary,
                     BlendMode.srcIn,
                   ),
                 ),
@@ -227,8 +228,8 @@ class _AddressScreenState extends State<AddressScreen> {
                 child: SvgPicture.asset(
                   AssetsConstants.trash2,
                   width: 20,
-                  colorFilter: const ColorFilter.mode(
-                    Colors.black,
+                  colorFilter: ColorFilter.mode(
+                    context.palette.icon,
                     BlendMode.srcIn,
                   ),
                 ),

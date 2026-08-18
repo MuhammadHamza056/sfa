@@ -6,6 +6,7 @@ import 'package:sfa/core/localization/app_localizations.dart';
 import 'package:sfa/utils/assets_constants.dart';
 import 'package:sfa/utils/color_constants.dart';
 import 'package:sfa/utils/app_style.dart';
+import 'package:sfa/core/theme/app_palette.dart';
 
 class SuccessScreen extends StatelessWidget {
   const SuccessScreen({super.key});
@@ -63,7 +64,7 @@ class SuccessScreen extends StatelessWidget {
     );
 
     return Scaffold(
-      backgroundColor: AppColors.grey,
+      backgroundColor: context.palette.backgroundSubtle,
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
@@ -81,7 +82,7 @@ class SuccessScreen extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: 16),
-                const Divider(thickness: 1, color: Colors.black12),
+                Divider(thickness: 1, color: context.palette.divider),
                 const SizedBox(height: 60),
 
                 // Success Icon (Thumbs Up in Circle)

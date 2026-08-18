@@ -13,6 +13,7 @@ import 'package:sfa/features/auth/bloc/auth_bloc.dart';
 import 'package:sfa/features/auth/bloc/auth_state.dart';
 import 'package:sfa/features/auth/bloc/auth_event.dart';
 import 'package:sfa/features/auth/presentation/widgets/phone_input_field.dart';
+import 'package:sfa/core/theme/app_palette.dart';
 
 class SignUpScreen extends StatefulWidget {
   const SignUpScreen({super.key});
@@ -102,7 +103,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
       },
       style: OutlinedButton.styleFrom(
         padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 20),
-        side: BorderSide(color: AppColors.textcolor, width: 1.2),
+        side: BorderSide(color: context.palette.outlineStrong, width: 1.2),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(30),
         ),
@@ -125,7 +126,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                 AssetsConstants.moveLeft,
                 width: 18,
                 colorFilter: ColorFilter.mode(
-                  AppColors.textcolor,
+                  context.palette.textPrimary,
                   BlendMode.srcIn,
                 ),
               ),
@@ -135,7 +136,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
               AssetsConstants.moveLeft,
               width: 18,
               colorFilter: ColorFilter.mode(
-                AppColors.textcolor,
+                context.palette.textPrimary,
                 BlendMode.srcIn,
               ),
             ),
@@ -146,7 +147,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
     return BlocProvider(
       create: (context) => AuthBloc(),
       child: Scaffold(
-        backgroundColor: AppColors.grey,
+        backgroundColor: context.palette.backgroundSubtle,
         body: BlocConsumer<AuthBloc, AuthState>(
           listener: (context, state) {},
           builder: (context, state) {
@@ -167,7 +168,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                         ),
                       ),
                       const SizedBox(height: 16),
-                      const Divider(thickness: 1, color: Colors.black12),
+                      Divider(thickness: 1, color: context.palette.divider),
                       const SizedBox(height: 24),
 
                       // Welcome Subtitle Section
@@ -178,7 +179,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                       const SizedBox(height: 8),
                       Text(
                         loc.translate('signupSubtitle'),
-                        style: AppStyle.subtitleDesc,
+                        style: AppStyle.subtitleDesc.copyWith(color: context.palette.textPrimary.withValues(alpha: 0.7)),
                       ),
                       const SizedBox(height: 28),
 
@@ -191,7 +192,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                               onPressed: () {},
                               style: OutlinedButton.styleFrom(
                                 padding: const EdgeInsets.symmetric(vertical: 14),
-                                side: BorderSide(color: AppColors.textcolor, width: 1.2),
+                                side: BorderSide(color: context.palette.outlineStrong, width: 1.2),
                                 shape: RoundedRectangleBorder(
                                   borderRadius: BorderRadius.circular(30),
                                 ),
@@ -221,7 +222,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                               onPressed: () {},
                               style: OutlinedButton.styleFrom(
                                 padding: const EdgeInsets.symmetric(vertical: 14),
-                                side: BorderSide(color: AppColors.textcolor, width: 1.2),
+                                side: BorderSide(color: context.palette.outlineStrong, width: 1.2),
                                 shape: RoundedRectangleBorder(
                                   borderRadius: BorderRadius.circular(30),
                                 ),
@@ -250,7 +251,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                       // Sub-label Or Phone Login
                       Text(
                         loc.translate('orSignupEmailPhone'),
-                        style: AppStyle.inputLabelSub,
+                        style: AppStyle.inputLabelSub.copyWith(color: context.palette.textPrimary.withValues(alpha: 0.7)),
                       ),
                       const SizedBox(height: 16),
 
@@ -313,7 +314,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(6),
                             ),
-                            side: BorderSide(color: Colors.grey.shade400, width: 1.5),
+                            side: BorderSide(color: context.palette.textMuted, width: 1.5),
                           ),
                           Expanded(
                             child: Text(
@@ -338,7 +339,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(6),
                             ),
-                            side: BorderSide(color: Colors.grey.shade400, width: 1.5),
+                            side: BorderSide(color: context.palette.textMuted, width: 1.5),
                           ),
                           Expanded(
                             child: Text.rich(
@@ -370,7 +371,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                       signUpBtn,
                       const SizedBox(height: 28),
 
-                      const Divider(thickness: 1, color: Colors.black12),
+                      Divider(thickness: 1, color: context.palette.divider),
                       const SizedBox(height: 24),
 
                       loginBtn,
@@ -403,10 +404,10 @@ class _SignUpScreenState extends State<SignUpScreen> {
   }) {
     return Container(
       decoration: BoxDecoration(
-        color: AppColors.grey,
+        color: context.palette.backgroundSubtle,
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
-          color: Colors.grey.shade300,
+          color: context.palette.divider,
         ),
       ),
       child: TextField(
@@ -417,7 +418,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
         onTapOutside: (event) => FocusManager.instance.primaryFocus?.unfocus(),
         decoration: InputDecoration(
           hintText: hintText,
-          hintStyle: AppStyle.inputHint,
+          hintStyle: AppStyle.inputHint.copyWith(color: context.palette.textPrimary.withValues(alpha: 0.4)),
           contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
           border: InputBorder.none,
         ),

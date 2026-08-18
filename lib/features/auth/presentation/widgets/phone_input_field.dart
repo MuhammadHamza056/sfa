@@ -9,6 +9,7 @@ import 'package:sfa/utils/phone_number_formatter.dart';
 import 'package:sfa/features/auth/bloc/auth_bloc.dart';
 import 'package:sfa/features/auth/bloc/auth_event.dart';
 import 'package:sfa/features/auth/bloc/auth_state.dart';
+import 'package:sfa/core/theme/app_palette.dart';
 
 class PhoneInputField extends StatelessWidget {
   final TextEditingController controller;
@@ -29,7 +30,7 @@ class PhoneInputField extends StatelessWidget {
               child: Text(
                 loc.translate('phoneLabel'),
                 style: TextStyle(
-                  color: AppColors.textcolor,
+                  color: context.palette.textPrimary,
                   fontSize: 14,
                   fontWeight: FontWeight.w600,
                 ),
@@ -40,12 +41,12 @@ class PhoneInputField extends StatelessWidget {
               textDirection: TextDirection.ltr,
               child: Container(
                 decoration: BoxDecoration(
-                  color: AppColors.grey,
+                  color: context.palette.backgroundSubtle,
                   borderRadius: BorderRadius.circular(12),
                   border: Border.all(
                     color: state.phoneValidationError != null
                         ? AppColors.redcolor
-                        : Colors.grey.shade300,
+                        : context.palette.divider,
                   ),
                 ),
                 child: Row(
@@ -68,14 +69,14 @@ class PhoneInputField extends StatelessWidget {
                       showOnlyCountryWhenClosed: false,
                       alignLeft: false,
                       textStyle: TextStyle(
-                        color: AppColors.textcolor,
+                        color: context.palette.textPrimary,
                         fontWeight: FontWeight.bold,
                       ),
                     ),
                     Container(
                       height: 24,
                       width: 1,
-                      color: Colors.grey.shade300,
+                      color: context.palette.divider,
                     ),
                     const SizedBox(width: 8),
                     Expanded(
@@ -92,7 +93,7 @@ class PhoneInputField extends StatelessWidget {
                         decoration: InputDecoration(
                           hintText: '${state.maxPhoneLength} digits e.g. 91234567',
                           hintStyle: TextStyle(
-                            color: Colors.grey.shade400,
+                            color: context.palette.textMuted,
                             fontSize: 14,
                           ),
                           border: InputBorder.none,

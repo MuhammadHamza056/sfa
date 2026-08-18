@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:sfa/core/localization/app_localizations.dart';
 import 'package:sfa/utils/color_constants.dart';
 import 'package:sfa/utils/app_style.dart';
+import 'package:sfa/core/theme/app_palette.dart';
 
 class PricingSummary extends StatelessWidget {
   final String subtotal;
@@ -30,7 +31,7 @@ class PricingSummary extends StatelessWidget {
           children: [
             Text(
               loc.translate('subtotal'),
-              style: AppStyle.subtitleDesc.copyWith(fontSize: 14),
+              style: AppStyle.subtitleDesc.copyWith(fontSize: 14, color: context.palette.textPrimary.withValues(alpha: 0.7)),
             ),
             Text(subtotal, style: AppStyle.fieldLabel.copyWith(fontSize: 14)),
           ],
@@ -44,7 +45,7 @@ class PricingSummary extends StatelessWidget {
             children: [
               Text(
                 loc.translate('pointsDiscountLabel'),
-                style: AppStyle.subtitleDesc.copyWith(fontSize: 14),
+                style: AppStyle.subtitleDesc.copyWith(fontSize: 14, color: context.palette.textPrimary.withValues(alpha: 0.7)),
               ),
               Text(
                 pointsDiscount!,
@@ -62,7 +63,7 @@ class PricingSummary extends StatelessWidget {
           children: [
             Text(
               loc.translate('totalAmount'),
-              style: AppStyle.subtitleDesc.copyWith(fontSize: 14),
+              style: AppStyle.subtitleDesc.copyWith(fontSize: 14, color: context.palette.textPrimary.withValues(alpha: 0.7)),
             ),
             Text(
               total,

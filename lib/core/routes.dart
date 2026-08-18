@@ -21,6 +21,7 @@ import '../features/wallet/presentation/screens/all_transactions_screen.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../features/orders/bloc/orders_bloc.dart';
 import '../features/address/presentation/screens/address_screen.dart';
+import '../features/address/presentation/screens/add_edit_address_screen.dart';
 import '../features/brands/presentation/screens/product_reviews_screen.dart';
 import '../features/brands/presentation/screens/write_review_screen.dart';
 
@@ -106,6 +107,23 @@ final router = GoRouter(
         body: AddressScreen(),
         customIndex: 3,
       ),
+    ),
+    GoRoute(
+      path: '/addresses/add',
+      builder: (context, state) => const DashboardScreen(
+        body: AddEditAddressScreen(),
+        customIndex: 3,
+      ),
+    ),
+    GoRoute(
+      path: '/addresses/edit',
+      builder: (context, state) {
+        final address = state.extra as Map<String, String>?;
+        return DashboardScreen(
+          body: AddEditAddressScreen(address: address),
+          customIndex: 3,
+        );
+      },
     ),
     GoRoute(
       path: '/refund-request/:id',

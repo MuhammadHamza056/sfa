@@ -24,6 +24,7 @@ import 'package:sfa/features/favorites/presentation/screens/favorites_screen.dar
 import 'package:sfa/features/wallet/presentation/screens/wallet_screen.dart';
 import 'package:sfa/features/wallet/presentation/screens/all_transactions_screen.dart';
 import 'package:sfa/features/address/presentation/screens/address_screen.dart';
+import 'package:sfa/features/address/presentation/screens/add_edit_address_screen.dart';
 import 'package:sfa/features/brands/presentation/screens/product_reviews_screen.dart';
 import 'package:sfa/features/brands/presentation/screens/write_review_screen.dart';
 
@@ -186,6 +187,7 @@ class _DashboardScreenState extends State<DashboardScreen>
                       return widget.body is WalletScreen ||
                              widget.body is AllTransactionsScreen ||
                              widget.body is AddressScreen ||
+                             widget.body is AddEditAddressScreen ||
                              widget.body is ProductReviewsScreen ||
                              widget.body is WriteReviewScreen;
                     }
@@ -215,15 +217,20 @@ class _DashboardScreenState extends State<DashboardScreen>
                                              ? loc.translate('allTransactionsTitle')
                                              : widget.body is AddressScreen
                                                  ? loc.translate('drawerMyAddresses')
-                                                 : widget.body is ProductReviewsScreen
-                                                     ? loc.translate('ratingsAndReviews')
-                                                     : widget.body is WriteReviewScreen
-                                                         ? loc.translate('addReview')
-                                                         : 'SFA',
+                                                 : widget.body is AddEditAddressScreen
+                                                     ? ((widget.body as AddEditAddressScreen).isEditMode
+                                                         ? loc.translate('editAddressTitle')
+                                                         : loc.translate('addAddress'))
+                                                     : widget.body is ProductReviewsScreen
+                                                         ? loc.translate('ratingsAndReviews')
+                                                         : widget.body is WriteReviewScreen
+                                                             ? loc.translate('addReview')
+                                                             : 'SFA',
                                      style: GoogleFonts.cairo(
                                        fontSize: (widget.body is WalletScreen ||
                                                widget.body is AllTransactionsScreen ||
                                                widget.body is AddressScreen ||
+                                               widget.body is AddEditAddressScreen ||
                                                widget.body is ProductReviewsScreen ||
                                                widget.body is WriteReviewScreen)
                                            ? 20
@@ -232,6 +239,7 @@ class _DashboardScreenState extends State<DashboardScreen>
                                        letterSpacing: (widget.body is WalletScreen ||
                                                widget.body is AllTransactionsScreen ||
                                                widget.body is AddressScreen ||
+                                               widget.body is AddEditAddressScreen ||
                                                widget.body is ProductReviewsScreen ||
                                                widget.body is WriteReviewScreen)
                                            ? 0
@@ -317,8 +325,8 @@ class _DashboardScreenState extends State<DashboardScreen>
                                           ),
                                           GestureDetector(
                                             onTap: () {
-                                              if (state.currentIndex == 5 || widget.body is WalletScreen || widget.body is AllTransactionsScreen || widget.body is AddressScreen || widget.body is ProductReviewsScreen || widget.body is WriteReviewScreen) {
-                                                if (widget.body is WalletScreen || widget.body is AllTransactionsScreen || widget.body is AddressScreen || widget.body is ProductReviewsScreen || widget.body is WriteReviewScreen) {
+                                              if (state.currentIndex == 5 || widget.body is WalletScreen || widget.body is AllTransactionsScreen || widget.body is AddressScreen || widget.body is AddEditAddressScreen || widget.body is ProductReviewsScreen || widget.body is WriteReviewScreen) {
+                                                if (widget.body is WalletScreen || widget.body is AllTransactionsScreen || widget.body is AddressScreen || widget.body is AddEditAddressScreen || widget.body is ProductReviewsScreen || widget.body is WriteReviewScreen) {
                                                   context.pop();
                                                 } else {
                                                   context.read<DashboardBloc>().add(
@@ -332,7 +340,7 @@ class _DashboardScreenState extends State<DashboardScreen>
                                             child: Padding(
                                               padding: const EdgeInsets.all(8.0),
                                               child: SvgPicture.asset(
-                                                (state.currentIndex == 5 || widget.body is WalletScreen || widget.body is AllTransactionsScreen || widget.body is AddressScreen || widget.body is ProductReviewsScreen || widget.body is WriteReviewScreen)
+                                                (state.currentIndex == 5 || widget.body is WalletScreen || widget.body is AllTransactionsScreen || widget.body is AddressScreen || widget.body is AddEditAddressScreen || widget.body is ProductReviewsScreen || widget.body is WriteReviewScreen)
                                                     ? AssetsConstants.back
                                                     : AssetsConstants.menu,
                                                 width: 22,

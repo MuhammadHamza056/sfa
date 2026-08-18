@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:go_router/go_router.dart';
 import 'package:sfa/core/localization/app_localizations.dart';
 import 'package:sfa/utils/assets_constants.dart';
 import 'package:sfa/utils/color_constants.dart';
@@ -58,7 +59,7 @@ class _AddressScreenState extends State<AddressScreen> {
                 separatorBuilder: (context, index) => const SizedBox(height: 16),
                 itemBuilder: (context, index) {
                   final item = _addresses[index];
-                  return _buildAddressCard(item, isAr);
+                  return _buildAddressCard(item, isAr, index);
                 },
               ),
               const SizedBox(height: 24),
@@ -80,8 +81,13 @@ class _AddressScreenState extends State<AddressScreen> {
                 child: Material(
                   color: Colors.transparent,
                   child: InkWell(
-                    onTap: () {
-                      // Add new address action
+                    onTap: () async {
+                      final result = await context.push<Map<String, String>>(
+                        '/addresses/add',
+                      );
+                      if (result != null) {
+                        setState(() => _addresses.add(result));
+                      }
                     },
                     borderRadius: BorderRadius.circular(27),
                     child: Padding(
@@ -115,7 +121,7 @@ class _AddressScreenState extends State<AddressScreen> {
     );
   }
 
-  Widget _buildAddressCard(Map<String, String> address, bool isAr) {
+  Widget _buildAddressCard(Map<String, String> address, bool isAr, int index) {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -208,8 +214,14 @@ class _AddressScreenState extends State<AddressScreen> {
             mainAxisSize: MainAxisSize.min,
             children: [
               GestureDetector(
-                onTap: () {
-                  // Edit action
+                onTap: () async {
+                  final result = await context.push<Map<String, String>>(
+                    '/addresses/edit',
+                    extra: address,
+                  );
+                  if (result != null) {
+                    setState(() => _addresses[index] = result);
+                  }
                 },
                 child: SvgPicture.asset(
                   AssetsConstants.edit,

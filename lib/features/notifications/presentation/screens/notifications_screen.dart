@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:sfa/core/localization/app_localizations.dart';
+import 'package:sfa/core/widgets/primary_app_bar.dart';
+import 'package:sfa/utils/Values.dart';
 import 'package:sfa/utils/assets_constants.dart';
 import 'package:sfa/utils/color_constants.dart';
 import 'package:sfa/utils/app_style.dart';
@@ -39,11 +41,15 @@ class NotificationsScreen extends StatelessWidget {
 
     return Scaffold(
       backgroundColor: context.palette.background,
+      appBar: PrimaryAppBar(title: loc.translate('notifications')),
       body: SafeArea(
         child: Directionality(
           textDirection: loc.isArabic ? TextDirection.rtl : TextDirection.ltr,
           child: SingleChildScrollView(
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+            padding: const EdgeInsets.symmetric(
+              horizontal: Values.horizontalPadding,
+              vertical: 10,
+            ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [

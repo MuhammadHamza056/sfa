@@ -1,19 +1,18 @@
 import 'dart:async';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
-import 'package:sfa/features/dashboard/bloc/dashboard_state.dart';
+import 'package:go_router/go_router.dart';
 import 'package:video_player/video_player.dart';
 import 'package:sfa/core/localization/app_localizations.dart';
+import 'package:sfa/core/models/product_detail_args.dart';
+import 'package:sfa/core/providers/nav_providers.dart';
+import 'package:sfa/core/widgets/cart_icon_button.dart';
 import 'package:sfa/utils/app_style.dart';
 import 'package:sfa/utils/assets_constants.dart';
 import 'package:sfa/utils/color_constants.dart';
-import 'package:sfa/features/dashboard/bloc/dashboard_bloc.dart';
-import 'package:sfa/features/dashboard/bloc/dashboard_event.dart';
-import 'package:sfa/features/reels/bloc/reels_bloc.dart';
-import 'package:sfa/features/reels/bloc/reels_event.dart';
-import 'package:sfa/features/reels/bloc/reels_state.dart';
+import 'package:sfa/features/reels/providers/reels_provider.dart';
 import 'package:sfa/core/theme/app_palette.dart';
 
 class ReelModel {
@@ -38,16 +37,15 @@ class ReelModel {
   });
 }
 
-class ReelsScreen extends StatefulWidget {
+class ReelsScreen extends ConsumerStatefulWidget {
   const ReelsScreen({super.key});
 
   @override
-  State<ReelsScreen> createState() => _ReelsScreenState();
+  ConsumerState<ReelsScreen> createState() => _ReelsScreenState();
 }
 
-class _ReelsScreenState extends State<ReelsScreen> {
+class _ReelsScreenState extends ConsumerState<ReelsScreen> {
   late PageController _pageController;
-  late final ReelsBloc _reelsBloc;
 
   // Cache/Store active initialized VideoPlayerControllers
   final Map<int, VideoPlayerController> _controllers = {};
@@ -58,7 +56,6 @@ class _ReelsScreenState extends State<ReelsScreen> {
   @override
   void initState() {
     super.initState();
-    _reelsBloc = ReelsBloc();
     _pageController = PageController();
   }
 
@@ -162,24 +159,25 @@ class _ReelsScreenState extends State<ReelsScreen> {
         .initialize()
         .then((_) {
           controller.setLooping(true);
-          final dashboardState = context.read<DashboardBloc>().state;
-          final isReelsActive = dashboardState.currentIndex == 2;
-          final isDrawerOpen = dashboardState.drawerOpen;
-          if (index == _reelsBloc.state.focusedIndex && isReelsActive && !isDrawerOpen) {
+          final isReelsActive = ref.read(highlightedTabIndexProvider) == 2;
+          final isDrawerOpen = ref.read(drawerOpenProvider);
+          if (index == ref.read(reelsProvider).focusedIndex &&
+              isReelsActive &&
+              !isDrawerOpen) {
             controller.play();
-            _reelsBloc.add(const VideoControllerUpdatedEvent());
+            ref.read(reelsProvider.notifier).videoControllerUpdated();
           }
         })
         .catchError((error) {
           debugPrint(
             'Error initializing video player for index $index: $error',
           );
-          _reelsBloc.add(const VideoControllerUpdatedEvent());
+          ref.read(reelsProvider.notifier).videoControllerUpdated();
         });
   }
 
   void _onPageChanged(int index) {
-    _reelsBloc.add(ChangeFocusedIndexEvent(index));
+    ref.read(reelsProvider.notifier).changeFocusedIndex(index);
 
     // Play current focused video, pause others
     _controllers.forEach((idx, ctrl) {
@@ -215,129 +213,129 @@ class _ReelsScreenState extends State<ReelsScreen> {
   void dispose() {
     _pageController.dispose();
     _controllers.forEach((_, ctrl) => ctrl.dispose());
-    _reelsBloc.close();
     super.dispose();
+  }
+
+  void _onActiveTabOrDrawerChanged() {
+    final isReelsActive = ref.read(highlightedTabIndexProvider) == 2;
+    final isDrawerOpen = ref.read(drawerOpenProvider);
+    if (!isReelsActive || isDrawerOpen) {
+      _controllers.forEach((_, ctrl) {
+        if (ctrl.value.isInitialized && ctrl.value.isPlaying) {
+          ctrl.pause();
+        }
+      });
+      ref.read(reelsProvider.notifier).videoControllerUpdated();
+    } else {
+      final focusedIndex = ref.read(reelsProvider).focusedIndex;
+      final activeCtrl = _controllers[focusedIndex];
+      if (activeCtrl != null && activeCtrl.value.isInitialized) {
+        activeCtrl.play();
+        ref.read(reelsProvider.notifier).videoControllerUpdated();
+      }
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     final loc = AppLocalizations.of(context);
 
-    return BlocProvider.value(
-      value: _reelsBloc,
-      child: BlocListener<DashboardBloc, DashboardState>(
-        listenWhen: (previous, current) =>
-            previous.currentIndex != current.currentIndex ||
-            previous.drawerOpen != current.drawerOpen,
-        listener: (context, dashboardState) {
-          final isReelsActive = dashboardState.currentIndex == 2;
-          final isDrawerOpen = dashboardState.drawerOpen;
-          if (!isReelsActive || isDrawerOpen) {
-            _controllers.forEach((_, ctrl) {
-              if (ctrl.value.isInitialized && ctrl.value.isPlaying) {
-                ctrl.pause();
-              }
-            });
-            _reelsBloc.add(const VideoControllerUpdatedEvent());
-          } else {
-            final focusedIndex = _reelsBloc.state.focusedIndex;
-            final activeCtrl = _controllers[focusedIndex];
-            if (activeCtrl != null && activeCtrl.value.isInitialized) {
-              activeCtrl.play();
-              _reelsBloc.add(const VideoControllerUpdatedEvent());
-            }
-          }
-        },
-        child: BlocBuilder<ReelsBloc, ReelsState>(
-          builder: (context, state) {
-            return Scaffold(
-              backgroundColor: Colors.black,
-              body: Stack(
-                children: [
-                  // Vertical PageView of Reels
-                  PageView.builder(
-                    scrollDirection: Axis.vertical,
-                    controller: _pageController,
-                    onPageChanged: _onPageChanged,
-                    itemCount: _reels.length,
-                    itemBuilder: (context, index) {
-                      return _ReelPageItem(
-                        reel: _reels[index],
-                        controller: _controllers[index],
-                        loc: loc,
-                        onControllerUpdate: () {
-                          _reelsBloc.add(const VideoControllerUpdatedEvent());
-                        },
-                      );
-                    },
-                  ),
+    ref.listen<int>(
+      highlightedTabIndexProvider,
+      (previous, next) => _onActiveTabOrDrawerChanged(),
+    );
+    ref.listen<bool>(
+      drawerOpenProvider,
+      (previous, next) => _onActiveTabOrDrawerChanged(),
+    );
 
-                  // Top Header Overlay (Bag, Wishlist, Logo, Search, Menu)
-                  Positioned(
-                    top: MediaQuery.of(context).padding.top + 10,
-                    left: 16,
-                    right: 16,
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        // Left Side (Bag & Heart)
-                        Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            _buildTopHeaderButton(
-                              icon: AssetsConstants.shoppingBag,
-                              onTap: () {
-                                context.read<DashboardBloc>().add(
-                                  const ChangeTabEvent(5),
-                                );
-                              },
-                            ),
-                            const SizedBox(width: 12),
-                            _buildTopHeaderButton(
-                              icon: AssetsConstants.heart2,
-                              onTap: () {},
-                            ),
-                          ],
-                        ),
+    ref.watch(reelsProvider);
 
-                        // Centered SFA text logo
-                        Text(
-                          'SFA',
-                          style: AppStyle.headerHeading.copyWith(
-                            color: Colors.white,
-                            fontSize: 26,
-                            fontWeight: FontWeight.bold,
-                            letterSpacing: 1.5,
-                          ),
-                        ),
+    return Scaffold(
+      backgroundColor: Colors.black,
+      body: Stack(
+        children: [
+          // Vertical PageView of Reels
+          PageView.builder(
+            scrollDirection: Axis.vertical,
+            controller: _pageController,
+            onPageChanged: _onPageChanged,
+            itemCount: _reels.length,
+            itemBuilder: (context, index) {
+              return _ReelPageItem(
+                reel: _reels[index],
+                controller: _controllers[index],
+                loc: loc,
+                onControllerUpdate: () {
+                  ref.read(reelsProvider.notifier).videoControllerUpdated();
+                },
+              );
+            },
+          ),
 
-                        // Right Side (Search & Menu)
-                        Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            _buildTopHeaderButton(
-                              icon: AssetsConstants.search,
-                              onTap: () {},
-                            ),
-                            const SizedBox(width: 12),
-                            _buildTopHeaderButton(
-                              icon: AssetsConstants.menu,
-                              onTap: () {
-                                context.read<DashboardBloc>().add(
-                                  const SetDrawerOpenEvent(true),
-                                );
-                              },
-                            ),
-                          ],
-                        ),
-                      ],
+          // Top Header Overlay (Bag, Wishlist, Logo, Search, Menu)
+          Positioned(
+            top: MediaQuery.of(context).padding.top + 10,
+            left: 16,
+            right: 16,
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                // Left Side (Bag & Heart)
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Container(
+                      decoration: BoxDecoration(
+                        color: Colors.black.withValues(alpha: 0.2),
+                        shape: BoxShape.circle,
+                      ),
+                      padding: const EdgeInsets.all(8),
+                      child: CartIconButton(
+                        icon: AssetsConstants.shoppingBag,
+                        color: Colors.white,
+                        size: 20,
+                      ),
                     ),
+                    const SizedBox(width: 12),
+                    _buildTopHeaderButton(
+                      icon: AssetsConstants.heart2,
+                      onTap: () {},
+                    ),
+                  ],
+                ),
+
+                // Centered SFA text logo
+                Text(
+                  'SFA',
+                  style: AppStyle.headerHeading.copyWith(
+                    color: Colors.white,
+                    fontSize: 26,
+                    fontWeight: FontWeight.bold,
+                    letterSpacing: 1.5,
                   ),
-                ],
-              ),
-            );
-          },
-        ),
+                ),
+
+                // Right Side (Search & Menu)
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    // _buildTopHeaderButton(
+                    //   icon: AssetsConstants.search,
+                    //   onTap: () {},
+                    // ),
+                    // const SizedBox(width: 12),
+                    _buildTopHeaderButton(
+                      icon: AssetsConstants.menu,
+                      onTap: () =>
+                          ref.read(drawerOpenProvider.notifier).state = true,
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -365,7 +363,7 @@ class _ReelsScreenState extends State<ReelsScreen> {
   }
 }
 
-class _ReelPageItem extends StatefulWidget {
+class _ReelPageItem extends ConsumerStatefulWidget {
   final ReelModel reel;
   final VideoPlayerController? controller;
   final AppLocalizations loc;
@@ -379,10 +377,10 @@ class _ReelPageItem extends StatefulWidget {
   });
 
   @override
-  State<_ReelPageItem> createState() => _ReelPageItemState();
+  ConsumerState<_ReelPageItem> createState() => _ReelPageItemState();
 }
 
-class _ReelPageItemState extends State<_ReelPageItem>
+class _ReelPageItemState extends ConsumerState<_ReelPageItem>
     with SingleTickerProviderStateMixin {
   late AnimationController _animationController;
   late Animation<double> _scaleAnimation;
@@ -417,10 +415,12 @@ class _ReelPageItemState extends State<_ReelPageItem>
       final wasPlaying = ctrl.value.isPlaying;
       if (wasPlaying) {
         ctrl.pause();
-        context.read<ReelsBloc>().add(const TogglePlayPauseIconEvent(true, Icons.pause));
+        ref.read(reelsProvider.notifier).togglePlayPauseIcon(true, Icons.pause);
       } else {
         ctrl.play();
-        context.read<ReelsBloc>().add(const TogglePlayPauseIconEvent(true, Icons.play_arrow));
+        ref
+            .read(reelsProvider.notifier)
+            .togglePlayPauseIcon(true, Icons.play_arrow);
       }
       _animationController.forward(from: 0);
       _timer?.cancel();
@@ -428,7 +428,9 @@ class _ReelPageItemState extends State<_ReelPageItem>
         if (mounted) {
           _animationController.reverse().then((_) {
             if (mounted) {
-              context.read<ReelsBloc>().add(const TogglePlayPauseIconEvent(false, Icons.play_arrow));
+              ref
+                  .read(reelsProvider.notifier)
+                  .togglePlayPauseIcon(false, Icons.play_arrow);
             }
           });
         }
@@ -443,89 +445,94 @@ class _ReelPageItemState extends State<_ReelPageItem>
     final controller = widget.controller;
     final loc = widget.loc;
     final isAr = loc.isArabic;
+    final state = ref.watch(reelsProvider);
 
-    return BlocBuilder<ReelsBloc, ReelsState>(
-      builder: (context, state) {
-        return Directionality(
-          textDirection: isAr ? TextDirection.rtl : TextDirection.ltr,
-          child: GestureDetector(
-            onTap: () => _onTapVideo(context),
-            child: Stack(
-              fit: StackFit.expand,
-              children: [
-                // Video Player or Fallbacks
-                if (controller != null && controller.value.hasError)
-                  Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        const Icon(
-                          Icons.error_outline,
-                          color: Colors.white,
-                          size: 48,
-                        ),
-                        const SizedBox(height: 16),
-                        Text(
-                          loc.translate('videoError'),
-                          style: const TextStyle(color: Colors.white),
-                        ),
-                      ],
+    return Directionality(
+      textDirection: isAr ? TextDirection.rtl : TextDirection.ltr,
+      child: GestureDetector(
+        onTap: () => _onTapVideo(context),
+        child: Stack(
+          fit: StackFit.expand,
+          children: [
+            // Video Player or Fallbacks
+            if (controller != null && controller.value.hasError)
+              Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const Icon(
+                      Icons.error_outline,
+                      color: Colors.white,
+                      size: 48,
                     ),
-                  )
-                else if (controller != null && controller.value.isInitialized)
-                  SizedBox.expand(
-                    child: FittedBox(
-                      fit: BoxFit.cover,
-                      clipBehavior: Clip.hardEdge,
-                      child: SizedBox(
-                        width: controller.value.size.width,
-                        height: controller.value.size.height,
-                        child: VideoPlayer(controller),
+                    const SizedBox(height: 16),
+                    Text(
+                      loc.translate('videoError'),
+                      style: const TextStyle(color: Colors.white),
+                    ),
+                  ],
+                ),
+              )
+            else if (controller != null && controller.value.isInitialized)
+              SizedBox.expand(
+                child: FittedBox(
+                  fit: BoxFit.cover,
+                  clipBehavior: Clip.hardEdge,
+                  child: SizedBox(
+                    width: controller.value.size.width,
+                    height: controller.value.size.height,
+                    child: VideoPlayer(controller),
+                  ),
+                ),
+              )
+            else
+              const Center(
+                child: CircularProgressIndicator(color: Colors.white),
+              ),
+
+            // Dark overlay for readability
+            Container(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [
+                    Colors.black.withOpacity(0.4),
+                    Colors.transparent,
+                    Colors.black.withOpacity(0.5),
+                  ],
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                ),
+              ),
+            ),
+
+            // Centered Play/Pause Icon Indicator Overlay
+            if (state.showPlayPauseIcon)
+              Center(
+                child: FadeTransition(
+                  opacity: _fadeAnimation,
+                  child: ScaleTransition(
+                    scale: _scaleAnimation,
+                    child: Container(
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: Colors.black.withOpacity(0.55),
+                        shape: BoxShape.circle,
                       ),
-                    ),
-                  )
-                else
-                  const Center(child: CircularProgressIndicator(color: Colors.white)),
-      
-                // Dark overlay for readability
-                Container(
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      colors: [
-                        Colors.black.withOpacity(0.4),
-                        Colors.transparent,
-                        Colors.black.withOpacity(0.5),
-                      ],
-                      begin: Alignment.topCenter,
-                      end: Alignment.bottomCenter,
+                      child: Icon(
+                        state.playPauseIcon,
+                        size: 48,
+                        color: Colors.white,
+                      ),
                     ),
                   ),
                 ),
-      
-                // Centered Play/Pause Icon Indicator Overlay
-                if (state.showPlayPauseIcon)
-                  Center(
-                    child: FadeTransition(
-                      opacity: _fadeAnimation,
-                      child: ScaleTransition(
-                        scale: _scaleAnimation,
-                        child: Container(
-                          padding: const EdgeInsets.all(16),
-                          decoration: BoxDecoration(
-                            color: Colors.black.withOpacity(0.55),
-                            shape: BoxShape.circle,
-                          ),
-                          child: Icon(state.playPauseIcon, size: 48, color: Colors.white),
-                        ),
-                      ),
-                    ),
-                  ),
-      
-                // Sidebar actions overlay
-                Positioned(
-                  bottom: 220,
-                  left: isAr ? null : 16,
-                  right: isAr ? 16 : null,
+              ),
+
+            // Sidebar actions overlay
+            Positioned(
+              bottom: 220,
+              left: isAr ? null : 16,
+              right: isAr ? 16 : null,
               child: Column(
                 children: [
                   // Heart button (Likes)
@@ -555,7 +562,10 @@ class _ReelPageItemState extends State<_ReelPageItem>
                     height: 44,
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
-                      border: Border.all(color: AppColors.goldAccent, width: 1.5),
+                      border: Border.all(
+                        color: AppColors.goldAccent,
+                        width: 1.5,
+                      ),
                       image: DecorationImage(
                         image: CachedNetworkImageProvider(reel.avatarUrl),
                         fit: BoxFit.cover,
@@ -565,7 +575,7 @@ class _ReelPageItemState extends State<_ReelPageItem>
                 ],
               ),
             ),
-  
+
             // Brand & description overlay
             Positioned(
               bottom: 210,
@@ -613,8 +623,9 @@ class _ReelPageItemState extends State<_ReelPageItem>
                       // انتقل للمنتج Button
                       GestureDetector(
                         onTap: () {
-                          context.read<DashboardBloc>().add(
-                            SelectProductEvent(
+                          context.push(
+                            '/product-detail',
+                            extra: ProductDetailArgs(
                               name: reel.productName,
                               imageUrl: reel.productImage,
                               price: reel.productPrice,
@@ -659,101 +670,103 @@ class _ReelPageItemState extends State<_ReelPageItem>
               ),
             ),
 
-          // Floating Bottom Product Banner
-          Positioned(
-            bottom: 130,
-            left: 16,
-            right: 16,
-            child: GestureDetector(
-              onTap: () {
-                context.read<DashboardBloc>().add(
-                  SelectProductEvent(
-                    name: reel.productName,
-                    imageUrl: reel.productImage,
-                    price: reel.productPrice,
-                    rating: '4.9 · 85 reviews',
+            // Floating Bottom Product Banner
+            Positioned(
+              bottom: kToolbarHeight + 60,
+              left: 16,
+              right: 16,
+              child: GestureDetector(
+                onTap: () {
+                  context.push(
+                    '/product-detail',
+                    extra: ProductDetailArgs(
+                      name: reel.productName,
+                      imageUrl: reel.productImage,
+                      price: reel.productPrice,
+                      rating: '4.9 · 85 reviews',
+                    ),
+                  );
+                },
+                child: Container(
+                  decoration: BoxDecoration(
+                    color: AppColors.black_50,
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(
+                      color: AppColors.goldAccent_25,
+                      width: 1,
+                    ),
                   ),
-                );
-              },
-              child: Container(
-                decoration: BoxDecoration(
-                  color: AppColors.black_50,
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: AppColors.goldAccent_25, width: 1),
-                ),
-                padding: const EdgeInsets.all(10),
-                child: Row(
-                  textDirection: TextDirection.ltr,
-                  children: [
-                    // Gold Shopping Bag icon container
-                    Container(
-                      width: 40,
-                      height: 40,
-                      decoration: const BoxDecoration(
-                        color: Color(0xFFD49E4B),
-                        shape: BoxShape.circle,
-                      ),
-                      child: Center(
-                        child: SvgPicture.asset(
-                          AssetsConstants.shoppingBag,
-                          colorFilter: const ColorFilter.mode(
-                            Color(0xFF451425),
-                            BlendMode.srcIn,
+                  padding: const EdgeInsets.all(10),
+                  child: Row(
+                    textDirection: TextDirection.ltr,
+                    children: [
+                      // Gold Shopping Bag icon container
+                      Container(
+                        width: 40,
+                        height: 40,
+                        decoration: const BoxDecoration(
+                          color: Color(0xFFD49E4B),
+                          shape: BoxShape.circle,
+                        ),
+                        child: Center(
+                          child: SvgPicture.asset(
+                            AssetsConstants.shoppingBag,
+                            colorFilter: const ColorFilter.mode(
+                              Color(0xFF451425),
+                              BlendMode.srcIn,
+                            ),
+                            width: 18,
+                            height: 18,
                           ),
-                          width: 18,
-                          height: 18,
                         ),
                       ),
-                    ),
-                    const SizedBox(width: 12),
-                    // Product details text
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.center,
-                        children: [
-                          Text(
-                            reel.productName,
-                            textAlign: TextAlign.center,
-                            style: AppStyle.bodyText.copyWith(
-                              color: Colors.white,
-                              fontWeight: FontWeight.bold,
-                              fontSize: 13.5,
+                      const SizedBox(width: 12),
+                      // Product details text
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.center,
+                          children: [
+                            Text(
+                              reel.productName,
+                              textAlign: TextAlign.center,
+                              style: AppStyle.bodyText.copyWith(
+                                color: Colors.white,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 13.5,
+                              ),
                             ),
-                          ),
-                          const SizedBox(height: 2),
-                          Text(
-                            reel.productPrice,
-                            textAlign: TextAlign.center,
-                            style: AppStyle.bodyText.copyWith(
-                              color: const Color(0xFFD49E4B),
-                              fontWeight: FontWeight.w600,
-                              fontSize: 12,
+                            const SizedBox(height: 2),
+                            Text(
+                              reel.productPrice,
+                              textAlign: TextAlign.center,
+                              style: AppStyle.bodyText.copyWith(
+                                color: const Color(0xFFD49E4B),
+                                fontWeight: FontWeight.w600,
+                                fontSize: 12,
+                              ),
                             ),
-                          ),
-                        ],
+                          ],
+                        ),
                       ),
-                    ),
-                    const SizedBox(width: 12),
-                    // Small Image preview
-                    ClipRRect(
-                      borderRadius: BorderRadius.circular(8),
-                      child: CachedNetworkImage(
-                        imageUrl: reel.productImage,
-                        width: 48,
-                        height: 48,
-                        fit: BoxFit.cover,
+                      const SizedBox(width: 12),
+                      // Small Image preview
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(8),
+                        child: CachedNetworkImage(
+                          imageUrl: reel.productImage,
+                          width: 48,
+                          height: 48,
+                          fit: BoxFit.cover,
+                        ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
               ),
             ),
-          ),
-              ],
-            ),
-          ),
-        );
-      },
+          ],
+        ),
+      ),
     );
   }
 

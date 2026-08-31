@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:go_router/go_router.dart';
@@ -7,41 +8,17 @@ import 'package:sfa/utils/assets_constants.dart';
 import 'package:sfa/utils/color_constants.dart';
 import 'package:sfa/utils/app_style.dart';
 import 'package:sfa/core/theme/app_palette.dart';
+import '../../models/address.dart';
+import '../../providers/address_provider.dart';
 
-class AddressScreen extends StatefulWidget {
+class AddressScreen extends ConsumerWidget {
   const AddressScreen({super.key});
 
   @override
-  State<AddressScreen> createState() => _AddressScreenState();
-}
-
-class _AddressScreenState extends State<AddressScreen> {
-  // Mock data for addresses
-  final List<Map<String, String>> _addresses = [
-    {
-      'titleAr': 'أحمد عبد الله',
-      'titleEn': 'Ahmed Abdullah',
-      'line1Ar': 'شارع التحلية، مبنى 45، شقة 16',
-      'line1En': 'Tahlia Street, Building 45, Apt 16',
-      'line2Ar': 'الرياض، المملكة العربية السعودية',
-      'line2En': 'Riyadh, Kingdom of Saudi Arabia',
-      'phone': '+966 2667990',
-    },
-    {
-      'titleAr': 'أحمد عبد الله (العمل)',
-      'titleEn': 'Ahmed Abdullah (Work)',
-      'line1Ar': 'طريق الملك فهد، برج الفيصلية، الطابق 15',
-      'line1En': 'King Fahd Road, Al Faisaliah Tower, Floor 15',
-      'line2Ar': 'الرياض، المملكة العربية السعودية',
-      'line2En': 'Riyadh, Kingdom of Saudi Arabia',
-      'phone': '+966 2667990',
-    }
-  ];
-
-  @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final loc = AppLocalizations.of(context);
     final isAr = loc.isArabic;
+    final addresses = ref.watch(addressProvider);
 
     return Scaffold(
       backgroundColor: context.palette.background,
@@ -52,16 +29,34 @@ class _AddressScreenState extends State<AddressScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              ListView.separated(
-                shrinkWrap: true,
-                physics: const NeverScrollableScrollPhysics(),
-                itemCount: _addresses.length,
-                separatorBuilder: (context, index) => const SizedBox(height: 16),
-                itemBuilder: (context, index) {
-                  final item = _addresses[index];
-                  return _buildAddressCard(item, isAr, index);
-                },
-              ),
+              if (addresses.isEmpty)
+                Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 48),
+                  child: Center(
+                    child: Text(
+                      loc.translate('noAddressesYet'),
+                      style: AppStyle.labelText.copyWith(
+                        color: context.palette.textMuted,
+                      ),
+                    ),
+                  ),
+                )
+              else
+                ListView.separated(
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  itemCount: addresses.length,
+                  separatorBuilder: (context, index) =>
+                      const SizedBox(height: 16),
+                  itemBuilder: (context, index) {
+                    return _buildAddressCard(
+                      context,
+                      ref,
+                      addresses[index],
+                      isAr,
+                    );
+                  },
+                ),
               const SizedBox(height: 24),
               // Button: إضافة عنوان جديد / Add New Address (inline under list)
               Container(
@@ -81,14 +76,7 @@ class _AddressScreenState extends State<AddressScreen> {
                 child: Material(
                   color: Colors.transparent,
                   child: InkWell(
-                    onTap: () async {
-                      final result = await context.push<Map<String, String>>(
-                        '/addresses/add',
-                      );
-                      if (result != null) {
-                        setState(() => _addresses.add(result));
-                      }
-                    },
+                    onTap: () => context.push('/addresses/add'),
                     borderRadius: BorderRadius.circular(27),
                     child: Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 24),
@@ -103,11 +91,7 @@ class _AddressScreenState extends State<AddressScreen> {
                               fontWeight: FontWeight.bold,
                             ),
                           ),
-                          const Icon(
-                            Icons.add,
-                            color: Colors.white,
-                            size: 20,
-                          ),
+                          const Icon(Icons.add, color: Colors.white, size: 20),
                         ],
                       ),
                     ),
@@ -121,7 +105,12 @@ class _AddressScreenState extends State<AddressScreen> {
     );
   }
 
-  Widget _buildAddressCard(Map<String, String> address, bool isAr, int index) {
+  Widget _buildAddressCard(
+    BuildContext context,
+    WidgetRef ref,
+    Address address,
+    bool isAr,
+  ) {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -138,10 +127,7 @@ class _AddressScreenState extends State<AddressScreen> {
             decoration: BoxDecoration(
               color: context.palette.background,
               shape: BoxShape.circle,
-              border: Border.all(
-                color: AppColors.primary,
-                width: 1,
-              ),
+              border: Border.all(color: AppColors.primary, width: 1),
             ),
             child: Center(
               child: SvgPicture.asset(
@@ -161,7 +147,7 @@ class _AddressScreenState extends State<AddressScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  isAr ? address['titleAr']! : address['titleEn']!,
+                  address.title(isAr),
                   style: GoogleFonts.cairo(
                     color: context.palette.textPrimary,
                     fontSize: 15,
@@ -170,14 +156,14 @@ class _AddressScreenState extends State<AddressScreen> {
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  isAr ? address['line1Ar']! : address['line1En']!,
+                  address.line1(isAr),
                   style: AppStyle.subtitleDesc.copyWith(
                     color: context.palette.textMuted,
                     fontSize: 13,
                   ),
                 ),
                 Text(
-                  isAr ? address['line2Ar']! : address['line2En']!,
+                  address.line2(isAr),
                   style: AppStyle.subtitleDesc.copyWith(
                     color: context.palette.textMuted,
                     fontSize: 13,
@@ -196,7 +182,7 @@ class _AddressScreenState extends State<AddressScreen> {
                     ),
                     const SizedBox(width: 6),
                     Text(
-                      address['phone']!,
+                      address.phone,
                       style: GoogleFonts.cairo(
                         color: context.palette.textMuted,
                         fontSize: 13,
@@ -214,15 +200,7 @@ class _AddressScreenState extends State<AddressScreen> {
             mainAxisSize: MainAxisSize.min,
             children: [
               GestureDetector(
-                onTap: () async {
-                  final result = await context.push<Map<String, String>>(
-                    '/addresses/edit',
-                    extra: address,
-                  );
-                  if (result != null) {
-                    setState(() => _addresses[index] = result);
-                  }
-                },
+                onTap: () => context.push('/addresses/edit', extra: address),
                 child: SvgPicture.asset(
                   AssetsConstants.edit,
                   width: 20,
@@ -234,9 +212,9 @@ class _AddressScreenState extends State<AddressScreen> {
               ),
               const SizedBox(width: 12),
               GestureDetector(
-                onTap: () {
-                  // Delete action
-                },
+                onTap: () => ref
+                    .read(addressProvider.notifier)
+                    .removeAddress(address.id),
                 child: SvgPicture.asset(
                   AssetsConstants.trash2,
                   width: 20,

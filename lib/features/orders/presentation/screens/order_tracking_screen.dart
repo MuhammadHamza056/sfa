@@ -6,276 +6,176 @@ import 'package:sfa/core/localization/app_localizations.dart';
 import 'package:sfa/utils/app_style.dart';
 import 'package:sfa/utils/assets_constants.dart';
 import 'package:sfa/utils/color_constants.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:sfa/features/orders/bloc/order_tracking_bloc.dart';
-import 'package:sfa/features/orders/bloc/order_tracking_state.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:sfa/features/orders/providers/order_tracking_provider.dart';
 import 'package:sfa/core/theme/app_palette.dart';
+import 'package:sfa/core/widgets/primary_app_bar.dart';
 
-class OrderTrackingScreen extends StatefulWidget {
+class OrderTrackingScreen extends ConsumerStatefulWidget {
   const OrderTrackingScreen({super.key});
 
   @override
-  State<OrderTrackingScreen> createState() => _OrderTrackingScreenState();
+  ConsumerState<OrderTrackingScreen> createState() =>
+      _OrderTrackingScreenState();
 }
 
-class _OrderTrackingScreenState extends State<OrderTrackingScreen> {
+class _OrderTrackingScreenState extends ConsumerState<OrderTrackingScreen> {
   @override
   Widget build(BuildContext context) {
     final loc = AppLocalizations.of(context);
     final isAr = loc.isArabic;
     final textDir = isAr ? TextDirection.rtl : TextDirection.ltr;
 
-    return BlocProvider(
-      create: (context) => OrderTrackingBloc(),
-      child: BlocBuilder<OrderTrackingBloc, OrderTrackingState>(
-        builder: (context, state) {
-          return Directionality(
-            textDirection: textDir,
-            child: Scaffold(
-              backgroundColor: context.palette.background,
+    ref.watch(orderTrackingProvider);
 
-              // ─── AppBar ───────────────────────────────────────────────────
-              appBar: AppBar(
-                backgroundColor: context.palette.background,
-                elevation: 0,
-                scrolledUnderElevation: 0,
-                automaticallyImplyLeading: false,
-                leadingWidth: 100,
-                leading: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Stack(
-                        clipBehavior: Clip.none,
-                        children: [
-                          SvgPicture.asset(
-                            AssetsConstants.shoppingBag,
-                            width: 22,
-                            colorFilter: ColorFilter.mode(
-                              context.palette.textPrimary,
-                              BlendMode.srcIn,
-                            ),
-                          ),
-                          Positioned(
-                            right: -6,
-                            top: -6,
-                            child: Container(
-                              padding: const EdgeInsets.all(3),
-                              decoration: BoxDecoration(
-                                color: AppColors.primary,
-                                shape: BoxShape.circle,
-                              ),
-                              constraints: const BoxConstraints(
-                                minWidth: 15,
-                                minHeight: 15,
-                              ),
-                              child: const Center(
-                                child: Text(
-                                  '2',
-                                  style: TextStyle(
-                                    color: Colors.white,
-                                    fontSize: 9,
-                                    fontWeight: FontWeight.bold,
-                                    height: 1.0,
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(width: 16),
-                      SvgPicture.asset(
-                        AssetsConstants.heart2,
-                        width: 22,
-                        colorFilter: ColorFilter.mode(
-                          context.palette.textPrimary,
-                          BlendMode.srcIn,
-                        ),
-                      ),
-                    ],
-                  ),
+    return Directionality(
+      textDirection: textDir,
+      child: Scaffold(
+        backgroundColor: context.palette.background,
+
+        // ─── AppBar ───────────────────────────────────────────────────
+        appBar: PrimaryAppBar(
+          title: loc.translate('orderTracking'),
+          fontSize: 18,
+          letterSpacing: 0,
+          showBackButton: true,
+          cartIcon: AssetsConstants.shoppingBag,
+          heartIcon: AssetsConstants.heart2,
+          onBackTap: () {
+            if (context.canPop()) {
+              context.pop();
+            } else {
+              context.go('/dashboard');
+            }
+          },
+        ),
+
+        // ─── Body ─────────────────────────────────────────────────────
+        body: SingleChildScrollView(
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              // ─── Order Info Header ───
+              Align(
+                alignment: isAr ? Alignment.centerRight : Alignment.centerLeft,
+                child: Text(
+                  loc.translate('orderInfo'),
+                  style: AppStyle.sectionHeader,
                 ),
-                title: Text(
-                  loc.translate('orderTracking'),
-                  style: AppStyle.welcomeTitle.copyWith(fontSize: 18),
-                ),
-                centerTitle: true,
-                actions: [
-                  GestureDetector(
-                    onTap: () {},
-                    child: SvgPicture.asset(
-                      AssetsConstants.search,
-                      width: 22,
-                      colorFilter: ColorFilter.mode(
-                        context.palette.textPrimary,
-                        BlendMode.srcIn,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 16),
-                  GestureDetector(
-                    onTap: () {
-                      if (context.canPop()) {
-                        context.pop();
-                      } else {
-                        context.go('/dashboard');
-                      }
-                    },
-                    child: SvgPicture.asset(
-                      AssetsConstants.back,
-                      width: 22,
-                      matchTextDirection: true,
-                      colorFilter: ColorFilter.mode(
-                        context.palette.textPrimary,
-                        BlendMode.srcIn,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 16),
-                ],
               ),
+              const SizedBox(height: 6),
+              Divider(color: context.palette.divider, thickness: 0.8),
+              const SizedBox(height: 24),
+              _buildInfoRow(loc.translate('orderNumberLabel'), '#84739201'),
+              const SizedBox(height: 12),
+              _buildInfoRow(
+                loc.translate('orderDateLabel'),
+                loc.translate('orderDateValue'),
+              ),
+              const SizedBox(height: 12),
+              _buildInfoRow(
+                loc.translate('totalAmountLabel'),
+                isAr ? '2,500 ر.س.' : '2,500 SAR',
+                valueColor: AppColors.primary,
+              ),
+              const SizedBox(height: 20),
 
-              // ─── Body ─────────────────────────────────────────────────────
-              body: SingleChildScrollView(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 20,
-                  vertical: 16,
+              // ─── Cancel Order Button ───
+              _buildCancelButton(loc, isAr),
+              const SizedBox(height: 32),
+
+              // ─── Order Status Header ───
+              Align(
+                alignment: isAr ? Alignment.centerRight : Alignment.centerLeft,
+                child: Text(
+                  loc.translate('orderStatus'),
+                  style: AppStyle.sectionHeader,
                 ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
+              ),
+              const SizedBox(height: 6),
+              Divider(color: context.palette.divider, thickness: 0.8),
+              const SizedBox(height: 24),
+
+              // ─── Vertical Timeline (Right-aligned tracker for Arabic, Left-aligned for English) ───
+              _buildTrackerTimeline(loc, isAr),
+              const SizedBox(height: 32),
+
+              // ─── Confirm Delivery Button ───
+              ElevatedButton(
+                onPressed: () {
+                  if (context.canPop()) {
+                    context.pop();
+                  } else {
+                    context.go('/dashboard');
+                  }
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.primary,
+                  minimumSize: const Size(double.infinity, 54),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(30),
+                  ),
+                  elevation: 0,
+                ),
+                child: Row(
                   children: [
-                    // ─── Order Info Header ───
-                    Align(
-                      alignment: isAr
-                          ? Alignment.centerRight
-                          : Alignment.centerLeft,
+                    const SizedBox(width: 12),
+                    Expanded(
                       child: Text(
-                        loc.translate('orderInfo'),
-                        style: AppStyle.sectionHeader,
+                        loc.translate('confirmDelivery'),
+                        textAlign: TextAlign.start,
+                        style: AppStyle.buttonTextPrimary,
                       ),
                     ),
-                    const SizedBox(height: 6),
-                    Divider(color: context.palette.divider, thickness: 0.8),
-                    const SizedBox(height: 24),
-                    _buildInfoRow(
-                      loc.translate('orderNumberLabel'),
-                      '#84739201',
-                    ),
-                    const SizedBox(height: 12),
-                    _buildInfoRow(
-                      loc.translate('orderDateLabel'),
-                      loc.translate('orderDateValue'),
-                    ),
-                    const SizedBox(height: 12),
-                    _buildInfoRow(
-                      loc.translate('totalAmountLabel'),
-                      isAr ? '2,500 ر.س.' : '2,500 SAR',
-                      valueColor: AppColors.primary,
-                    ),
-                    const SizedBox(height: 20),
-
-                    // ─── Cancel Order Button ───
-                    _buildCancelButton(loc, isAr),
-                    const SizedBox(height: 32),
-
-                    // ─── Order Status Header ───
-                    Align(
-                      alignment: isAr
-                          ? Alignment.centerRight
-                          : Alignment.centerLeft,
-                      child: Text(
-                        loc.translate('orderStatus'),
-                        style: AppStyle.sectionHeader,
+                    SvgPicture.asset(
+                      AssetsConstants.shoppingBag,
+                      width: 18,
+                      height: 18,
+                      colorFilter: const ColorFilter.mode(
+                        Colors.white,
+                        BlendMode.srcIn,
                       ),
                     ),
-                    const SizedBox(height: 6),
-                    Divider(color: context.palette.divider, thickness: 0.8),
-                    const SizedBox(height: 24),
-
-                    // ─── Vertical Timeline (Right-aligned tracker for Arabic, Left-aligned for English) ───
-                    _buildTrackerTimeline(loc, isAr),
-                    const SizedBox(height: 32),
-
-                    // ─── Confirm Delivery Button ───
-                    ElevatedButton(
-                      onPressed: () {
-                        if (context.canPop()) {
-                          context.pop();
-                        } else {
-                          context.go('/dashboard');
-                        }
-                      },
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: AppColors.primary,
-                        minimumSize: const Size(double.infinity, 54),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(30),
-                        ),
-                        elevation: 0,
-                      ),
-                      child: Row(
-                        children: [
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: Text(
-                              loc.translate('confirmDelivery'),
-                              textAlign: TextAlign.start,
-                              style: AppStyle.buttonTextPrimary,
-                            ),
-                          ),
-                          SvgPicture.asset(
-                            AssetsConstants.shoppingBag,
-                            width: 18,
-                            height: 18,
-                            colorFilter: const ColorFilter.mode(
-                              Colors.white,
-                              BlendMode.srcIn,
-                            ),
-                          ),
-                          const SizedBox(width: 12),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-
-                    // ─── Bottom Cancel Button ───
-                    _buildCancelButton(loc, isAr),
-                    const SizedBox(height: 32),
-
-                    // ─── Delivery Info Header ───
-                    Center(
-                      child: Text(
-                        loc.translate('deliveryInfo'),
-                        style: AppStyle.sectionHeader,
-                      ),
-                    ),
-                    const SizedBox(height: 6),
-                    Divider(color: context.palette.divider, thickness: 0.8),
-                    const SizedBox(height: 24),
-
-                    // ─── Expected Delivery ───
-                    _buildInfoRow(
-                      loc.translate('expectedDeliveryLabel'),
-                      loc.translate('orderDateValue'),
-                      forceValueLtr: false,
-                    ),
-                    const SizedBox(height: 24),
-
-                    // ─── SMSA Express Delivery Card ───
-                    _buildDeliveryCard(loc, isAr),
-                    const SizedBox(height: 24),
-
-                    // ─── Final Cancel Button ───
-                    _buildCancelButton(loc, isAr),
-                    const SizedBox(height: 24),
+                    const SizedBox(width: 12),
                   ],
                 ),
               ),
-            ),
-          );
-        },
+              const SizedBox(height: 12),
+
+              // ─── Bottom Cancel Button ───
+              _buildCancelButton(loc, isAr),
+              const SizedBox(height: 32),
+
+              // ─── Delivery Info Header ───
+              Center(
+                child: Text(
+                  loc.translate('deliveryInfo'),
+                  style: AppStyle.sectionHeader,
+                ),
+              ),
+              const SizedBox(height: 6),
+              Divider(color: context.palette.divider, thickness: 0.8),
+              const SizedBox(height: 24),
+
+              // ─── Expected Delivery ───
+              _buildInfoRow(
+                loc.translate('expectedDeliveryLabel'),
+                loc.translate('orderDateValue'),
+                forceValueLtr: false,
+              ),
+              const SizedBox(height: 24),
+
+              // ─── SMSA Express Delivery Card ───
+              _buildDeliveryCard(loc, isAr),
+              const SizedBox(height: 24),
+
+              // ─── Final Cancel Button ───
+              _buildCancelButton(loc, isAr),
+              const SizedBox(height: 24),
+            ],
+          ),
+        ),
       ),
     );
   }

@@ -6,19 +6,17 @@ import 'package:sfa/core/localization/app_localizations.dart';
 import 'package:sfa/utils/assets_constants.dart';
 import 'package:sfa/utils/color_constants.dart';
 import 'package:sfa/utils/app_style.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:sfa/features/onboarding/bloc/onboarding_bloc.dart';
-import 'package:sfa/features/onboarding/bloc/onboarding_event.dart';
-import 'package:sfa/features/onboarding/bloc/onboarding_state.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:sfa/features/onboarding/providers/onboarding_provider.dart';
 
-class OnboardingScreen extends StatefulWidget {
+class OnboardingScreen extends ConsumerStatefulWidget {
   const OnboardingScreen({super.key});
 
   @override
-  State<OnboardingScreen> createState() => _OnboardingScreenState();
+  ConsumerState<OnboardingScreen> createState() => _OnboardingScreenState();
 }
 
-class _OnboardingScreenState extends State<OnboardingScreen> {
+class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
   final PageController _pageController = PageController();
 
   @override
@@ -102,10 +100,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
               colorFilter: ColorFilter.mode(AppColors.primary, BlendMode.srcIn),
             ),
             const SizedBox(width: 6),
-            Text(
-              loc.translate('home'),
-              style: AppStyle.buttonTextHome,
-            ),
+            Text(loc.translate('home'), style: AppStyle.buttonTextHome),
           ],
         ),
       ),
@@ -117,12 +112,10 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
       loginBtn,
     ];
 
-    return BlocProvider(
-      create: (context) => OnboardingBloc(),
-      child: BlocBuilder<OnboardingBloc, OnboardingState>(
-        builder: (context, state) {
-          return Scaffold(
-            backgroundColor: AppColors.textcolor,
+    final state = ref.watch(onboardingProvider);
+
+    return Scaffold(
+      backgroundColor: AppColors.textcolor,
       body: SafeArea(
         child: Column(
           children: [
@@ -136,14 +129,8 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                 errorBuilder: (context, error, stackTrace) => Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Text(
-                      'SFA',
-                      style: AppStyle.logoTitleSmall,
-                    ),
-                    Text(
-                      'SAUDI FASHION',
-                      style: AppStyle.logoSubtitleSmall,
-                    ),
+                    Text('SFA', style: AppStyle.logoTitleSmall),
+                    Text('SAUDI FASHION', style: AppStyle.logoSubtitleSmall),
                   ],
                 ),
               ),
@@ -154,7 +141,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
               child: PageView(
                 controller: _pageController,
                 onPageChanged: (index) {
-                  context.read<OnboardingBloc>().add(ChangePageEvent(index));
+                  ref.read(onboardingProvider.notifier).changePage(index);
                 },
                 children: [
                   // Slide 1: Saudi Vision 2030 (vector.png)
@@ -203,9 +190,6 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
             const SizedBox(height: 12),
           ],
         ),
-      ),
-    );
-        },
       ),
     );
   }

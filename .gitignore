@@ -47,3 +47,5 @@ app.*.map.json
 # Large files
 figma/KSA-SFA (Copy).pdf
 
+# Widget Preview related
+.widget_preview/

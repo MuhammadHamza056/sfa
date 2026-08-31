@@ -1,5 +1,7 @@
 class AssetsConstants {
   // Logos & Images
+
+  static const String sfaWhite = "assets/logos/sfa_white.svg";
   static const String logoPng = "assets/logos/logo.png";
   static const String aiPng = "assets/logos/ai.png";
   static const String homeBackground = "assets/logos/homebackground.png";

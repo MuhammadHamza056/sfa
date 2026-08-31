@@ -1,10 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:sfa/core/localization/app_localizations.dart';
 import 'package:sfa/features/brands/presentation/widgets/brands_grid.dart';
 import 'package:sfa/features/brands/presentation/widgets/brands_header.dart';
 import 'package:sfa/features/brands/presentation/widgets/brands_promo_banner.dart';
-import 'package:sfa/features/brands/bloc/brands_bloc.dart';
 
 // ── Dummy data ────────────────────────────────────────────────────────────────
 
@@ -77,7 +75,6 @@ const _kBrandsRow2 = [
 const _kPromoBannerUrl =
     'https://images.unsplash.com/photo-1490481651871-ab68de25d43d?w=800&q=80';
 
-
 // ── Screen ────────────────────────────────────────────────────────────────────
 
 class BrandsScreen extends StatelessWidget {
@@ -88,73 +85,78 @@ class BrandsScreen extends StatelessWidget {
     final loc = AppLocalizations.of(context);
     final isAr = loc.isArabic;
 
-    final row1 = _kBrandsRow1.map((brand) => BrandItem(
-      imageUrl: brand.imageUrl,
-      name: loc.translate(brand.name),
-    )).toList();
+    final row1 = _kBrandsRow1
+        .map(
+          (brand) => BrandItem(
+            imageUrl: brand.imageUrl,
+            name: loc.translate(brand.name),
+          ),
+        )
+        .toList();
 
-    final row2 = _kBrandsRow2.map((brand) => BrandItem(
-      imageUrl: brand.imageUrl,
-      name: loc.translate(brand.name),
-    )).toList();
+    final row2 = _kBrandsRow2
+        .map(
+          (brand) => BrandItem(
+            imageUrl: brand.imageUrl,
+            name: loc.translate(brand.name),
+          ),
+        )
+        .toList();
 
-    return BlocProvider(
-      create: (context) => BrandsBloc(),
-      child: Directionality(
-        textDirection: isAr ? TextDirection.rtl : TextDirection.ltr,
-        child: GestureDetector(
-          onTap: () => FocusManager.instance.primaryFocus?.unfocus(),
-          behavior: HitTestBehavior.opaque,
-          child: Scaffold(
-            backgroundColor: Colors.transparent,
-            body: Stack(
-              // fit: StackFit.expand,
-              children: [
-                // Scaffold background image from assets
-                SizedBox(
-                  height: 600,
-                  width: double.infinity,
-                  child: Image.asset(
-                    'assets/images/brandbackground.png',
-                    fit: BoxFit.fill,
-                  ),
+    return Directionality(
+      textDirection: isAr ? TextDirection.rtl : TextDirection.ltr,
+      child: GestureDetector(
+        onTap: () => FocusManager.instance.primaryFocus?.unfocus(),
+        behavior: HitTestBehavior.opaque,
+        child: Scaffold(
+          backgroundColor: Colors.transparent,
+          body: Stack(
+            // fit: StackFit.expand,
+            children: [
+              // Scaffold background image from assets
+              SizedBox(
+                height: 600,
+                width: double.infinity,
+                child: Image.asset(
+                  'assets/images/brandbackground.png',
+                  fit: BoxFit.fill,
                 ),
-                // Content overlay
-                Column(
-                  children: [
-                    // ── Header: heading + tabs + categories + search ──
-                    const BrandsHeader(),
+              ),
+              // Content overlay
+              Column(
+                children: [
+                  // ── Header: heading + tabs + categories + search ──
+                  const BrandsHeader(),
 
-                    // ── Scrollable Content ──
-                    Expanded(
-                      child: SingleChildScrollView(
-                        child: Column(
-                          children: [
-                            const SizedBox(height: 15),
+                  // ── Scrollable Content ──
+                  Expanded(
+                    child: SingleChildScrollView(
+                      child: Column(
+                        children: [
+                          const SizedBox(height: 15),
 
-                            // ── First grid ──
-                            BrandsGrid(brands: row1),
+                          // ── First grid ──
+                          BrandsGrid(brands: row1),
 
-                            // ── Promo banner ──
-                            BrandsPromoBanner(
-                              imageUrl: _kPromoBannerUrl,
-                              title: loc.translate('summerSale'),
-                              subtitle: loc.translate('upTo80'),
-                              brandName: loc.translate('saudiBrands'),
-                            ),
+                          // ── Promo banner ──
+                          BrandsPromoBanner(
+                            imageUrl: _kPromoBannerUrl,
+                            title: loc.translate('summerSale'),
+                            subtitle: loc.translate('upTo80'),
+                            brandName: loc.translate('saudiBrands'),
+                          ),
 
-                            // ── Second grid ──
-                            BrandsGrid(brands: row2),
+                          // ── Second grid ──
+                          BrandsGrid(brands: row2),
 
-                            const SizedBox(height: 24),
-                          ],
-                        ),
+                          const SizedBox(height: 24),
+                        ],
                       ),
                     ),
-                  ],
-                ),
-              ],
-            ),
+                  ),
+                ],
+              ),
+            ],
           ),
         ),
       ),

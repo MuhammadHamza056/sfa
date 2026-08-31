@@ -1,19 +1,15 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 import 'package:sfa/core/localization/app_localizations.dart';
-import 'package:sfa/features/dashboard/bloc/dashboard_event.dart';
+import 'package:sfa/core/models/product_detail_args.dart';
 import 'package:sfa/utils/app_style.dart';
 import 'package:sfa/utils/assets_constants.dart';
 import 'package:sfa/utils/color_constants.dart';
-import 'package:sfa/features/dashboard/bloc/dashboard_bloc.dart';
-import 'package:sfa/features/dashboard/bloc/dashboard_state.dart';
 import 'package:sfa/features/favorites/models/favorite_product.dart';
-import 'package:sfa/features/favorites/bloc/favorites_bloc.dart';
-import 'package:sfa/features/favorites/bloc/favorites_event.dart';
-import 'package:sfa/features/favorites/bloc/favorites_state.dart';
+import 'package:sfa/features/favorites/providers/favorites_provider.dart';
 import 'package:sfa/core/theme/app_palette.dart';
 
 class ReviewItem {
@@ -41,7 +37,9 @@ class ReviewItem {
 }
 
 class ProductReviewsScreen extends StatefulWidget {
-  const ProductReviewsScreen({super.key});
+  final ProductDetailArgs? args;
+
+  const ProductReviewsScreen({super.key, this.args});
 
   @override
   State<ProductReviewsScreen> createState() => _ProductReviewsScreenState();
@@ -82,22 +80,18 @@ class _ProductReviewsScreenState extends State<ProductReviewsScreen> {
     final loc = AppLocalizations.of(context);
     final isAr = loc.isArabic;
 
-    return BlocBuilder<DashboardBloc, DashboardState>(
-      builder: (context, dashboardState) {
-        final productName =
-            dashboardState.selectedProductName ??
-            (isAr ? 'وردة الصحراء المطرزة' : 'Embroidered Desert Rose');
-        final productImage =
-            dashboardState.selectedProductImage ??
-            'https://images.unsplash.com/photo-1509631179647-0177331693ae?w=800&q=80';
-        final productPrice =
-            dashboardState.selectedProductPrice ??
-            (isAr ? '1,250 ر.س.' : '1,250 SAR');
-        final productRating =
-            dashboardState.selectedProductRating ??
-            (isAr ? '4.9 · 85 تقييماً' : '4.9 · 85 reviews');
-        final brandNameKey = dashboardState.selectedBrandName ?? 'brandJuba';
-        final resolvedBrandName = loc.translate(brandNameKey);
+    final productName =
+        widget.args?.name ??
+        (isAr ? 'وردة الصحراء المطرزة' : 'Embroidered Desert Rose');
+    final productImage =
+        widget.args?.imageUrl ??
+        'https://images.unsplash.com/photo-1509631179647-0177331693ae?w=800&q=80';
+    final productPrice =
+        widget.args?.price ?? (isAr ? '1,250 ر.س.' : '1,250 SAR');
+    final productRating =
+        widget.args?.rating ?? (isAr ? '4.9 · 85 تقييماً' : '4.9 · 85 reviews');
+    final brandNameKey = widget.args?.brandNameKey ?? 'brandJuba';
+    final resolvedBrandName = loc.translate(brandNameKey);
 
         final totalRatingsCount = 85;
         final ratingsDistribution = [
@@ -202,17 +196,18 @@ class _ProductReviewsScreenState extends State<ProductReviewsScreen> {
                             Positioned(
                               top: 8,
                               right: 8,
-                              child: BlocBuilder<FavoritesBloc, FavoritesState>(
-                                builder: (context, favState) {
+                              child: Consumer(
+                                builder: (context, ref, _) {
                                   final favProduct = FavoriteProduct(
                                     title: productName,
                                     imageUrl: productImage,
                                     price: productPrice,
                                     rating: productRating,
                                   );
-                                  final isFav = favState.favorites.contains(
-                                    favProduct,
-                                  );
+                                  final isFav = ref
+                                      .watch(favoritesProvider)
+                                      .favorites
+                                      .contains(favProduct);
                                   return Container(
                                     width: 36,
                                     height: 36,
@@ -239,9 +234,9 @@ class _ProductReviewsScreenState extends State<ProductReviewsScreen> {
                                         ),
                                       ),
                                       onPressed: () {
-                                        context.read<FavoritesBloc>().add(
-                                          ToggleFavoriteEvent(favProduct),
-                                        );
+                                        ref
+                                            .read(favoritesProvider.notifier)
+                                            .toggle(favProduct);
                                       },
                                     ),
                                   );
@@ -346,7 +341,7 @@ class _ProductReviewsScreenState extends State<ProductReviewsScreen> {
                       width: double.infinity,
                       child: ElevatedButton(
                         onPressed: () {
-                          context.push('/write-review');
+                          context.push('/write-review', extra: widget.args);
                         },
                         style: ElevatedButton.styleFrom(
                           backgroundColor: const Color(0xFFCA9A4E),
@@ -539,7 +534,5 @@ class _ProductReviewsScreenState extends State<ProductReviewsScreen> {
             ),
           ),
         );
-      },
-    );
   }
 }

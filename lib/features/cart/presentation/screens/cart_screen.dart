@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 import 'package:sfa/core/localization/app_localizations.dart';
+import 'package:sfa/features/cart/providers/cart_provider.dart';
 import 'package:sfa/utils/assets_constants.dart';
 import 'package:sfa/utils/color_constants.dart';
 import 'package:sfa/utils/app_style.dart';
@@ -10,14 +12,14 @@ import '../widgets/cart_item_card.dart';
 import '../widgets/coupon_code_field.dart';
 import '../widgets/pricing_summary.dart';
 
-class CartScreen extends StatefulWidget {
+class CartScreen extends ConsumerStatefulWidget {
   const CartScreen({super.key});
 
   @override
-  State<CartScreen> createState() => _CartScreenState();
+  ConsumerState<CartScreen> createState() => _CartScreenState();
 }
 
-class _CartScreenState extends State<CartScreen> {
+class _CartScreenState extends ConsumerState<CartScreen> {
   bool _freeGiftWrap = false;
   bool _earnAndRedeem = false;
   final TextEditingController _giftCardController = TextEditingController();
@@ -31,32 +33,12 @@ class _CartScreenState extends State<CartScreen> {
   @override
   Widget build(BuildContext context) {
     final loc = AppLocalizations.of(context);
+    final cartItems = ref.watch(cartProvider);
 
-    // Mock cart items
-    final List<Map<String, dynamic>> cartItems = [
-      {
-        'imageUrl':
-            'https://images.unsplash.com/photo-1595777457583-95e059d581b8?w=300',
-        'brand': loc.translate('jubaBrand'),
-        'title': loc.translate('desertRose'),
-        'price': loc.isArabic ? '1,250 ر.س.' : '1,250 SAR',
-        'color': const Color(0xFFD7B9A9), // beige
-        'size': 'M',
-        'quantity': 1,
-        'showWarning': true,
-      },
-      {
-        'imageUrl':
-            'https://images.unsplash.com/photo-1605763240000-7e93b172d754?w=300',
-        'brand': loc.translate('jubaBrand'),
-        'title': loc.translate('desertRose'),
-        'price': loc.isArabic ? '1,250 ر.س.' : '1,250 SAR',
-        'color': const Color(0xFF8FA1A6), // slate grey
-        'size': 'M',
-        'quantity': 1,
-        'showWarning': true,
-      },
-    ];
+    final subtotal = cartSubtotal(cartItems);
+    const pointsDiscountAmount = 20.0;
+    final discount = _earnAndRedeem ? pointsDiscountAmount : 0.0;
+    final total = subtotal - discount;
 
     return Container(
       color: context.palette.background,
@@ -67,197 +49,223 @@ class _CartScreenState extends State<CartScreen> {
             padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                // Cart Items List
-                ...cartItems.asMap().entries.map((entry) {
-                  final int index = entry.key;
-                  final Map<String, dynamic> item = entry.value;
-                  return Column(
-                    children: [
-                      CartItemCard(
-                        imageUrl: item['imageUrl'],
-                        brand: item['brand'],
-                        title: item['title'],
-                        price: item['price'],
-                        itemColor: item['color'],
-                        size: item['size'],
-                        quantity: item['quantity'],
-                        showWarning: item['showWarning'],
-                        onDelete: () {},
-                        onFavorite: () {},
-                      ),
-                      if (index < cartItems.length - 1)
-                        Divider(
-                          height: 24,
-                          thickness: 0.5,
-                          color: context.palette.divider,
-                        ),
-                    ],
-                  );
-                }),
-                const SizedBox(height: 12),
-
-                // ── Free Gift Wrap ────────────────────────────────────────
-                _CartCheckboxRow(
-                  value: _freeGiftWrap,
-                  onChanged: (v) => setState(() => _freeGiftWrap = v ?? false),
-                  svgPath: AssetsConstants.gift,
-                  label: loc.translate('freeGiftWrap'),
-                ),
-                // Expandable gift-wrap detail
-                AnimatedCrossFade(
-                  duration: const Duration(milliseconds: 250),
-                  crossFadeState: _freeGiftWrap
-                      ? CrossFadeState.showFirst
-                      : CrossFadeState.showSecond,
-                  firstChild: Padding(
-                    padding: const EdgeInsets.only(bottom: 16),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        // Bullet 1
-                        _BulletText(loc.translate('giftWrapBullet1')),
-                        const SizedBox(height: 8),
-                        // Bullet 2
-                        _BulletText(loc.translate('giftWrapBullet2')),
-                        const SizedBox(height: 16),
-                        // Gift card message label
-                        Text(
-                          loc.translate('giftCardMessageLabel'),
-                          style: AppStyle.labelText.copyWith(
-                            fontWeight: FontWeight.w600,
-                          ),
-                          textAlign: loc.isArabic
-                              ? TextAlign.right
-                              : TextAlign.left,
-                        ),
-                        const SizedBox(height: 8),
-                        // Multiline text field
-                        TextField(
-                          controller: _giftCardController,
-                          minLines: 4,
-                          maxLines: 6,
-                          textAlign: loc.isArabic
-                              ? TextAlign.right
-                              : TextAlign.left,
-                          textDirection: loc.isArabic
-                              ? TextDirection.rtl
-                              : TextDirection.ltr,
-                          decoration: InputDecoration(
-                            hintText: loc.translate('giftCardMessageHint'),
-                            contentPadding: const EdgeInsets.all(12),
-                            border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(8),
-                              borderSide: BorderSide(
-                                color: context.palette.divider,
-                              ),
-                            ),
-                            enabledBorder: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(8),
-                              borderSide: BorderSide(
-                                color: context.palette.divider,
-                              ),
-                            ),
-                            focusedBorder: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(8),
-                              borderSide: BorderSide(color: AppColors.primary),
-                            ),
-                          ),
-                        ),
-                        const SizedBox(height: 20),
-                      ],
-                    ),
-                  ),
-                  secondChild: const SizedBox.shrink(),
-                ),
-                Divider(
-                  height: 1,
-                  thickness: 0.5,
-                  color: context.palette.divider,
-                ),
-                const SizedBox(height: 12),
-
-                // ── Earn & Redeem ─────────────────────────────────────────
-                _CartCheckboxRow(
-                  value: _earnAndRedeem,
-                  onChanged: (v) => setState(() => _earnAndRedeem = v ?? false),
-                  svgPath: AssetsConstants.ticketCheck,
-                  label: loc.translate('earnAndRedeem'),
-                  trailingLabel: loc.translate('earnAndRedeemPoints'),
-                ),
-                // Expandable points-discount detail
-                AnimatedCrossFade(
-                  duration: const Duration(milliseconds: 250),
-                  crossFadeState: _earnAndRedeem
-                      ? CrossFadeState.showFirst
-                      : CrossFadeState.showSecond,
-                  firstChild: Padding(
-                    padding: const EdgeInsets.only(bottom: 16),
-                    child: _PointsDiscountText(
-                      loc.translate('pointsDiscountText'),
-                      isArabic: loc.isArabic,
-                    ),
-                  ),
-                  secondChild: const SizedBox.shrink(),
-                ),
-                Divider(
-                  height: 1,
-                  thickness: 0.5,
-                  color: context.palette.divider,
-                ),
-                const SizedBox(height: 16),
-
-                // Coupon Code Box
-                const CouponCodeField(),
-                const SizedBox(height: 28),
-
-                // Pricing Summary
-                PricingSummary(
-                  subtotal: loc.isArabic ? '2,500 ر.س.' : '2,500 SAR',
-                  total: loc.isArabic ? '2,480 ر.س.' : '2,480 SAR',
-                  pointsDiscount: loc.isArabic ? '-20 ر.س.' : '-20 SAR',
-                ),
-                const SizedBox(height: 32),
-
-                // Checkout Button
-                ElevatedButton(
-                  onPressed: () => context.push('/checkout'),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.primary,
-                    minimumSize: const Size(double.infinity, 54),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(30),
-                    ),
-                    elevation: 0,
-                  ),
-                  child: Row(
-                    textDirection: TextDirection.ltr,
-                    children: [
-                      const SizedBox(width: 8),
-                      SvgPicture.asset(
-                        AssetsConstants.shoppingBag,
-                        width: 18,
-                        height: 18,
-                        colorFilter: const ColorFilter.mode(
-                          Colors.white,
-                          BlendMode.srcIn,
-                        ),
-                      ),
-                      Expanded(
-                        child: Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 16.0),
+              children: cartItems.isEmpty
+                  ? [
+                      Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 96),
+                        child: Center(
                           child: Text(
-                            loc.translate('secureCheckout'),
-                            textAlign: TextAlign.right,
-                            style: AppStyle.buttonTextPrimary,
+                            loc.translate('cartEmpty'),
+                            style: AppStyle.labelText.copyWith(
+                              color: context.palette.textMuted,
+                            ),
                           ),
                         ),
                       ),
+                    ]
+                  : [
+                      // Cart Items List
+                      ...cartItems.asMap().entries.map((entry) {
+                        final int index = entry.key;
+                        final item = entry.value;
+                        return Column(
+                          children: [
+                            CartItemCard(
+                              imageUrl: item.imageUrl,
+                              brand: item.brand,
+                              title: item.title,
+                              price: item.price,
+                              itemColor: item.color,
+                              size: item.size,
+                              quantity: item.quantity,
+                              showWarning: item.showWarning,
+                              onDelete: () => ref
+                                  .read(cartProvider.notifier)
+                                  .removeItem(item.id),
+                              onFavorite: () {},
+                            ),
+                            if (index < cartItems.length - 1)
+                              Divider(
+                                height: 24,
+                                thickness: 0.5,
+                                color: context.palette.divider,
+                              ),
+                          ],
+                        );
+                      }),
+                      const SizedBox(height: 12),
+
+                      // ── Free Gift Wrap ────────────────────────────────────────
+                      _CartCheckboxRow(
+                        value: _freeGiftWrap,
+                        onChanged: (v) =>
+                            setState(() => _freeGiftWrap = v ?? false),
+                        svgPath: AssetsConstants.gift,
+                        label: loc.translate('freeGiftWrap'),
+                      ),
+                      // Expandable gift-wrap detail
+                      AnimatedCrossFade(
+                        duration: const Duration(milliseconds: 250),
+                        crossFadeState: _freeGiftWrap
+                            ? CrossFadeState.showFirst
+                            : CrossFadeState.showSecond,
+                        firstChild: Padding(
+                          padding: const EdgeInsets.only(bottom: 16),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                            children: [
+                              // Bullet 1
+                              _BulletText(loc.translate('giftWrapBullet1')),
+                              const SizedBox(height: 8),
+                              // Bullet 2
+                              _BulletText(loc.translate('giftWrapBullet2')),
+                              const SizedBox(height: 16),
+                              // Gift card message label
+                              Text(
+                                loc.translate('giftCardMessageLabel'),
+                                style: AppStyle.labelText.copyWith(
+                                  fontWeight: FontWeight.w600,
+                                ),
+                                textAlign: loc.isArabic
+                                    ? TextAlign.right
+                                    : TextAlign.left,
+                              ),
+                              const SizedBox(height: 8),
+                              // Multiline text field
+                              TextField(
+                                controller: _giftCardController,
+                                minLines: 4,
+                                maxLines: 6,
+                                textAlign: loc.isArabic
+                                    ? TextAlign.right
+                                    : TextAlign.left,
+                                textDirection: loc.isArabic
+                                    ? TextDirection.rtl
+                                    : TextDirection.ltr,
+                                decoration: InputDecoration(
+                                  hintText: loc.translate(
+                                    'giftCardMessageHint',
+                                  ),
+                                  contentPadding: const EdgeInsets.all(12),
+                                  border: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(8),
+                                    borderSide: BorderSide(
+                                      color: context.palette.divider,
+                                    ),
+                                  ),
+                                  enabledBorder: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(8),
+                                    borderSide: BorderSide(
+                                      color: context.palette.divider,
+                                    ),
+                                  ),
+                                  focusedBorder: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(8),
+                                    borderSide: BorderSide(
+                                      color: AppColors.primary,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(height: 20),
+                            ],
+                          ),
+                        ),
+                        secondChild: const SizedBox.shrink(),
+                      ),
+                      Divider(
+                        height: 1,
+                        thickness: 0.5,
+                        color: context.palette.divider,
+                      ),
+                      const SizedBox(height: 12),
+
+                      // ── Earn & Redeem ─────────────────────────────────────────
+                      _CartCheckboxRow(
+                        value: _earnAndRedeem,
+                        onChanged: (v) =>
+                            setState(() => _earnAndRedeem = v ?? false),
+                        svgPath: AssetsConstants.ticketCheck,
+                        label: loc.translate('earnAndRedeem'),
+                        trailingLabel: loc.translate('earnAndRedeemPoints'),
+                      ),
+                      // Expandable points-discount detail
+                      AnimatedCrossFade(
+                        duration: const Duration(milliseconds: 250),
+                        crossFadeState: _earnAndRedeem
+                            ? CrossFadeState.showFirst
+                            : CrossFadeState.showSecond,
+                        firstChild: Padding(
+                          padding: const EdgeInsets.only(bottom: 16),
+                          child: _PointsDiscountText(
+                            loc.translate('pointsDiscountText'),
+                            isArabic: loc.isArabic,
+                          ),
+                        ),
+                        secondChild: const SizedBox.shrink(),
+                      ),
+                      Divider(
+                        height: 1,
+                        thickness: 0.5,
+                        color: context.palette.divider,
+                      ),
+                      const SizedBox(height: 16),
+
+                      // Coupon Code Box
+                      const CouponCodeField(),
+                      const SizedBox(height: 28),
+
+                      // Pricing Summary
+                      PricingSummary(
+                        subtotal: formatCartPrice(subtotal, loc.isArabic),
+                        total: formatCartPrice(total, loc.isArabic),
+                        pointsDiscount: _earnAndRedeem
+                            ? '-${formatCartPrice(discount, loc.isArabic)}'
+                            : null,
+                      ),
+                      const SizedBox(height: 32),
+
+                      // Checkout Button
+                      ElevatedButton(
+                        onPressed: () => context.push('/checkout'),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppColors.primary,
+                          minimumSize: const Size(double.infinity, 54),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(30),
+                          ),
+                          elevation: 0,
+                        ),
+                        child: Row(
+                          textDirection: TextDirection.ltr,
+                          children: [
+                            const SizedBox(width: 8),
+                            SvgPicture.asset(
+                              AssetsConstants.shoppingBag,
+                              width: 18,
+                              height: 18,
+                              colorFilter: const ColorFilter.mode(
+                                Colors.white,
+                                BlendMode.srcIn,
+                              ),
+                            ),
+                            Expanded(
+                              child: Padding(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 16.0,
+                                ),
+                                child: Text(
+                                  loc.translate('secureCheckout'),
+                                  textAlign: TextAlign.right,
+                                  style: AppStyle.buttonTextPrimary,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 20),
                     ],
-                  ),
-                ),
-                const SizedBox(height: 20),
-              ],
             ),
           ),
         ),
@@ -298,7 +306,10 @@ class _CartCheckboxRow extends StatelessWidget {
       svgPath,
       width: 22,
       height: 22,
-      colorFilter: ColorFilter.mode(context.palette.textPrimary, BlendMode.srcIn),
+      colorFilter: ColorFilter.mode(
+        context.palette.textPrimary,
+        BlendMode.srcIn,
+      ),
     );
 
     final labelWidgets = <Widget>[
@@ -390,7 +401,9 @@ class _BulletText extends StatelessWidget {
     final label = Expanded(
       child: Text(
         text,
-        style: AppStyle.subtitleDesc.copyWith(color: context.palette.textPrimary.withValues(alpha: 0.7)),
+        style: AppStyle.subtitleDesc.copyWith(
+          color: context.palette.textPrimary.withValues(alpha: 0.7),
+        ),
         textDirection: isArabic ? TextDirection.rtl : TextDirection.ltr,
         textAlign: isArabic ? TextAlign.right : TextAlign.left,
       ),

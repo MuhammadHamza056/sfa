@@ -3,25 +3,23 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 import 'package:sfa/core/localization/app_localizations.dart';
+import 'package:sfa/core/widgets/primary_app_bar.dart';
+import 'package:sfa/utils/Values.dart';
 import 'package:sfa/utils/assets_constants.dart';
 import 'package:sfa/core/theme/app_palette.dart';
 import 'package:sfa/utils/color_constants.dart';
 import 'package:sfa/utils/app_style.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:sfa/features/profile/bloc/profile_bloc.dart';
-import 'package:sfa/features/profile/bloc/profile_event.dart';
-import 'package:sfa/features/profile/bloc/profile_state.dart';
-import 'package:sfa/features/dashboard/bloc/dashboard_bloc.dart';
-import 'package:sfa/features/dashboard/bloc/dashboard_event.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:sfa/features/profile/providers/profile_provider.dart';
 
-class ProfileScreen extends StatefulWidget {
+class ProfileScreen extends ConsumerStatefulWidget {
   const ProfileScreen({super.key});
 
   @override
-  State<ProfileScreen> createState() => _ProfileScreenState();
+  ConsumerState<ProfileScreen> createState() => _ProfileScreenState();
 }
 
-class _ProfileScreenState extends State<ProfileScreen> {
+class _ProfileScreenState extends ConsumerState<ProfileScreen> {
   @override
   Widget build(BuildContext context) {
     final loc = AppLocalizations.of(context);
@@ -154,7 +152,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
             GestureDetector(
               behavior: HitTestBehavior.opaque,
               onTap: () {
-                context.read<ProfileBloc>().add(const ToggleTooltipEvent());
+                ref.read(profileProvider.notifier).toggleTooltip();
               },
               child: Padding(
                 padding: const EdgeInsets.symmetric(vertical: 8.0),
@@ -385,190 +383,176 @@ class _ProfileScreenState extends State<ProfileScreen> {
       ),
     );
 
-    return BlocProvider(
-      create: (context) => ProfileBloc(),
-      child: BlocBuilder<ProfileBloc, ProfileState>(
-        builder: (context, state) {
-          return Scaffold(
-            backgroundColor: context.palette.backgroundSubtle,
-            body: SafeArea(
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 24,
-                  vertical: 20,
-                ),
-                child: Directionality(
-                  textDirection: loc.isArabic
-                      ? TextDirection.rtl
-                      : TextDirection.ltr,
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      Center(child: profileHeader),
-                      const SizedBox(height: 24),
+    final state = ref.watch(profileProvider);
 
-                      Stack(
-                        clipBehavior: Clip.none,
-                        children: [
-                          Column(
-                            crossAxisAlignment: CrossAxisAlignment.stretch,
-                            children: [
-                              buildPointsProgressCard(context, state),
-                              const SizedBox(height: 16),
-                              buildBalanceCard(),
-                            ],
-                          ),
-                          if (state.showTooltip)
+    return Scaffold(
+      appBar: PrimaryAppBar(title: loc.translate('myAccount')),
+      backgroundColor: context.palette.backgroundSubtle,
+      body: SafeArea(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.symmetric(
+            horizontal: Values.horizontalPadding,
+            vertical: 20,
+          ),
+          child: Directionality(
+            textDirection: loc.isArabic ? TextDirection.rtl : TextDirection.ltr,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Center(child: profileHeader),
+                const SizedBox(height: 24),
+
+                Stack(
+                  clipBehavior: Clip.none,
+                  children: [
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        buildPointsProgressCard(context, state),
+                        const SizedBox(height: 16),
+                        buildBalanceCard(),
+                      ],
+                    ),
+                    if (state.showTooltip)
+                      Positioned(
+                        left: loc.isArabic ? 24 : null,
+                        right: loc.isArabic ? null : 24,
+                        top: 74,
+                        child: Stack(
+                          alignment: Alignment.topCenter,
+                          clipBehavior: Clip.none,
+                          children: [
                             Positioned(
-                              left: loc.isArabic ? 24 : null,
-                              right: loc.isArabic ? null : 24,
-                              top: 74,
-                              child: Stack(
-                                alignment: Alignment.topCenter,
-                                clipBehavior: Clip.none,
-                                children: [
-                                  Positioned(
-                                    top: -4,
-                                    left: loc.isArabic ? 16 : null,
-                                    right: loc.isArabic ? null : 16,
-                                    child: Transform.rotate(
-                                      angle: 3.14159 / 4,
-                                      child: Container(
-                                        width: 10,
-                                        height: 10,
-                                        decoration: BoxDecoration(
-                                          color: context.palette.surface,
-                                          border: Border(
-                                            top: BorderSide(
-                                              color: context.palette.divider,
-                                              width: 0.8,
-                                            ),
-                                            left: BorderSide(
-                                              color: context.palette.divider,
-                                              width: 0.8,
-                                            ),
-                                          ),
-                                        ),
+                              top: -4,
+                              left: loc.isArabic ? 16 : null,
+                              right: loc.isArabic ? null : 16,
+                              child: Transform.rotate(
+                                angle: 3.14159 / 4,
+                                child: Container(
+                                  width: 10,
+                                  height: 10,
+                                  decoration: BoxDecoration(
+                                    color: context.palette.surface,
+                                    border: Border(
+                                      top: BorderSide(
+                                        color: context.palette.divider,
+                                        width: 0.8,
                                       ),
-                                    ),
-                                  ),
-                                  Container(
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: 14,
-                                      vertical: 8,
-                                    ),
-                                    decoration: BoxDecoration(
-                                      color: context.palette.surface,
-                                      borderRadius: BorderRadius.circular(12),
-                                      boxShadow: [
-                                        BoxShadow(
-                                          color: context.palette.shadow,
-                                          blurRadius: 8,
-                                          offset: const Offset(0, 4),
-                                        ),
-                                      ],
-                                      border: Border.all(
+                                      left: BorderSide(
                                         color: context.palette.divider,
                                         width: 0.8,
                                       ),
                                     ),
-                                    child: Column(
-                                      mainAxisSize: MainAxisSize.min,
-                                      crossAxisAlignment: loc.isArabic
-                                          ? CrossAxisAlignment.end
-                                          : CrossAxisAlignment.start,
-                                      children: [
-                                        Text(
-                                          loc.isArabic
-                                              ? '1000 نقطة'
-                                              : '1000 Points',
-                                          style: GoogleFonts.cairo(
-                                            color: AppColors.primary,
-                                            fontSize: 12,
-                                            fontWeight: FontWeight.bold,
-                                          ),
-                                        ),
-                                        Text(
-                                          loc.isArabic
-                                              ? 'العضوية الذهبية'
-                                              : 'Golden Membership',
-                                          style: GoogleFonts.cairo(
-                                            color: context.palette.textPrimary,
-                                            fontSize: 12,
-                                            fontWeight: FontWeight.bold,
-                                          ),
-                                        ),
-                                      ],
+                                  ),
+                                ),
+                              ),
+                            ),
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 14,
+                                vertical: 8,
+                              ),
+                              decoration: BoxDecoration(
+                                color: context.palette.surface,
+                                borderRadius: BorderRadius.circular(12),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: context.palette.shadow,
+                                    blurRadius: 8,
+                                    offset: const Offset(0, 4),
+                                  ),
+                                ],
+                                border: Border.all(
+                                  color: context.palette.divider,
+                                  width: 0.8,
+                                ),
+                              ),
+                              child: Column(
+                                mainAxisSize: MainAxisSize.min,
+                                crossAxisAlignment: loc.isArabic
+                                    ? CrossAxisAlignment.end
+                                    : CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    loc.isArabic ? '1000 نقطة' : '1000 Points',
+                                    style: GoogleFonts.cairo(
+                                      color: AppColors.primary,
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                  Text(
+                                    loc.isArabic
+                                        ? 'العضوية الذهبية'
+                                        : 'Golden Membership',
+                                    style: GoogleFonts.cairo(
+                                      color: context.palette.textPrimary,
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.bold,
                                     ),
                                   ),
                                 ],
                               ),
                             ),
-                        ],
-                      ),
-                      const SizedBox(height: 24),
-
-                      // Menu items
-                      _buildMenuTile(
-                        icon: AssetsConstants.circleUser2,
-                        title: loc.translate('accountManagement'),
-                        trailing: tileArrow,
-                        onTap: () {},
-                      ),
-                      _buildMenuTile(
-                        icon: AssetsConstants.mapPin,
-                        title: loc.translate('addresses'),
-                        trailing: tileArrow,
-                        onTap: () => context.push('/addresses'),
-                      ),
-                      _buildMenuTile(
-                        icon: AssetsConstants.package,
-                        title: loc.translate('previousOrders'),
-                        trailing: tileArrow,
-                        onTap: () => context.push('/previous-orders'),
-                      ),
-                      _buildMenuTile(
-                        icon: AssetsConstants.heart,
-                        title: loc.translate('favorites'),
-                        trailing: tileArrow,
-                        onTap: () {
-                          context.read<DashboardBloc>().add(
-                            const ChangeTabEvent(8),
-                          );
-                        },
-                      ),
-                      _buildMenuTile(
-                        icon: AssetsConstants.moon,
-                        title: loc.translate('darkMode'),
-                        trailing: Switch(
-                          value: state.darkMode,
-                          activeTrackColor: AppColors.primary,
-                          activeColor: Colors.white,
-                          inactiveThumbColor: Colors.white,
-                          inactiveTrackColor: Colors.grey.shade200,
-                          trackOutlineColor: const WidgetStatePropertyAll(
-                            Colors.transparent,
-                          ),
-                          onChanged: (val) {
-                            context.read<ProfileBloc>().add(
-                              ToggleDarkModeEvent(val),
-                            );
-                          },
+                          ],
                         ),
-                        onTap: () {},
                       ),
-
-                      const SizedBox(height: 28),
-                      aiAgentBtn,
-                      const SizedBox(height: 16),
-                      logoutBtn,
-                    ],
-                  ),
+                  ],
                 ),
-              ),
+                const SizedBox(height: 24),
+
+                // Menu items
+                // _buildMenuTile(
+                //   icon: AssetsConstants.circleUser2,
+                //   title: loc.translate('accountManagement'),
+                //   trailing: tileArrow,
+                //   onTap: () {},
+                // ),
+                _buildMenuTile(
+                  icon: AssetsConstants.mapPin,
+                  title: loc.translate('addresses'),
+                  trailing: tileArrow,
+                  onTap: () => context.push('/addresses'),
+                ),
+                _buildMenuTile(
+                  icon: AssetsConstants.package,
+                  title: loc.translate('previousOrders'),
+                  trailing: tileArrow,
+                  onTap: () => context.push('/previous-orders'),
+                ),
+                _buildMenuTile(
+                  icon: AssetsConstants.heart,
+                  title: loc.translate('favorites'),
+                  trailing: tileArrow,
+                  onTap: () => context.push('/favorites'),
+                ),
+                _buildMenuTile(
+                  icon: AssetsConstants.moon,
+                  title: loc.translate('darkMode'),
+                  trailing: Switch(
+                    value: state.darkMode,
+                    activeTrackColor: AppColors.primary,
+                    activeColor: Colors.white,
+                    inactiveThumbColor: Colors.white,
+                    inactiveTrackColor: Colors.grey.shade200,
+                    trackOutlineColor: const WidgetStatePropertyAll(
+                      Colors.transparent,
+                    ),
+                    onChanged: (val) {
+                      ref.read(profileProvider.notifier).toggleDarkMode(val);
+                    },
+                  ),
+                  onTap: () {},
+                ),
+
+                const SizedBox(height: 28),
+                aiAgentBtn,
+                const SizedBox(height: 16),
+                logoutBtn,
+              ],
             ),
-          );
-        },
+          ),
+        ),
       ),
     );
   }

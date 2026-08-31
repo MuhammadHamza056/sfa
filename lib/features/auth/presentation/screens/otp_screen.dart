@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
@@ -17,10 +18,39 @@ class OtpScreen extends StatefulWidget {
 }
 
 class _OtpScreenState extends State<OtpScreen> {
+  static const int _resendCooldownSeconds = 60;
+
   final TextEditingController _pinController = TextEditingController();
+  Timer? _resendTimer;
+  int _secondsRemaining = _resendCooldownSeconds;
+
+  @override
+  void initState() {
+    super.initState();
+    _startResendTimer();
+  }
+
+  void _startResendTimer() {
+    _resendTimer?.cancel();
+    _secondsRemaining = _resendCooldownSeconds;
+    _resendTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
+      if (_secondsRemaining <= 1) {
+        timer.cancel();
+        setState(() => _secondsRemaining = 0);
+      } else {
+        setState(() => _secondsRemaining--);
+      }
+    });
+  }
+
+  void _onResendOtp() {
+    // Trigger OTP resend
+    setState(_startResendTimer);
+  }
 
   @override
   void dispose() {
+    _resendTimer?.cancel();
     _pinController.dispose();
     super.dispose();
   }
@@ -49,9 +79,7 @@ class _OtpScreenState extends State<OtpScreen> {
       style: ElevatedButton.styleFrom(
         backgroundColor: AppColors.primary,
         padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 20),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(30),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
         elevation: 0,
       ),
       child: Row(
@@ -67,7 +95,9 @@ class _OtpScreenState extends State<OtpScreen> {
           if (loc.isArabic)
             Transform(
               alignment: Alignment.center,
-              transform: Matrix4.rotationY(math.pi), // Mirror horizontally so it points left (←)
+              transform: Matrix4.rotationY(
+                math.pi,
+              ), // Mirror horizontally so it points left (←)
               child: SvgPicture.asset(
                 AssetsConstants.moveLeft,
                 width: 18,
@@ -97,9 +127,7 @@ class _OtpScreenState extends State<OtpScreen> {
       style: OutlinedButton.styleFrom(
         padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 20),
         side: BorderSide(color: context.palette.outlineStrong, width: 1.2),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(30),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
       ),
       child: Row(
         children: [
@@ -114,7 +142,9 @@ class _OtpScreenState extends State<OtpScreen> {
           if (loc.isArabic)
             Transform(
               alignment: Alignment.center,
-              transform: Matrix4.rotationY(math.pi), // Mirror horizontally so it points left (←)
+              transform: Matrix4.rotationY(
+                math.pi,
+              ), // Mirror horizontally so it points left (←)
               child: SvgPicture.asset(
                 AssetsConstants.moveLeft,
                 width: 18,
@@ -168,7 +198,9 @@ class _OtpScreenState extends State<OtpScreen> {
                 const SizedBox(height: 8),
                 Text(
                   loc.translate('otpSubtitle'),
-                  style: AppStyle.subtitleDesc.copyWith(color: context.palette.textPrimary.withValues(alpha: 0.7)),
+                  style: AppStyle.subtitleDesc.copyWith(
+                    color: context.palette.textPrimary.withValues(alpha: 0.7),
+                  ),
                   textAlign: loc.isArabic ? TextAlign.right : TextAlign.left,
                 ),
                 const SizedBox(height: 32),
@@ -183,7 +215,10 @@ class _OtpScreenState extends State<OtpScreen> {
                       defaultPinTheme: defaultPinTheme,
                       focusedPinTheme: defaultPinTheme.copyWith(
                         decoration: defaultPinTheme.decoration!.copyWith(
-                          border: Border.all(color: AppColors.primary, width: 1.5),
+                          border: Border.all(
+                            color: AppColors.primary,
+                            width: 1.5,
+                          ),
                         ),
                       ),
                       submittedPinTheme: defaultPinTheme,
@@ -195,24 +230,33 @@ class _OtpScreenState extends State<OtpScreen> {
                 verifyBtn,
                 const SizedBox(height: 20),
 
-                // Verify using Email Link
+                // Resend OTP link, greyed out until the cooldown finishes
                 Center(
                   child: TextButton(
-                    onPressed: () {
-                      // Action for verifying using email
-                    },
+                    onPressed: _secondsRemaining == 0 ? _onResendOtp : null,
                     child: Text(
-                      loc.translate('verifyEmail'),
-                      style: AppStyle.switchTextLink,
+                      _secondsRemaining == 0
+                          ? loc.translate('resendOtp')
+                          : loc
+                              .translate('resendOtpTimer')
+                              .replaceAll(
+                                '{seconds}',
+                                '$_secondsRemaining',
+                              ),
+                      style: AppStyle.switchTextLink.copyWith(
+                        color: _secondsRemaining == 0
+                            ? AppColors.primary
+                            : context.palette.textMuted,
+                      ),
                     ),
                   ),
                 ),
-                const SizedBox(height: 20),
-
-                Divider(thickness: 1, color: context.palette.divider),
-                const SizedBox(height: 24),
-
-                loginBtn,
+                // const SizedBox(height: 20),
+                //
+                // Divider(thickness: 1, color: context.palette.divider),
+                // const SizedBox(height: 24),
+                //
+                // loginBtn,
               ],
             ),
           ),

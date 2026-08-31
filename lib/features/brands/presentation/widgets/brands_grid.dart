@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:go_router/go_router.dart';
 import 'brand_card.dart';
-import 'package:sfa/features/dashboard/bloc/dashboard_bloc.dart';
-import 'package:sfa/features/dashboard/bloc/dashboard_event.dart';
 
 class BrandItem {
   final String imageUrl;
@@ -36,7 +34,7 @@ class BrandsGrid extends StatelessWidget {
           imageUrl: brand.imageUrl,
           brandName: brand.name,
           onTap: () {
-            context.read<DashboardBloc>().add(SelectBrandEvent(brand.name));
+            context.push('/brand-detail', extra: brand.name);
           },
         );
       },

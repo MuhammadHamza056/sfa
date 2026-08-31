@@ -1,58 +1,41 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 import 'package:sfa/core/localization/app_localizations.dart';
 import 'package:sfa/utils/app_style.dart';
 import 'package:sfa/utils/assets_constants.dart';
 import 'package:sfa/utils/color_constants.dart';
-import 'package:sfa/features/dashboard/bloc/dashboard_bloc.dart';
-import 'package:sfa/features/dashboard/bloc/dashboard_event.dart';
-import 'package:sfa/features/dashboard/bloc/dashboard_state.dart';
-import 'package:sfa/features/brands/bloc/product_detail_bloc.dart';
-import 'package:sfa/features/brands/bloc/product_detail_event.dart';
-import 'package:sfa/features/brands/bloc/product_detail_state.dart';
+import 'package:sfa/core/models/product.dart';
+import 'package:sfa/core/models/product_detail_args.dart';
+import 'package:sfa/core/widgets/primary_app_bar.dart';
+import 'package:sfa/core/widgets/product_card.dart';
 import 'package:sfa/features/brands/presentation/widgets/delivery_terms_bottom_sheet.dart';
+import 'package:sfa/features/brands/providers/product_detail_provider.dart';
+import 'package:sfa/features/cart/providers/cart_provider.dart';
 import 'package:sfa/features/favorites/models/favorite_product.dart';
-import 'package:sfa/features/favorites/bloc/favorites_bloc.dart';
-import 'package:sfa/features/favorites/bloc/favorites_event.dart';
-import 'package:sfa/features/favorites/bloc/favorites_state.dart';
+import 'package:sfa/features/favorites/providers/favorites_provider.dart';
 import 'package:sfa/core/theme/app_palette.dart';
 
-class RelatedProductItem {
-  final String imageUrl;
-  final String brandName;
-  final String title;
-  final String price;
-  final String rating;
+class ProductDetailScreen extends ConsumerStatefulWidget {
+  final ProductDetailArgs? args;
 
-  const RelatedProductItem({
-    required this.imageUrl,
-    required this.brandName,
-    required this.title,
-    required this.price,
-    required this.rating,
-  });
-}
-
-class ProductDetailScreen extends StatefulWidget {
-  const ProductDetailScreen({super.key});
+  const ProductDetailScreen({super.key, this.args});
 
   @override
-  State<ProductDetailScreen> createState() => _ProductDetailScreenState();
+  ConsumerState<ProductDetailScreen> createState() =>
+      _ProductDetailScreenState();
 }
 
-class _ProductDetailScreenState extends State<ProductDetailScreen> {
+class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
   final ScrollController _scrollController = ScrollController();
-  late final ProductDetailBloc _productDetailBloc;
   late final TapGestureRecognizer _deliveryTermsRecognizer;
 
   @override
   void initState() {
     super.initState();
-    _productDetailBloc = ProductDetailBloc();
     _deliveryTermsRecognizer = TapGestureRecognizer()
       ..onTap = () => DeliveryTermsBottomSheet.show(context);
   }
@@ -60,18 +43,17 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
   @override
   void dispose() {
     _scrollController.dispose();
-    _productDetailBloc.close();
     _deliveryTermsRecognizer.dispose();
     super.dispose();
   }
 
-  final List<Color> _colors = [
-    const Color(0xFF141D2B), // Dark blue
-    const Color(0xFFC9DBCA), // Light green
-    const Color(0xFF7A1415), // Dark red
+  static const List<Color> _colors = [
+    Color(0xFF141D2B), // Dark blue
+    Color(0xFFC9DBCA), // Light green
+    Color(0xFF7A1415), // Dark red
   ];
 
-  final List<String> _sizes = ['S', 'M', 'L', 'XL', 'XXL'];
+  static const List<String> _sizes = ['S', 'M', 'L', 'XL', 'XXL'];
 
   @override
   Widget build(BuildContext context) {
@@ -96,7 +78,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
     final buyNowText = isAr ? 'اشترِ الآن' : 'Buy Now';
 
     final relatedProducts = [
-      RelatedProductItem(
+      Product(
         imageUrl:
             'https://images.unsplash.com/photo-1509631179647-0177331693ae?w=500&q=80',
         brandName: loc.translate('brandJuba'),
@@ -104,7 +86,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
         price: loc.translate('brandProductPrice1250'),
         rating: loc.translate('brandProductRatingText'),
       ),
-      RelatedProductItem(
+      Product(
         imageUrl:
             'https://images.unsplash.com/photo-1529139574466-a303027c1d8b?w=500&q=80',
         brandName: loc.translate('brandAnbar'),
@@ -112,7 +94,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
         price: loc.translate('brandProductPrice1250'),
         rating: loc.translate('brandProductRatingText'),
       ),
-      RelatedProductItem(
+      Product(
         imageUrl:
             'https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?w=500&q=80',
         brandName: loc.translate('brandJuba'),
@@ -120,7 +102,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
         price: loc.translate('brandProductPrice780'),
         rating: loc.translate('brandProductRatingText'),
       ),
-      RelatedProductItem(
+      Product(
         imageUrl:
             'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=500&q=80',
         brandName: loc.translate('brandAnbar'),
@@ -130,939 +112,785 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
       ),
     ];
 
-    return BlocProvider.value(
-      value: _productDetailBloc,
-      child: BlocBuilder<ProductDetailBloc, ProductDetailState>(
-        builder: (context, detailState) {
-          return BlocBuilder<DashboardBloc, DashboardState>(
-            builder: (context, state) {
-        final productName =
-            state.selectedProductName ??
-            (isAr ? 'وردة الصحراء المطرزة' : 'Embroidered Desert Rose');
-        final productImage =
-            state.selectedProductImage ??
-            'https://images.unsplash.com/photo-1509631179647-0177331693ae?w=800&q=80';
-        final productPrice =
-            state.selectedProductPrice ?? (isAr ? '1,250 ر.س.' : '1,250 SAR');
-        final productRating =
-            state.selectedProductRating ??
-            (isAr ? '4.9 · 85 تقييماً' : '4.9 · 85 reviews');
-        final brandNameKey = state.selectedBrandName ?? 'brandJuba';
-        final resolvedBrandName = loc.translate(brandNameKey);
+    final productName =
+        widget.args?.name ??
+        (isAr ? 'وردة الصحراء المطرزة' : 'Embroidered Desert Rose');
+    final productImage =
+        widget.args?.imageUrl ??
+        'https://images.unsplash.com/photo-1509631179647-0177331693ae?w=800&q=80';
+    final productPrice =
+        widget.args?.price ?? (isAr ? '1,250 ر.س.' : '1,250 SAR');
+    final productRating =
+        widget.args?.rating ?? (isAr ? '4.9 · 85 تقييماً' : '4.9 · 85 reviews');
+    final brandNameKey = widget.args?.brandNameKey ?? 'brandJuba';
+    final resolvedBrandName = loc.translate(brandNameKey);
+    final currentProduct = Product(
+      imageUrl: productImage,
+      title: productName,
+      price: productPrice,
+      rating: productRating,
+      brandName: resolvedBrandName,
+    );
 
-        return Scaffold(
-          backgroundColor: context.palette.background,
-          appBar: AppBar(
-            backgroundColor: context.palette.background,
-            elevation: 0.5,
-            scrolledUnderElevation: 0.5,
-            automaticallyImplyLeading: false,
-            centerTitle: true,
-            leadingWidth: 110,
-            leading: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const SizedBox(width: 8),
-                IconButton(
-                  icon: SvgPicture.asset(
-                    AssetsConstants.shoppingBag2,
-                    colorFilter: ColorFilter.mode(
-                      context.palette.textPrimary,
-                      BlendMode.srcIn,
-                    ),
-                    width: 22,
-                    height: 22,
+    final detailKey = productDetailKey(productName, productImage);
+    final detailState = ref.watch(productDetailProvider(detailKey));
+
+    return Scaffold(
+      backgroundColor: context.palette.background,
+      appBar: PrimaryAppBar(
+        title: appbarTitle,
+        fontSize: 18,
+        letterSpacing: 0,
+        showBackButton: true,
+        heartIcon: ref
+                .watch(favoritesProvider)
+                .favorites
+                .contains(
+                  FavoriteProduct(
+                    title: productName,
+                    imageUrl: productImage,
+                    price: productPrice,
+                    rating: productRating,
                   ),
-                  onPressed: () {
-                    context.read<DashboardBloc>().add(
-                      const CacheCurrentTabEvent(),
-                    );
-                    context.read<DashboardBloc>().add(const ChangeTabEvent(5));
-                  },
+                )
+            ? AssetsConstants.heartFilled
+            : AssetsConstants.heart2,
+        onHeartTap: () => ref
+            .read(favoritesProvider.notifier)
+            .toggle(
+              FavoriteProduct(
+                title: productName,
+                imageUrl: productImage,
+                price: productPrice,
+                rating: productRating,
+              ),
+            ),
+      ),
+      body: SingleChildScrollView(
+        controller: _scrollController,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            // 1. Huge Product Image with dots overlay
+            Stack(
+              children: [
+                CachedNetworkImage(
+                  imageUrl: productImage,
+                  height: 520,
+                  width: double.infinity,
+                  fit: BoxFit.cover,
+                  placeholder: (_, __) =>
+                      Container(color: context.palette.surfaceMuted),
+                  errorWidget: (_, __, ___) =>
+                      Container(color: context.palette.surfaceMuted),
                 ),
-                BlocBuilder<FavoritesBloc, FavoritesState>(
-                  builder: (context, favState) {
-                    final favProduct = FavoriteProduct(
-                      title: productName,
-                      imageUrl: productImage,
-                      price: productPrice,
-                      rating: productRating,
-                    );
-                    final isFav = favState.favorites.contains(favProduct);
-                    return IconButton(
-                      icon: SvgPicture.asset(
-                        isFav ? AssetsConstants.heartFilled : AssetsConstants.heart2,
-                        colorFilter: ColorFilter.mode(
-                          isFav ? AppColors.primary : context.palette.textPrimary,
-                          BlendMode.srcIn,
+                Positioned(
+                  bottom: 16,
+                  left: 0,
+                  right: 0,
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: List.generate(3, (i) {
+                      return Container(
+                        width: i == 0 ? 20 : 6,
+                        height: 6,
+                        margin: const EdgeInsets.symmetric(horizontal: 3),
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(3),
+                          color: i == 0
+                              ? Colors.white
+                              : Colors.white.withOpacity(0.5),
                         ),
-                        width: 22,
-                        height: 22,
-                      ),
-                      onPressed: () {
-                        context.read<FavoritesBloc>().add(ToggleFavoriteEvent(favProduct));
-                      },
-                    );
-                  },
+                      );
+                    }),
+                  ),
                 ),
               ],
             ),
-            title: Text(
-              appbarTitle,
-              style: AppStyle.headerHeading.copyWith(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-                color: context.palette.textPrimary,
+
+            const SizedBox(height: 16),
+
+            // 2. Title & Price Row
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  // Right: Product Title (Arabic right, English left)
+                  Expanded(
+                    child: Text(
+                      productName,
+                      textAlign: isAr ? TextAlign.right : TextAlign.left,
+                      style: AppStyle.headerHeading.copyWith(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                        color: context.palette.textPrimary,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 16),
+                  // Left: Price
+                  Text(
+                    productPrice,
+                    style: AppStyle.bodyText.copyWith(
+                      fontSize: 17,
+                      fontWeight: FontWeight.bold,
+                      color: const Color(0xFFC19E68), // Gold/Beige color
+                    ),
+                  ),
+                ],
               ),
             ),
-            actions: [
-              IconButton(
-                icon: SvgPicture.asset(
-                  AssetsConstants.search3,
-                  colorFilter: ColorFilter.mode(
-                    context.palette.textPrimary,
-                    BlendMode.srcIn,
-                  ),
-                  width: 22,
-                  height: 22,
+
+            const SizedBox(height: 12),
+
+            // 3. Hurry alert pill
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: Container(
+                decoration: BoxDecoration(
+                  color: context.palette.background,
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(color: const Color(0xFFE57373), width: 1),
                 ),
-                onPressed: () {},
-              ),
-              IconButton(
-                icon: SvgPicture.asset(
-                  AssetsConstants.back2,
-                  colorFilter: ColorFilter.mode(
-                    context.palette.textPrimary,
-                    BlendMode.srcIn,
-                  ),
-                  width: 20,
-                  height: 20,
+                padding: const EdgeInsets.symmetric(
+                  vertical: 8,
+                  horizontal: 16,
                 ),
-                onPressed: () {
-                  context.read<DashboardBloc>().add(
-                    const RestorePreviousTabEvent(),
-                  );
-                },
-              ),
-              const SizedBox(width: 8),
-            ],
-          ),
-          body: SingleChildScrollView(
-            controller: _scrollController,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                // 1. Huge Product Image with dots overlay
-                Stack(
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  mainAxisSize: MainAxisSize.min,
                   children: [
-                    CachedNetworkImage(
-                      imageUrl: productImage,
-                      height: 520,
-                      width: double.infinity,
-                      fit: BoxFit.cover,
-                      placeholder: (_, __) =>
-                          Container(color: context.palette.surfaceMuted),
-                      errorWidget: (_, __, ___) =>
-                          Container(color: context.palette.surfaceMuted),
+                    const Icon(
+                      Icons.access_time_filled,
+                      size: 15,
+                      color: Color(0xFFE57373),
                     ),
-                    Positioned(
-                      bottom: 16,
-                      left: 0,
-                      right: 0,
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: List.generate(3, (i) {
-                          return Container(
-                            width: i == 0 ? 20 : 6,
-                            height: 6,
-                            margin: const EdgeInsets.symmetric(horizontal: 3),
-                            decoration: BoxDecoration(
-                              borderRadius: BorderRadius.circular(3),
-                              color: i == 0
-                                  ? Colors.white
-                                  : Colors.white.withOpacity(0.5),
-                            ),
-                          );
-                        }),
+                    const SizedBox(width: 6),
+                    Text(
+                      hurryText,
+                      style: AppStyle.bodyText.copyWith(
+                        fontSize: 12.5,
+                        color: const Color(0xFFE57373),
+                        fontWeight: FontWeight.bold,
                       ),
                     ),
                   ],
                 ),
+              ),
+            ),
 
-                const SizedBox(height: 16),
+            const SizedBox(height: 16),
 
-                // 2. Title & Price Row
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      // Right: Product Title (Arabic right, English left)
-                      Expanded(
-                        child: Text(
-                          productName,
-                          textAlign: isAr ? TextAlign.right : TextAlign.left,
-                          style: AppStyle.headerHeading.copyWith(
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                            color: context.palette.textPrimary,
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 16),
-                      // Left: Price
-                      Text(
-                        productPrice,
-                        style: AppStyle.bodyText.copyWith(
-                          fontSize: 17,
-                          fontWeight: FontWeight.bold,
-                          color: const Color(0xFFC19E68), // Gold/Beige color
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-
-                const SizedBox(height: 12),
-
-                // 3. Hurry alert pill
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
-                  child: Container(
-                    decoration: BoxDecoration(
-                      color: context.palette.background,
-                      borderRadius: BorderRadius.circular(20),
-                      border: Border.all(
-                        color: const Color(0xFFE57373),
-                        width: 1,
-                      ),
-                    ),
-                    padding: const EdgeInsets.symmetric(
-                      vertical: 8,
-                      horizontal: 16,
-                    ),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        const Icon(
-                          Icons.access_time_filled,
-                          size: 15,
-                          color: Color(0xFFE57373),
-                        ),
-                        const SizedBox(width: 6),
-                        Text(
-                          hurryText,
-                          style: AppStyle.bodyText.copyWith(
-                            fontSize: 12.5,
-                            color: const Color(0xFFE57373),
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-
-                const SizedBox(height: 16),
-
-                // 4. Brand Name & Rating Row
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      // Brand (Icon & Name)
-                      Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Container(
-                            decoration: BoxDecoration(
-                              color: context.palette.surfaceAlt,
-                              borderRadius: BorderRadius.circular(6),
-                              border: Border.all(
-                                color: const Color(0xFFD49E4B),
-                                width: 1,
-                              ),
-                            ),
-                            padding: const EdgeInsets.all(8),
-                            child: SvgPicture.asset(
-                              AssetsConstants.store3,
-                              width: 16,
-                              height: 16,
-                              colorFilter: const ColorFilter.mode(
-                                Color(0xFFD49E4B),
-                                BlendMode.srcIn,
-                              ),
-                            ),
-                          ),
-                          const SizedBox(width: 8),
-                          Text(
-                            resolvedBrandName,
-                            style: AppStyle.bodyText.copyWith(
-                              fontWeight: FontWeight.bold,
-                              fontSize: 13,
-                              color: context.palette.textPrimary,
-                            ),
-                          ),
-                        ],
-                      ),
-
-                      // Rating (Star & text)
-                      GestureDetector(
-                        onTap: () => context.push('/product-reviews'),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            const Icon(Icons.star, size: 14, color: Colors.amber),
-                            const SizedBox(width: 4),
-                            Text(
-                              productRating,
-                              style: AppStyle.bodyText.copyWith(
-                                fontSize: 11.5,
-                                color: context.palette.textMuted,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-
-                const SizedBox(height: 16),
-                Divider(
-                  indent: 16,
-                  endIndent: 16,
-                  height: 1,
-                  thickness: 0.5,
-                  color: context.palette.divider,
-                ),
-
-                // 5. Color Selection
-                Padding(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 8,
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        colorLabel,
-                        style: AppStyle.bodyText.copyWith(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 14,
-                          color: context.palette.textPrimary,
-                        ),
-                      ),
-                      const SizedBox(height: 10),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.start,
-                        children: List.generate(_colors.length, (i) {
-                          final isSelected = detailState.selectedColorIndex == i;
-                          return GestureDetector(
-                            onTap: () =>
-                                _productDetailBloc.add(SelectColorEvent(i)),
-                            child: Container(
-                              margin: const EdgeInsets.symmetric(horizontal: 6),
-                              width: 32,
-                              height: 32,
-                              decoration: BoxDecoration(
-                                shape: BoxShape.circle,
-                                color: _colors[i],
-                                border: isSelected
-                                    ? Border.all(
-                                        color: const Color(0xFFC19E68),
-                                        width: 2,
-                                      )
-                                    : Border.all(
-                                        color: Colors.transparent,
-                                        width: 0,
-                                      ),
-                              ),
-                            ),
-                          );
-                        }),
-                      ),
-                    ],
-                  ),
-                ),
-
-                const SizedBox(height: 8),
-                Divider(
-                  indent: 16,
-                  endIndent: 16,
-                  height: 1,
-                  thickness: 0.5,
-                  color: context.palette.divider,
-                ),
-
-                // Shipping details widget
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                  child: Row(
+            // 4. Brand Name & Rating Row
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  // Brand (Icon & Name)
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
                     children: [
                       Container(
-                        width: 40,
-                        height: 40,
                         decoration: BoxDecoration(
-                          shape: BoxShape.circle,
+                          color: context.palette.surfaceAlt,
+                          borderRadius: BorderRadius.circular(6),
                           border: Border.all(
                             color: const Color(0xFFD49E4B),
                             width: 1,
                           ),
                         ),
-                        child: Center(
-                          child: SvgPicture.asset(
-                            AssetsConstants.truck,
-                            width: 20,
-                            height: 20,
-                            colorFilter: const ColorFilter.mode(
-                              Color(0xFFD49E4B),
-                              BlendMode.srcIn,
-                            ),
+                        padding: const EdgeInsets.all(8),
+                        child: SvgPicture.asset(
+                          AssetsConstants.store3,
+                          width: 16,
+                          height: 16,
+                          colorFilter: const ColorFilter.mode(
+                            Color(0xFFD49E4B),
+                            BlendMode.srcIn,
                           ),
                         ),
                       ),
-                      const SizedBox(width: 16),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              loc.translate('shippingFromSaudi'),
-                              textAlign: TextAlign.start,
-                              style: AppStyle.bodyText.copyWith(
-                                fontSize: 15,
-                                fontWeight: FontWeight.w600,
-                                color: context.palette.textPrimary,
-                              ),
-                            ),
-                            const SizedBox(height: 4),
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.start,
-                              children: [
-                                Text(
-                                  '${loc.translate('shippingDaysTo')} ',
-                                  textAlign: TextAlign.start,
-                                  style: AppStyle.bodyText.copyWith(
-                                    fontSize: 13,
-                                    fontWeight: FontWeight.w300,
-                                    color: context.palette.textPrimary.withOpacity(0.60),
-                                  ),
-                                ),
-                                Text(
-                                  ' ${loc.translate('chooseCityLabel')}',
-                                  textAlign: TextAlign.start,
-                                  style: AppStyle.bodyText.copyWith(
-                                    fontSize: 13,
-                                    fontWeight: FontWeight.w300,
-                                    color: context.palette.textPrimary.withOpacity(0.60),
-                                  ),
-                                ),
-                                const SizedBox(width: 4),
-                                Theme(
-                                  data: Theme.of(context).copyWith(
-                                    cardColor: context.palette.surface,
-                                  ),
-                                  child: PopupMenuButton<String>(
-                                    offset: const Offset(0, 24),
-                                    color: context.palette.surface,
-                                    elevation: 2,
-                                    onSelected: (String newValue) {
-                                      _productDetailBloc.add(SelectCityEvent(newValue));
-                                    },
-                                    itemBuilder: (BuildContext context) {
-                                      return <String>[
-                                        'cityRiyadh',
-                                        'cityJeddah',
-                                        'cityDammam',
-                                        'cityMecca',
-                                        'cityMedina',
-                                      ].map((String value) {
-                                        return PopupMenuItem<String>(
-                                          value: value,
-                                          height: 38,
-                                          child: Text(
-                                            loc.translate(value),
-                                            style: AppStyle.bodyText.copyWith(
-                                              fontSize: 13,
-                                              color: context.palette.textPrimary,
-                                            ),
-                                          ),
-                                        );
-                                      }).toList();
-                                    },
-                                    child: Text(
-                                      loc.translate(detailState.selectedCity),
-                                      style: AppStyle.bodyText.copyWith(
-                                        fontSize: 13,
-                                        fontWeight: FontWeight.bold,
-                                        color: const Color(0xFFD49E4B),
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-
-                const SizedBox(height: 8),
-                Divider(
-                  indent: 16,
-                  endIndent: 16,
-                  height: 1,
-                  thickness: 0.5,
-                  color: context.palette.divider,
-                ),
-
-                // 6. Size Selection
-                Padding(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 8,
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
+                      const SizedBox(width: 8),
                       Text(
-                        sizeLabel,
+                        resolvedBrandName,
                         style: AppStyle.bodyText.copyWith(
                           fontWeight: FontWeight.bold,
-                          fontSize: 14,
-                          color: context.palette.textPrimary,
-                        ),
-                      ),
-                      const SizedBox(height: 10),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.start,
-                        children: List.generate(_sizes.length, (i) {
-                          final isSelected = detailState.selectedSizeIndex == i;
-                          return GestureDetector(
-                            onTap: () => _productDetailBloc.add(SelectSizeEvent(i)),
-                            child: Container(
-                              margin: const EdgeInsets.symmetric(horizontal: 4),
-                              width: 44,
-                              height: 32,
-                              decoration: BoxDecoration(
-                                color: isSelected
-                                    ? AppColors.primary
-                                    : context.palette.surfaceMuted,
-                                borderRadius: BorderRadius.circular(10),
-                              ),
-                              child: Center(
-                                child: Text(
-                                  _sizes[i],
-                                  style: AppStyle.bodyText.copyWith(
-                                    fontSize: 12,
-                                    fontWeight: isSelected
-                                        ? FontWeight.bold
-                                        : FontWeight.normal,
-                                    color: isSelected
-                                        ? Colors.white
-                                        : context.palette.textPrimary,
-                                  ),
-                                ),
-                              ),
-                            ),
-                          );
-                        }),
-                      ),
-                    ],
-                  ),
-                ),
-
-                const SizedBox(height: 8),
-                Divider(
-                  indent: 16,
-                  endIndent: 16,
-                  height: 1,
-                  thickness: 0.5,
-                  color: context.palette.divider,
-                ),
-
-                // 7. Product Description
-                Padding(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 8,
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        descTitle,
-                        style: AppStyle.bodyText.copyWith(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 14,
-                          color: context.palette.textPrimary,
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        descText,
-                        textAlign: TextAlign.start,
-                        style: AppStyle.bodyText.copyWith(
                           fontSize: 13,
-                          color: context.palette.textPrimary.withOpacity(0.70),
-                          height: 1.5,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-
-                const SizedBox(height: 8),
-                Divider(
-                  indent: 16,
-                  endIndent: 16,
-                  height: 1,
-                  thickness: 0.5,
-                  color: context.palette.divider,
-                ),
-
-                // 8. Care Instructions
-                Padding(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 8,
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        careTitle,
-                        style: AppStyle.bodyText.copyWith(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 14,
                           color: context.palette.textPrimary,
                         ),
                       ),
-                      const SizedBox(height: 8),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.start,
-                        children: [
-                          SvgPicture.asset(
-                            AssetsConstants.info,
-                            width: 14,
-                            height: 14,
-                            colorFilter: ColorFilter.mode(
-                              context.palette.textPrimary.withOpacity(0.70),
-                              BlendMode.srcIn,
-                            ),
-                          ),
-                          const SizedBox(width: 6),
-                          Text(
-                            careText,
-                            style: AppStyle.bodyText.copyWith(
-                              fontSize: 12,
-                              color: context.palette.textPrimary.withOpacity(0.70),
-                            ),
-                          ),
-                        ],
-                      ),
                     ],
                   ),
-                ),
 
-                const SizedBox(height: 8),
-                Divider(
-                  indent: 16,
-                  endIndent: 16,
-                  height: 1,
-                  thickness: 0.5,
-                  color: context.palette.divider,
-                ),
-
-                // Free Delivery & Return widget
-                Padding(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 8,
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        loc.translate('freeDeliveryTitle'),
-                        style: AppStyle.bodyText.copyWith(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 14,
-                          color: context.palette.textPrimary,
-                        ),
+                  // Rating (Star & text)
+                  GestureDetector(
+                    onTap: () => context.push(
+                      '/product-reviews',
+                      extra: ProductDetailArgs(
+                        name: productName,
+                        imageUrl: productImage,
+                        price: productPrice,
+                        rating: productRating,
+                        brandNameKey: brandNameKey,
                       ),
-                      const SizedBox(height: 8),
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.start,
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                SvgPicture.asset(
-                                  AssetsConstants.info,
-                                  width: 14,
-                                  height: 14,
-                                  colorFilter: ColorFilter.mode(
-                                    context.palette.textPrimary.withOpacity(0.70),
-                                    BlendMode.srcIn,
-                                  ),
-                                ),
-                                const SizedBox(width: 6),
-                                Expanded(
-                                  child: Text.rich(
-                                    TextSpan(
-                                      children: [
-                                        TextSpan(
-                                          text: loc.translate('viewDeliveryTermsPrefix'),
-                                          style: AppStyle.bodyText.copyWith(
-                                            fontSize: 12,
-                                            color: context.palette.textPrimary.withOpacity(0.70),
-                                          ),
-                                        ),
-                                        TextSpan(
-                                          text: loc.translate('viewDeliveryTermsHighlight'),
-                                          style: AppStyle.bodyText.copyWith(
-                                            fontSize: 12,
-                                            fontWeight: FontWeight.bold,
-                                            color: AppColors.primary,
-                                            decoration: TextDecoration.underline,
-                                            decorationColor: AppColors.primary,
-                                          ),
-                                          recognizer: _deliveryTermsRecognizer,
-                                        ),
-                                        TextSpan(
-                                          text: loc.translate('viewDeliveryTermsSuffix'),
-                                          style: AppStyle.bodyText.copyWith(
-                                            fontSize: 12,
-                                            color: context.palette.textPrimary.withOpacity(0.70),
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                    textAlign: TextAlign.start,
-                                  ),
-                                ),
-                              ],
-                            ),
-                    ],
-                  ),
-                ),
-
-                const SizedBox(height: 16),
-
-                // 9. Buy Now Button
-                Padding(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 12,
-                  ),
-                  child: ElevatedButton(
-                    onPressed: () {},
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.primary,
-                      padding: const EdgeInsets.symmetric(vertical: 14),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(30),
-                      ),
-                      elevation: 0,
                     ),
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 16),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Text(
-                            buyNowText,
-                            style: AppStyle.bodyText.copyWith(
-                              fontWeight: FontWeight.bold,
-                              fontSize: 15.5,
-                              color: Colors.white,
-                            ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(Icons.star, size: 14, color: Colors.amber),
+                        const SizedBox(width: 4),
+                        Text(
+                          productRating,
+                          style: AppStyle.bodyText.copyWith(
+                            fontSize: 11.5,
+                            color: context.palette.textMuted,
                           ),
-                          SvgPicture.asset(
-                            AssetsConstants.shoppingBag2,
-                            width: 18,
-                            height: 18,
-                            colorFilter: const ColorFilter.mode(
-                              Colors.white,
-                              BlendMode.srcIn,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                ),
-
-                const SizedBox(height: 16),
-
-                // Related Products Title
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
-                  child: Align(
-                    alignment: AlignmentDirectional.centerStart,
-                    child: Text(
-                      loc.translate('relatedProducts'),
-                      style: AppStyle.bodyText.copyWith(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 16,
-                        color: context.palette.textPrimary,
-                      ),
-                    ),
-                  ),
-                ),
-
-                const SizedBox(height: 16),
-
-                // Related Products Grid (2 columns)
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 12),
-                  child: GridView.builder(
-                    shrinkWrap: true,
-                    physics: const NeverScrollableScrollPhysics(),
-                    itemCount: relatedProducts.length,
-                    gridDelegate:
-                        const SliverGridDelegateWithFixedCrossAxisCount(
-                          crossAxisCount: 2,
-                          crossAxisSpacing: 12,
-                          mainAxisSpacing: 16,
-                          childAspectRatio: 0.65,
                         ),
-                    itemBuilder: (context, index) {
-                      final item = relatedProducts[index];
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+
+            const SizedBox(height: 16),
+            Divider(
+              indent: 16,
+              endIndent: 16,
+              height: 1,
+              thickness: 0.5,
+              color: context.palette.divider,
+            ),
+
+            // 5. Color Selection
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    colorLabel,
+                    style: AppStyle.bodyText.copyWith(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 14,
+                      color: context.palette.textPrimary,
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.start,
+                    children: List.generate(_colors.length, (i) {
+                      final isSelected = detailState.selectedColorIndex == i;
                       return GestureDetector(
-                        onTap: () {
-                          context.read<DashboardBloc>().add(
-                            SelectProductEvent(
-                              name: item.title,
-                              imageUrl: item.imageUrl,
-                              price: item.price,
-                              rating: item.rating,
-                            ),
-                          );
-                          _scrollController.animateTo(
-                            0,
-                            duration: const Duration(milliseconds: 300),
-                            curve: Curves.easeOut,
-                          );
-                        },
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Expanded(
-                              child: Stack(
-                                children: [
-                                  ClipRRect(
-                                    borderRadius: BorderRadius.circular(4),
-                                    child: CachedNetworkImage(
-                                      imageUrl: item.imageUrl,
-                                      width: double.infinity,
-                                      height: double.infinity,
-                                      fit: BoxFit.cover,
-                                      placeholder: (_, __) =>
-                                          Container(color: context.palette.surfaceMuted),
-                                      errorWidget: (_, __, ___) =>
-                                          Container(color: context.palette.surfaceMuted),
-                                    ),
+                        onTap: () => ref
+                            .read(productDetailProvider(detailKey).notifier)
+                            .selectColor(i),
+                        child: Container(
+                          margin: const EdgeInsets.symmetric(horizontal: 6),
+                          width: 32,
+                          height: 32,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: _colors[i],
+                            border: isSelected
+                                ? Border.all(
+                                    color: const Color(0xFFC19E68),
+                                    width: 2,
+                                  )
+                                : Border.all(
+                                    color: Colors.transparent,
+                                    width: 0,
                                   ),
-                                  Positioned(
-                                    top: 8,
-                                    right: isAr ? null : 8,
-                                    left: isAr ? 8 : null,
-                                    child: Container(
-                                      decoration: BoxDecoration(
-                                        color: Colors.white.withOpacity(0.85),
-                                        shape: BoxShape.circle,
-                                      ),
-                                      child: IconButton(
-                                        constraints: const BoxConstraints(),
-                                        padding: const EdgeInsets.all(6),
-                                        icon: SvgPicture.asset(
-                                          AssetsConstants.heart2,
-                                          width: 16,
-                                          height: 16,
-                                          colorFilter: ColorFilter.mode(
-                                            context.palette.textPrimary,
-                                            BlendMode.srcIn,
-                                          ),
-                                        ),
-                                        onPressed: () {},
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                            const SizedBox(height: 8),
-                            // Brand name (e.g. جوبا or عنبر)
-                            Text(
-                              item.brandName,
-                              style: AppStyle.bodyText.copyWith(
-                                fontSize: 12,
-                                color: context.palette.textPrimary.withOpacity(0.60),
-                              ),
-                            ),
-                            const SizedBox(height: 2),
-                            // Title
-                            Text(
-                              item.title,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: AppStyle.bodyText.copyWith(
-                                fontSize: 13.5,
-                                fontWeight: FontWeight.w600,
-                                color: context.palette.textPrimary,
-                              ),
-                            ),
-                            const SizedBox(height: 2),
-                            // Price
-                            Text(
-                              item.price,
-                              style: AppStyle.bodyText.copyWith(
-                                fontSize: 13,
-                                fontWeight: FontWeight.bold,
-                                color: context.palette.textPrimary.withOpacity(0.80),
-                              ),
-                            ),
-                            const SizedBox(height: 2),
-                            // Rating (Star & Text)
-                            Row(
-                              children: [
-                                const Icon(
-                                  Icons.star,
-                                  size: 13,
-                                  color: Colors.amber,
-                                ),
-                                const SizedBox(width: 3),
-                                Text(
-                                  item.rating,
-                                  style: AppStyle.bodyText.copyWith(
-                                    fontSize: 11,
-                                    color: context.palette.textMuted,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ],
+                          ),
                         ),
                       );
-                    },
+                    }),
+                  ),
+                ],
+              ),
+            ),
+
+            const SizedBox(height: 8),
+            Divider(
+              indent: 16,
+              endIndent: 16,
+              height: 1,
+              thickness: 0.5,
+              color: context.palette.divider,
+            ),
+
+            // Shipping details widget
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              child: Row(
+                children: [
+                  Container(
+                    width: 40,
+                    height: 40,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      border: Border.all(
+                        color: const Color(0xFFD49E4B),
+                        width: 1,
+                      ),
+                    ),
+                    child: Center(
+                      child: SvgPicture.asset(
+                        AssetsConstants.truck,
+                        width: 20,
+                        height: 20,
+                        colorFilter: const ColorFilter.mode(
+                          Color(0xFFD49E4B),
+                          BlendMode.srcIn,
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          loc.translate('shippingFromSaudi'),
+                          textAlign: TextAlign.start,
+                          style: AppStyle.bodyText.copyWith(
+                            fontSize: 15,
+                            fontWeight: FontWeight.w600,
+                            color: context.palette.textPrimary,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.start,
+                          children: [
+                            Text(
+                              '${loc.translate('shippingDaysTo')} ',
+                              textAlign: TextAlign.start,
+                              style: AppStyle.bodyText.copyWith(
+                                fontSize: 13,
+                                fontWeight: FontWeight.w300,
+                                color: context.palette.textPrimary.withOpacity(
+                                  0.60,
+                                ),
+                              ),
+                            ),
+                            Text(
+                              ' ${loc.translate('chooseCityLabel')}',
+                              textAlign: TextAlign.start,
+                              style: AppStyle.bodyText.copyWith(
+                                fontSize: 13,
+                                fontWeight: FontWeight.w300,
+                                color: context.palette.textPrimary.withOpacity(
+                                  0.60,
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 4),
+                            Theme(
+                              data: Theme.of(
+                                context,
+                              ).copyWith(cardColor: context.palette.surface),
+                              child: PopupMenuButton<String>(
+                                offset: const Offset(0, 24),
+                                color: context.palette.surface,
+                                elevation: 2,
+                                onSelected: (String newValue) {
+                                  ref
+                                      .read(
+                                        productDetailProvider(
+                                          detailKey,
+                                        ).notifier,
+                                      )
+                                      .selectCity(newValue);
+                                },
+                                itemBuilder: (BuildContext context) {
+                                  return <String>[
+                                    'cityRiyadh',
+                                    'cityJeddah',
+                                    'cityDammam',
+                                    'cityMecca',
+                                    'cityMedina',
+                                  ].map((String value) {
+                                    return PopupMenuItem<String>(
+                                      value: value,
+                                      height: 38,
+                                      child: Text(
+                                        loc.translate(value),
+                                        style: AppStyle.bodyText.copyWith(
+                                          fontSize: 13,
+                                          color: context.palette.textPrimary,
+                                        ),
+                                      ),
+                                    );
+                                  }).toList();
+                                },
+                                child: Text(
+                                  loc.translate(detailState.selectedCity),
+                                  style: AppStyle.bodyText.copyWith(
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.bold,
+                                    color: const Color(0xFFD49E4B),
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+
+            const SizedBox(height: 8),
+            Divider(
+              indent: 16,
+              endIndent: 16,
+              height: 1,
+              thickness: 0.5,
+              color: context.palette.divider,
+            ),
+
+            // 6. Size Selection
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    sizeLabel,
+                    style: AppStyle.bodyText.copyWith(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 14,
+                      color: context.palette.textPrimary,
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.start,
+                    children: List.generate(_sizes.length, (i) {
+                      final isSelected = detailState.selectedSizeIndex == i;
+                      return GestureDetector(
+                        onTap: () => ref
+                            .read(productDetailProvider(detailKey).notifier)
+                            .selectSize(i),
+                        child: Container(
+                          margin: const EdgeInsets.symmetric(horizontal: 4),
+                          width: 44,
+                          height: 32,
+                          decoration: BoxDecoration(
+                            color: isSelected
+                                ? AppColors.primary
+                                : context.palette.surfaceMuted,
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          child: Center(
+                            child: Text(
+                              _sizes[i],
+                              style: AppStyle.bodyText.copyWith(
+                                fontSize: 12,
+                                fontWeight: isSelected
+                                    ? FontWeight.bold
+                                    : FontWeight.normal,
+                                color: isSelected
+                                    ? Colors.white
+                                    : context.palette.textPrimary,
+                              ),
+                            ),
+                          ),
+                        ),
+                      );
+                    }),
+                  ),
+                ],
+              ),
+            ),
+
+            const SizedBox(height: 8),
+            Divider(
+              indent: 16,
+              endIndent: 16,
+              height: 1,
+              thickness: 0.5,
+              color: context.palette.divider,
+            ),
+
+            // 7. Product Description
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    descTitle,
+                    style: AppStyle.bodyText.copyWith(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 14,
+                      color: context.palette.textPrimary,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    descText,
+                    textAlign: TextAlign.start,
+                    style: AppStyle.bodyText.copyWith(
+                      fontSize: 13,
+                      color: context.palette.textPrimary.withOpacity(0.70),
+                      height: 1.5,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+
+            const SizedBox(height: 8),
+            Divider(
+              indent: 16,
+              endIndent: 16,
+              height: 1,
+              thickness: 0.5,
+              color: context.palette.divider,
+            ),
+
+            // 8. Care Instructions
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    careTitle,
+                    style: AppStyle.bodyText.copyWith(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 14,
+                      color: context.palette.textPrimary,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.start,
+                    children: [
+                      SvgPicture.asset(
+                        AssetsConstants.info,
+                        width: 14,
+                        height: 14,
+                        colorFilter: ColorFilter.mode(
+                          context.palette.textPrimary.withOpacity(0.70),
+                          BlendMode.srcIn,
+                        ),
+                      ),
+                      const SizedBox(width: 6),
+                      Text(
+                        careText,
+                        style: AppStyle.bodyText.copyWith(
+                          fontSize: 12,
+                          color: context.palette.textPrimary.withOpacity(0.70),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+
+            const SizedBox(height: 8),
+            Divider(
+              indent: 16,
+              endIndent: 16,
+              height: 1,
+              thickness: 0.5,
+              color: context.palette.divider,
+            ),
+
+            // Free Delivery & Return widget
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    loc.translate('freeDeliveryTitle'),
+                    style: AppStyle.bodyText.copyWith(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 14,
+                      color: context.palette.textPrimary,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.start,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      SvgPicture.asset(
+                        AssetsConstants.info,
+                        width: 14,
+                        height: 14,
+                        colorFilter: ColorFilter.mode(
+                          context.palette.textPrimary.withOpacity(0.70),
+                          BlendMode.srcIn,
+                        ),
+                      ),
+                      const SizedBox(width: 6),
+                      Expanded(
+                        child: Text.rich(
+                          TextSpan(
+                            children: [
+                              TextSpan(
+                                text: loc.translate('viewDeliveryTermsPrefix'),
+                                style: AppStyle.bodyText.copyWith(
+                                  fontSize: 12,
+                                  color: context.palette.textPrimary
+                                      .withOpacity(0.70),
+                                ),
+                              ),
+                              TextSpan(
+                                text: loc.translate(
+                                  'viewDeliveryTermsHighlight',
+                                ),
+                                style: AppStyle.bodyText.copyWith(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.bold,
+                                  color: AppColors.primary,
+                                  decoration: TextDecoration.underline,
+                                  decorationColor: AppColors.primary,
+                                ),
+                                recognizer: _deliveryTermsRecognizer,
+                              ),
+                              TextSpan(
+                                text: loc.translate('viewDeliveryTermsSuffix'),
+                                style: AppStyle.bodyText.copyWith(
+                                  fontSize: 12,
+                                  color: context.palette.textPrimary
+                                      .withOpacity(0.70),
+                                ),
+                              ),
+                            ],
+                          ),
+                          textAlign: TextAlign.start,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+
+            const SizedBox(height: 16),
+
+            // 9. Buy Now Button
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              child: ElevatedButton(
+                onPressed: () {
+                  ref
+                      .read(cartProvider.notifier)
+                      .addItem(
+                        product: currentProduct,
+                        color: _colors[detailState.selectedColorIndex],
+                        size: _sizes[detailState.selectedSizeIndex],
+                      );
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text(loc.translate('itemAddedToCart'))),
+                  );
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.primary,
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(30),
+                  ),
+                  elevation: 0,
+                ),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        buyNowText,
+                        style: AppStyle.bodyText.copyWith(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 15.5,
+                          color: Colors.white,
+                        ),
+                      ),
+                      SvgPicture.asset(
+                        AssetsConstants.shoppingBag2,
+                        width: 18,
+                        height: 18,
+                        colorFilter: const ColorFilter.mode(
+                          Colors.white,
+                          BlendMode.srcIn,
+                        ),
+                      ),
+                    ],
                   ),
                 ),
-
-                const SizedBox(height: 32),
-              ],
+              ),
             ),
-          ),
-          );
-        },
-      );
-    },
-  ),
-);
+
+            const SizedBox(height: 16),
+
+            // Related Products Title
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: Align(
+                alignment: AlignmentDirectional.centerStart,
+                child: Text(
+                  loc.translate('relatedProducts'),
+                  style: AppStyle.bodyText.copyWith(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 16,
+                    color: context.palette.textPrimary,
+                  ),
+                ),
+              ),
+            ),
+
+            const SizedBox(height: 16),
+
+            // Related Products Grid (2 columns)
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 12),
+              child: GridView.builder(
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                itemCount: relatedProducts.length,
+                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: 2,
+                  crossAxisSpacing: 12,
+                  mainAxisSpacing: 16,
+                  childAspectRatio: 0.65,
+                ),
+                itemBuilder: (context, index) {
+                  final item = relatedProducts[index];
+                  return ProductCard(
+                    product: item,
+                    isAr: isAr,
+                    onTap: () {
+                      context.push(
+                        '/product-detail',
+                        extra: item.toDetailArgs(),
+                      );
+                      _scrollController.animateTo(
+                        0,
+                        duration: const Duration(milliseconds: 300),
+                        curve: Curves.easeOut,
+                      );
+                    },
+                  );
+                },
+              ),
+            ),
+
+            const SizedBox(height: 32),
+          ],
+        ),
+      ),
+    );
   }
 }

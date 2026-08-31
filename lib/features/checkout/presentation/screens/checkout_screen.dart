@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:flutter_svg/flutter_svg.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:sfa/core/localization/app_localizations.dart';
@@ -12,19 +12,18 @@ import 'package:sfa/utils/app_style.dart';
 import 'package:sfa/utils/assets_constants.dart';
 import 'package:sfa/utils/color_constants.dart';
 import 'package:sfa/utils/phone_number_formatter.dart';
-import 'package:sfa/features/checkout/bloc/checkout_bloc.dart';
-import 'package:sfa/features/checkout/bloc/checkout_event.dart';
-import 'package:sfa/features/checkout/bloc/checkout_state.dart';
+import 'package:sfa/features/checkout/providers/checkout_provider.dart';
 import 'package:sfa/core/theme/app_palette.dart';
+import 'package:sfa/core/widgets/primary_app_bar.dart';
 
-class CheckoutScreen extends StatefulWidget {
+class CheckoutScreen extends ConsumerStatefulWidget {
   const CheckoutScreen({super.key});
 
   @override
-  State<CheckoutScreen> createState() => _CheckoutScreenState();
+  ConsumerState<CheckoutScreen> createState() => _CheckoutScreenState();
 }
 
-class _CheckoutScreenState extends State<CheckoutScreen> {
+class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
   final _formKey = GlobalKey<FormState>();
   final _nameController = TextEditingController();
   final _phoneController = TextEditingController();
@@ -53,439 +52,338 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
 
     final paymentOptions = ['PayTaps', 'TapPayments', 'Moyasar'];
 
-    return BlocProvider(
-      create: (context) => CheckoutBloc(),
-      child: BlocBuilder<CheckoutBloc, CheckoutState>(
-        builder: (context, state) {
-          return Directionality(
-            textDirection: textDir,
-            child: GestureDetector(
-              onTap: () => FocusScope.of(context).unfocus(),
-              child: Scaffold(
-                backgroundColor: context.palette.background,
+    final state = ref.watch(checkoutProvider);
 
-                // ──────────────────────────────────────────────────────────────
-                // AppBar — same style as DashboardScreen
-                // ──────────────────────────────────────────────────────────────
-                appBar: AppBar(
-                  backgroundColor: context.palette.background,
-                  elevation: 0,
-                  scrolledUnderElevation: 0,
-                  automaticallyImplyLeading: false,
-                  leadingWidth: 100,
-                  // Leading: cart badge + heart (always LTR order in AppBar)
-                  leading: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Stack(
-                          clipBehavior: Clip.none,
-                          children: [
-                            SvgPicture.asset(
-                              AssetsConstants.shoppingBag,
-                              width: 22,
-                              colorFilter: ColorFilter.mode(
-                                context.palette.textPrimary,
-                                BlendMode.srcIn,
-                              ),
-                            ),
-                            Positioned(
-                              right: -6,
-                              top: -6,
-                              child: Container(
-                                padding: const EdgeInsets.all(3),
-                                decoration: BoxDecoration(
-                                  color: AppColors.primary,
-                                  shape: BoxShape.circle,
-                                ),
-                                constraints: const BoxConstraints(
-                                  minWidth: 15,
-                                  minHeight: 15,
-                                ),
-                                child: const Center(
-                                  child: Text(
-                                    '2',
-                                    style: TextStyle(
-                                      color: Colors.white,
-                                      fontSize: 9,
-                                      fontWeight: FontWeight.bold,
-                                      height: 1.0,
+    return Directionality(
+      textDirection: textDir,
+      child: GestureDetector(
+        onTap: () => FocusScope.of(context).unfocus(),
+        child: Scaffold(
+          backgroundColor: context.palette.background,
+
+          // ──────────────────────────────────────────────────────────────
+          // AppBar — shared PrimaryAppBar
+          // ──────────────────────────────────────────────────────────────
+          appBar: PrimaryAppBar(
+            title: loc.translate('secureCheckout'),
+            fontSize: 18,
+            letterSpacing: 0,
+            showBackButton: true,
+            cartIcon: AssetsConstants.shoppingBag,
+            heartIcon: AssetsConstants.heart2,
+          ),
+
+          // ──────────────────────────────────────────────────────────────
+          // Body
+          // ──────────────────────────────────────────────────────────────
+          body: SingleChildScrollView(
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+            child: Form(
+              key: _formKey,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  // ─── Shipping Address Section Header ──────────────────
+                  Align(
+                    alignment: isAr
+                        ? Alignment.centerRight
+                        : Alignment.centerLeft,
+                    child: Text(
+                      loc.translate('shippingAddress'),
+                      style: AppStyle.sectionHeader,
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  Divider(color: context.palette.divider, thickness: 0.8),
+                  const SizedBox(height: 12),
+                  Align(
+                    alignment: isAr
+                        ? Alignment.centerRight
+                        : Alignment.centerLeft,
+                    child: Text(
+                      loc.translate('fillFormToReceive'),
+                      style: AppStyle.inputHint.copyWith(
+                        color: context.palette.textPrimary.withValues(
+                          alpha: 0.4,
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+
+                  // ─── Full Name ────────────────────────────────────────
+                  _buildLabel(loc.translate('fullNameLabel')),
+                  const SizedBox(height: 6),
+                  _buildTextField(
+                    controller: _nameController,
+                    validator: (v) => (v == null || v.trim().isEmpty)
+                        ? loc.translate('fieldRequired')
+                        : null,
+                  ),
+                  const SizedBox(height: 14),
+
+                  // ─── Phone Number ─────────────────────────────────────
+                  _buildLabel(loc.translate('phoneLabel')),
+                  const SizedBox(height: 6),
+                  _buildPhoneField(),
+                  const SizedBox(height: 14),
+
+                  // ─── Region ───────────────────────────────────────────
+                  _buildLabel(loc.translate('regionLabel')),
+                  const SizedBox(height: 6),
+                  _buildRegionChips(context, state, regions, isAr),
+                  const SizedBox(height: 14),
+
+                  // ─── City ─────────────────────────────────────────────
+                  _buildLabel(loc.translate('cityLabel')),
+                  const SizedBox(height: 6),
+                  _buildTextField(
+                    controller: _cityController,
+                    validator: (v) => (v == null || v.trim().isEmpty)
+                        ? loc.translate('fieldRequired')
+                        : null,
+                  ),
+                  const SizedBox(height: 14),
+
+                  // ─── Map ──────────────────────────────────────────────
+                  Align(
+                    alignment: isAr
+                        ? Alignment.centerRight
+                        : Alignment.centerLeft,
+                    child: Text(
+                      loc.translate('addressByMap'),
+                      style: AppStyle.fieldLabel,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  _CheckoutMap(),
+                  const SizedBox(height: 14),
+                  _buildLabel(loc.translate('detailedAddressLabel')),
+                  const SizedBox(height: 6),
+                  _buildTextField(
+                    controller: _addressController,
+                    validator: (v) => (v == null || v.trim().isEmpty)
+                        ? loc.translate('fieldRequired')
+                        : null,
+                  ),
+                  const SizedBox(height: 12),
+
+                  // ─── Save address checkbox ────────────────────────
+                  Directionality(
+                    textDirection: TextDirection.ltr,
+                    child: InkWell(
+                      onTap: () => setState(() => _saveAddress = !_saveAddress),
+                      borderRadius: BorderRadius.circular(8),
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 6),
+                        child: Row(
+                          children: isAr
+                              ? [
+                                  SizedBox(
+                                    width: 22,
+                                    height: 22,
+                                    child: Checkbox(
+                                      value: _saveAddress,
+                                      onChanged: (v) => setState(
+                                        () => _saveAddress = v ?? false,
+                                      ),
+                                      activeColor: AppColors.primary,
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(4),
+                                      ),
+                                      side: BorderSide(
+                                        color: context.palette.divider,
+                                        width: 1.5,
+                                      ),
+                                      materialTapTargetSize:
+                                          MaterialTapTargetSize.shrinkWrap,
+                                      visualDensity: VisualDensity.compact,
                                     ),
                                   ),
-                                ),
-                              ),
-                            ),
-                          ],
+                                  const SizedBox(width: 10),
+                                  Expanded(
+                                    child: Align(
+                                      alignment: Alignment.centerRight,
+                                      child: Text(
+                                        loc.translate('saveAddressForFuture'),
+                                        style: AppStyle.labelText,
+                                        textDirection: TextDirection.rtl,
+                                      ),
+                                    ),
+                                  ),
+                                ]
+                              : [
+                                  SizedBox(
+                                    width: 22,
+                                    height: 22,
+                                    child: Checkbox(
+                                      value: _saveAddress,
+                                      onChanged: (v) => setState(
+                                        () => _saveAddress = v ?? false,
+                                      ),
+                                      activeColor: AppColors.primary,
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(4),
+                                      ),
+                                      side: BorderSide(
+                                        color: context.palette.divider,
+                                        width: 1.5,
+                                      ),
+                                      materialTapTargetSize:
+                                          MaterialTapTargetSize.shrinkWrap,
+                                      visualDensity: VisualDensity.compact,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 10),
+                                  Text(
+                                    loc.translate('saveAddressForFuture'),
+                                    style: AppStyle.labelText,
+                                  ),
+                                ],
                         ),
-                        const SizedBox(width: 16),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+
+                  // ─── Payment Method Section Header ────────────────────
+                  Text(
+                    loc.translate('paymentMethod'),
+                    style: AppStyle.sectionHeader,
+                  ),
+                  const SizedBox(height: 16),
+                  Divider(color: context.palette.divider, thickness: 0.8),
+                  const SizedBox(height: 16),
+
+                  // ─── Pricing Summary ──────────────────────────────────
+                  _buildPricingRow(
+                    label: loc.translate('subtotal'),
+                    amount: isAr ? '2,500 ر.س' : '2,500 SAR',
+                    isPrimary: false,
+                    isAr: isAr,
+                  ),
+                  const SizedBox(height: 8),
+                  _buildPricingRow(
+                    label: loc.translate('totalAmount'),
+                    amount: isAr ? '2,500 ر.س' : '2,500 SAR',
+                    isPrimary: true,
+                    isAr: isAr,
+                  ),
+                  const SizedBox(height: 16),
+
+                  Text(
+                    loc.translate('choosePayment'),
+                    style: AppStyle.inputHint.copyWith(
+                      color: context.palette.textPrimary.withValues(alpha: 0.4),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+
+                  // ─── Payment Options ──────────────────────────────────
+                  ...paymentOptions.map(
+                    (option) => Padding(
+                      padding: const EdgeInsets.only(bottom: 10),
+                      child: _buildPaymentOption(
+                        context,
+                        state,
+                        option,
+                        isAr,
+                        loc,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+
+                  // ─── Confirm Order Button ─────────────────────────────
+                  ElevatedButton(
+                    onPressed: _onConfirmOrder,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.primary,
+                      minimumSize: const Size(double.infinity, 54),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(30),
+                      ),
+                      elevation: 0,
+                    ),
+                    child: Row(
+                      children: [
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            loc.translate('confirmOrder'),
+                            textAlign: TextAlign.start,
+                            style: AppStyle.buttonTextPrimary,
+                          ),
+                        ),
                         SvgPicture.asset(
-                          AssetsConstants.heart2,
-                          width: 22,
-                          colorFilter: ColorFilter.mode(
-                            context.palette.textPrimary,
+                          AssetsConstants.shoppingBag,
+                          width: 18,
+                          height: 18,
+                          colorFilter: const ColorFilter.mode(
+                            Colors.white,
                             BlendMode.srcIn,
                           ),
                         ),
+                        const SizedBox(width: 8),
                       ],
                     ),
                   ),
-                  // Title: page title
-                  title: Text(
-                    loc.translate('secureCheckout'),
-                    style: AppStyle.welcomeTitle.copyWith(fontSize: 18),
-                  ),
-                  centerTitle: true,
-                  // Actions: search + back arrow
-                  actions: [
-                    GestureDetector(
-                      onTap: () {},
-                      child: SvgPicture.asset(
-                        AssetsConstants.search,
-                        width: 22,
-                        colorFilter: ColorFilter.mode(
-                          context.palette.textPrimary,
-                          BlendMode.srcIn,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 16),
-                    GestureDetector(
-                      onTap: () => context.pop(),
-                      child: SvgPicture.asset(
-                        AssetsConstants.back,
-                        width: 22,
-                        matchTextDirection: true,
-                        colorFilter: ColorFilter.mode(
-                          context.palette.textPrimary,
-                          BlendMode.srcIn,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 16),
-                  ],
-                ),
+                  const SizedBox(height: 12),
 
-                // ──────────────────────────────────────────────────────────────
-                // Body
-                // ──────────────────────────────────────────────────────────────
-                body: SingleChildScrollView(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 20,
-                    vertical: 16,
-                  ),
-                  child: Form(
-                    key: _formKey,
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                  // ─── Cancel Button ────────────────────────────────────
+                  OutlinedButton(
+                    onPressed: () => context.pop(),
+                    style: OutlinedButton.styleFrom(
+                      minimumSize: const Size(double.infinity, 54),
+                      side: BorderSide(color: context.palette.divider),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(30),
+                      ),
+                    ),
+                    child: Row(
                       children: [
-                        // ─── Shipping Address Section Header ──────────────────
-                        Align(
-                          alignment: isAr
-                              ? Alignment.centerRight
-                              : Alignment.centerLeft,
+                        const SizedBox(width: 12),
+                        Expanded(
                           child: Text(
-                            loc.translate('shippingAddress'),
-                            style: AppStyle.sectionHeader,
+                            loc.translate('cancel'),
+                            textAlign: TextAlign.start,
+                            style: AppStyle.buttonTextSecondary,
                           ),
                         ),
-                        const SizedBox(height: 6),
-                        Divider(color: context.palette.divider, thickness: 0.8),
-                        const SizedBox(height: 12),
-                        Align(
-                          alignment: isAr
-                              ? Alignment.centerRight
-                              : Alignment.centerLeft,
-                          child: Text(
-                            loc.translate('fillFormToReceive'),
-                            style: AppStyle.inputHint.copyWith(color: context.palette.textPrimary.withValues(alpha: 0.4)),
-                          ),
-                        ),
-                        const SizedBox(height: 16),
-
-                        // ─── Full Name ────────────────────────────────────────
-                        _buildLabel(loc.translate('fullNameLabel')),
-                        const SizedBox(height: 6),
-                        _buildTextField(
-                          controller: _nameController,
-                          validator: (v) => (v == null || v.trim().isEmpty)
-                              ? loc.translate('fieldRequired')
-                              : null,
-                        ),
-                        const SizedBox(height: 14),
-
-                        // ─── Phone Number ─────────────────────────────────────
-                        _buildLabel(loc.translate('phoneLabel')),
-                        const SizedBox(height: 6),
-                        _buildPhoneField(),
-                        const SizedBox(height: 14),
-
-                        // ─── Region ───────────────────────────────────────────
-                        _buildLabel(loc.translate('regionLabel')),
-                        const SizedBox(height: 6),
-                        _buildRegionChips(context, state, regions, isAr),
-                        const SizedBox(height: 14),
-
-                        // ─── City ─────────────────────────────────────────────
-                        _buildLabel(loc.translate('cityLabel')),
-                        const SizedBox(height: 6),
-                        _buildTextField(
-                          controller: _cityController,
-                          validator: (v) => (v == null || v.trim().isEmpty)
-                              ? loc.translate('fieldRequired')
-                              : null,
-                        ),
-                        const SizedBox(height: 14),
-
-                        // ─── Map ──────────────────────────────────────────────
-                        Align(
-                          alignment: isAr
-                              ? Alignment.centerRight
-                              : Alignment.centerLeft,
-                          child: Text(
-                            loc.translate('addressByMap'),
-                            style: AppStyle.fieldLabel,
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-                        _CheckoutMap(),
-                        const SizedBox(height: 14),
-                        _buildLabel(loc.translate('detailedAddressLabel')),
-                        const SizedBox(height: 6),
-                        _buildTextField(
-                          controller: _addressController,
-                          validator: (v) => (v == null || v.trim().isEmpty)
-                              ? loc.translate('fieldRequired')
-                              : null,
-                        ),
-                        const SizedBox(height: 12),
-
-                        // ─── Save address checkbox ────────────────────────
-                        Directionality(
-                          textDirection: TextDirection.ltr,
-                          child: InkWell(
-                            onTap: () =>
-                                setState(() => _saveAddress = !_saveAddress),
-                            borderRadius: BorderRadius.circular(8),
-                            child: Padding(
-                              padding: const EdgeInsets.symmetric(vertical: 6),
-                              child: Row(
-                                children: isAr
-                                    ? [
-                                        SizedBox(
-                                          width: 22,
-                                          height: 22,
-                                          child: Checkbox(
-                                            value: _saveAddress,
-                                            onChanged: (v) => setState(
-                                              () => _saveAddress = v ?? false,
-                                            ),
-                                            activeColor: AppColors.primary,
-                                            shape: RoundedRectangleBorder(
-                                              borderRadius:
-                                                  BorderRadius.circular(4),
-                                            ),
-                                            side: BorderSide(
-                                              color: context.palette.divider,
-                                              width: 1.5,
-                                            ),
-                                            materialTapTargetSize:
-                                                MaterialTapTargetSize
-                                                    .shrinkWrap,
-                                            visualDensity:
-                                                VisualDensity.compact,
-                                          ),
-                                        ),
-                                        const SizedBox(width: 10),
-                                        Expanded(
-                                          child: Align(
-                                            alignment: Alignment.centerRight,
-                                            child: Text(
-                                              loc.translate(
-                                                'saveAddressForFuture',
-                                              ),
-                                              style: AppStyle.labelText,
-                                              textDirection: TextDirection.rtl,
-                                            ),
-                                          ),
-                                        ),
-                                      ]
-                                    : [
-                                        SizedBox(
-                                          width: 22,
-                                          height: 22,
-                                          child: Checkbox(
-                                            value: _saveAddress,
-                                            onChanged: (v) => setState(
-                                              () => _saveAddress = v ?? false,
-                                            ),
-                                            activeColor: AppColors.primary,
-                                            shape: RoundedRectangleBorder(
-                                              borderRadius:
-                                                  BorderRadius.circular(4),
-                                            ),
-                                            side: BorderSide(
-                                              color: context.palette.divider,
-                                              width: 1.5,
-                                            ),
-                                            materialTapTargetSize:
-                                                MaterialTapTargetSize
-                                                    .shrinkWrap,
-                                            visualDensity:
-                                                VisualDensity.compact,
-                                          ),
-                                        ),
-                                        const SizedBox(width: 10),
-                                        Text(
-                                          loc.translate('saveAddressForFuture'),
-                                          style: AppStyle.labelText,
-                                        ),
-                                      ],
-                              ),
-                            ),
-                          ),
-                        ),
-                        const SizedBox(height: 20),
-
-                        // ─── Payment Method Section Header ────────────────────
-                        Text(
-                          loc.translate('paymentMethod'),
-                          style: AppStyle.sectionHeader,
-                        ),
-                        const SizedBox(height: 16),
-                        Divider(color: context.palette.divider, thickness: 0.8),
-                        const SizedBox(height: 16),
-
-                        // ─── Pricing Summary ──────────────────────────────────
-                        _buildPricingRow(
-                          label: loc.translate('subtotal'),
-                          amount: isAr ? '2,500 ر.س' : '2,500 SAR',
-                          isPrimary: false,
-                          isAr: isAr,
-                        ),
-                        const SizedBox(height: 8),
-                        _buildPricingRow(
-                          label: loc.translate('totalAmount'),
-                          amount: isAr ? '2,500 ر.س' : '2,500 SAR',
-                          isPrimary: true,
-                          isAr: isAr,
-                        ),
-                        const SizedBox(height: 16),
-
-                        Text(
-                          loc.translate('choosePayment'),
-                          style: AppStyle.inputHint.copyWith(color: context.palette.textPrimary.withValues(alpha: 0.4)),
-                        ),
-                        const SizedBox(height: 12),
-
-                        // ─── Payment Options ──────────────────────────────────
-                        ...paymentOptions.map(
-                          (option) => Padding(
-                            padding: const EdgeInsets.only(bottom: 10),
-                            child: _buildPaymentOption(
-                              context,
-                              state,
-                              option,
-                              isAr,
-                              loc,
-                            ),
-                          ),
-                        ),
-                        const SizedBox(height: 24),
-
-                        // ─── Confirm Order Button ─────────────────────────────
-                        ElevatedButton(
-                          onPressed: _onConfirmOrder,
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: AppColors.primary,
-                            minimumSize: const Size(double.infinity, 54),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(30),
-                            ),
-                            elevation: 0,
-                          ),
-                          child: Row(
-                            children: [
-                              const SizedBox(width: 8),
-                              Expanded(
-                                child: Text(
-                                  loc.translate('confirmOrder'),
-                                  textAlign: TextAlign.start,
-                                  style: AppStyle.buttonTextPrimary,
+                        // Mirror the arrow to point LEFT (←) in Arabic
+                        isAr
+                            ? Transform(
+                                alignment: Alignment.center,
+                                transform: Matrix4.rotationY(math.pi),
+                                child: SvgPicture.asset(
+                                  AssetsConstants.moveLeft,
+                                  width: 18,
+                                  height: 18,
+                                  colorFilter: ColorFilter.mode(
+                                    context.palette.textPrimary,
+                                    BlendMode.srcIn,
+                                  ),
                                 ),
-                              ),
-                              SvgPicture.asset(
-                                AssetsConstants.shoppingBag,
+                              )
+                            : SvgPicture.asset(
+                                AssetsConstants.moveLeft,
                                 width: 18,
                                 height: 18,
-                                colorFilter: const ColorFilter.mode(
-                                  Colors.white,
+                                colorFilter: ColorFilter.mode(
+                                  context.palette.textPrimary,
                                   BlendMode.srcIn,
                                 ),
                               ),
-                              const SizedBox(width: 8),
-                            ],
-                          ),
-                        ),
-                        const SizedBox(height: 12),
-
-                        // ─── Cancel Button ────────────────────────────────────
-                        OutlinedButton(
-                          onPressed: () => context.pop(),
-                          style: OutlinedButton.styleFrom(
-                            minimumSize: const Size(double.infinity, 54),
-                            side: BorderSide(color: context.palette.divider),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(30),
-                            ),
-                          ),
-                          child: Row(
-                            children: [
-                              const SizedBox(width: 12),
-                              Expanded(
-                                child: Text(
-                                  loc.translate('cancel'),
-                                  textAlign: TextAlign.start,
-                                  style: AppStyle.buttonTextSecondary,
-                                ),
-                              ),
-                              // Mirror the arrow to point LEFT (←) in Arabic
-                              isAr
-                                  ? Transform(
-                                      alignment: Alignment.center,
-                                      transform: Matrix4.rotationY(math.pi),
-                                      child: SvgPicture.asset(
-                                        AssetsConstants.moveLeft,
-                                        width: 18,
-                                        height: 18,
-                                        colorFilter: ColorFilter.mode(
-                                          context.palette.textPrimary,
-                                          BlendMode.srcIn,
-                                        ),
-                                      ),
-                                    )
-                                  : SvgPicture.asset(
-                                      AssetsConstants.moveLeft,
-                                      width: 18,
-                                      height: 18,
-                                      colorFilter: ColorFilter.mode(
-                                        context.palette.textPrimary,
-                                        BlendMode.srcIn,
-                                      ),
-                                    ),
-                              const SizedBox(width: 12),
-                            ],
-                          ),
-                        ),
-                        const SizedBox(height: 24),
+                        const SizedBox(width: 12),
                       ],
                     ),
                   ),
-                ),
+                  const SizedBox(height: 24),
+                ],
               ),
             ),
-          );
-        },
+          ),
+        ),
       ),
     );
   }
@@ -615,7 +513,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
             padding: EdgeInsetsDirectional.only(end: 8),
             child: GestureDetector(
               onTap: () =>
-                  context.read<CheckoutBloc>().add(ChangeRegionIndexEvent(i)),
+                  ref.read(checkoutProvider.notifier).changeRegionIndex(i),
               child: AnimatedContainer(
                 duration: const Duration(milliseconds: 200),
                 padding: const EdgeInsets.symmetric(
@@ -684,7 +582,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
     final translatedLabel = loc.translate(locKey);
 
     return GestureDetector(
-      onTap: () => context.read<CheckoutBloc>().add(ChangePaymentEvent(option)),
+      onTap: () => ref.read(checkoutProvider.notifier).changePayment(option),
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),

@@ -1,36 +1,18 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:sfa/core/localization/app_localizations.dart';
+import 'package:sfa/core/models/product.dart';
+import 'package:sfa/core/widgets/primary_app_bar.dart';
+import 'package:sfa/core/widgets/product_card.dart';
 import 'package:sfa/utils/app_style.dart';
 import 'package:sfa/utils/assets_constants.dart';
-import 'package:sfa/utils/color_constants.dart';
-import 'package:sfa/features/dashboard/bloc/dashboard_bloc.dart';
-import 'package:sfa/features/dashboard/bloc/dashboard_event.dart';
-import 'package:sfa/features/dashboard/bloc/dashboard_state.dart';
-import 'package:sfa/features/favorites/models/favorite_product.dart';
-import 'package:sfa/features/favorites/bloc/favorites_bloc.dart';
-import 'package:sfa/features/favorites/bloc/favorites_event.dart';
-import 'package:sfa/features/favorites/bloc/favorites_state.dart';
 import 'package:sfa/core/theme/app_palette.dart';
 
-class ProductItem {
-  final String imageUrl;
-  final String title;
-  final String price;
-  final String rating;
-
-  const ProductItem({
-    required this.imageUrl,
-    required this.title,
-    required this.price,
-    required this.rating,
-  });
-}
-
 class BrandDetailScreen extends StatelessWidget {
-  const BrandDetailScreen({super.key});
+  final String brandName;
+
+  const BrandDetailScreen({super.key, required this.brandName});
 
   @override
   Widget build(BuildContext context) {
@@ -44,330 +26,153 @@ class BrandDetailScreen extends StatelessWidget {
 
     // 6 Dummy localized products
     final dummyProducts = [
-      ProductItem(
-        imageUrl: 'https://images.unsplash.com/photo-1509631179647-0177331693ae?w=500&q=80',
+      Product(
+        imageUrl:
+            'https://images.unsplash.com/photo-1509631179647-0177331693ae?w=500&q=80',
         title: loc.translate('brandProductDesertRose'),
         price: loc.translate('brandProductPrice1250'),
         rating: loc.translate('brandProductRatingText'),
       ),
-      ProductItem(
-        imageUrl: 'https://images.unsplash.com/photo-1529139574466-a303027c1d8b?w=500&q=80',
+      Product(
+        imageUrl:
+            'https://images.unsplash.com/photo-1529139574466-a303027c1d8b?w=500&q=80',
         title: loc.translate('brandProductBlackSilk'),
         price: loc.translate('brandProductPrice1250'),
         rating: loc.translate('brandProductRatingText'),
       ),
-      ProductItem(
-        imageUrl: 'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=500&q=80',
+      Product(
+        imageUrl:
+            'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=500&q=80',
         title: loc.translate('brandProductLinenSet'),
         price: loc.translate('brandProductPrice450'),
         rating: loc.translate('brandProductRatingText'),
       ),
-      ProductItem(
-        imageUrl: 'https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?w=500&q=80',
+      Product(
+        imageUrl:
+            'https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?w=500&q=80',
         title: loc.translate('brandProductCrepeAbaya'),
         price: loc.translate('brandProductPrice780'),
         rating: loc.translate('brandProductRatingText'),
       ),
-      ProductItem(
-        imageUrl: 'https://images.unsplash.com/photo-1539109136881-3be0616acf4b?w=500&q=80',
+      Product(
+        imageUrl:
+            'https://images.unsplash.com/photo-1539109136881-3be0616acf4b?w=500&q=80',
         title: loc.translate('brandProductDesertRose'),
         price: loc.translate('brandProductPrice1250'),
         rating: loc.translate('brandProductRatingText'),
       ),
-      ProductItem(
-        imageUrl: 'https://images.unsplash.com/photo-1529139574466-a303027c1d8b?w=500&q=80',
+      Product(
+        imageUrl:
+            'https://images.unsplash.com/photo-1529139574466-a303027c1d8b?w=500&q=80',
         title: loc.translate('brandProductBlackSilk'),
         price: loc.translate('brandProductPrice1250'),
         rating: loc.translate('brandProductRatingText'),
       ),
     ];
 
-    return BlocBuilder<DashboardBloc, DashboardState>(
-      builder: (context, state) {
-        final brandNameKey = state.selectedBrandName ?? 'brandJuba';
-        final resolvedBrandName = loc.translate(brandNameKey);
+    final resolvedBrandName = loc.translate(brandName);
 
-        return Scaffold(
-          backgroundColor: context.palette.background,
-          appBar: AppBar(
-            backgroundColor: context.palette.background,
-            elevation: 0.5,
-            scrolledUnderElevation: 0.5,
-            automaticallyImplyLeading: false,
-            centerTitle: true,
-            leadingWidth: 110,
-            leading: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const SizedBox(width: 8),
-                IconButton(
-                  icon: SvgPicture.asset(
-                    AssetsConstants.shoppingBag2,
-                    colorFilter: ColorFilter.mode(
-                      context.palette.textPrimary,
-                      BlendMode.srcIn,
-                    ),
-                    width: 22,
-                    height: 22,
-                  ),
-                  onPressed: () {
-                    context.read<DashboardBloc>().add(const CacheCurrentTabEvent());
-                    context.read<DashboardBloc>().add(const ChangeTabEvent(5));
-                  },
-                ),
-                IconButton(
-                  icon: SvgPicture.asset(
-                    AssetsConstants.heart,
-                    colorFilter: ColorFilter.mode(
-                      context.palette.textPrimary,
-                      BlendMode.srcIn,
-                    ),
-                    width: 22,
-                    height: 22,
-                  ),
-                  onPressed: () {
-                    context.read<DashboardBloc>().add(const CacheCurrentTabEvent());
-                    context.read<DashboardBloc>().add(const ChangeTabEvent(8));
-                  },
-                ),
-              ],
+    return Scaffold(
+      backgroundColor: context.palette.background,
+      appBar: PrimaryAppBar(
+        title: resolvedBrandName,
+        fontSize: 19,
+        letterSpacing: 0,
+        showBackButton: true,
+      ),
+      body: SingleChildScrollView(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            // 1. Huge Brand Image Banner
+            CachedNetworkImage(
+              imageUrl:
+                  'https://images.unsplash.com/photo-1490481651871-ab68de25d43d?w=1000&q=80',
+              height: 520,
+              fit: BoxFit.cover,
+              placeholder: (_, __) =>
+                  Container(color: context.palette.surfaceMuted),
+              errorWidget: (_, __, ___) =>
+                  Container(color: context.palette.surfaceMuted),
             ),
-            title: Text(
-              resolvedBrandName,
-              style: AppStyle.headerHeading.copyWith(
-                fontSize: 19,
-                fontWeight: FontWeight.bold,
-                color: context.palette.textPrimary,
+
+            // 2. Brand Description
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
+              child: Text(
+                loc.translate('brandDescription'),
+                textAlign: TextAlign.start,
+                style: AppStyle.bodyText.copyWith(
+                  fontSize: 13.5,
+                  color: context.palette.textPrimary.withOpacity(0.80),
+                  height: 1.6,
+                ),
               ),
             ),
-            actions: [
-              IconButton(
-                icon: SvgPicture.asset(
-                  AssetsConstants.search3,
-                  colorFilter: ColorFilter.mode(
-                    context.palette.textPrimary,
-                    BlendMode.srcIn,
+
+            // 3. Info Row & Filters
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              child: Row(
+                children: [
+                  // Product count (e.g. 273 products)
+                  Text(
+                    productsLabel,
+                    style: AppStyle.bodyText.copyWith(
+                      fontSize: 15,
+                      fontWeight: FontWeight.bold,
+                      color: context.palette.textPrimary,
+                    ),
                   ),
-                  width: 22,
-                  height: 22,
-                ),
-                onPressed: () {},
+                  const Spacer(),
+
+                  // Sort options button
+                  _buildFilterBtn(
+                    context,
+                    label: sortLabel,
+                    icon: AssetsConstants.arrowDownUp,
+                  ),
+                  const SizedBox(width: 8),
+
+                  // Filter button
+                  _buildFilterBtn(
+                    context,
+                    label: filterLabel,
+                    icon: AssetsConstants.settings2,
+                  ),
+                ],
               ),
-              IconButton(
-                icon: SvgPicture.asset(
-                  AssetsConstants.back2,
-                  colorFilter: ColorFilter.mode(
-                    context.palette.textPrimary,
-                    BlendMode.srcIn,
-                  ),
-                  width: 20,
-                  height: 20,
+            ),
+
+            const SizedBox(height: 12),
+
+            // 4. Products Grid (2 columns)
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 12),
+              child: GridView.builder(
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                itemCount: dummyProducts.length,
+                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: 2,
+                  crossAxisSpacing: 12,
+                  mainAxisSpacing: 16,
+                  childAspectRatio: 0.65,
                 ),
-                onPressed: () {
-                  context.read<DashboardBloc>().add(const RestorePreviousTabEvent());
+                itemBuilder: (context, index) {
+                  return ProductCard(
+                    product: dummyProducts[index],
+                    isAr: isAr,
+                    brandNameKey: brandName,
+                  );
                 },
               ),
-              const SizedBox(width: 8),
-            ],
-          ),
-          body: SingleChildScrollView(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                // 1. Huge Brand Image Banner
-                CachedNetworkImage(
-                  imageUrl: 'https://images.unsplash.com/photo-1490481651871-ab68de25d43d?w=1000&q=80',
-                  height: 520,
-                  fit: BoxFit.cover,
-                  placeholder: (_, __) => Container(color: context.palette.surfaceMuted),
-                  errorWidget: (_, __, ___) => Container(color: context.palette.surfaceMuted),
-                ),
-
-                // 2. Brand Description
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
-                  child: Text(
-                    loc.translate('brandDescription'),
-                    textAlign: TextAlign.start,
-                    style: AppStyle.bodyText.copyWith(
-                      fontSize: 13.5,
-                      color: context.palette.textPrimary.withOpacity(0.80),
-                      height: 1.6,
-                    ),
-                  ),
-                ),
-
-                // 3. Info Row & Filters
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                  child: Row(
-                    children: [
-                      // Product count (e.g. 273 products)
-                      Text(
-                        productsLabel,
-                        style: AppStyle.bodyText.copyWith(
-                          fontSize: 15,
-                          fontWeight: FontWeight.bold,
-                          color: context.palette.textPrimary,
-                        ),
-                      ),
-                      const Spacer(),
-
-                      // Sort options button
-                      _buildFilterBtn(
-                        context,
-                        label: sortLabel,
-                        icon: AssetsConstants.arrowDownUp,
-                      ),
-                      const SizedBox(width: 8),
-
-                      // Filter button
-                      _buildFilterBtn(
-                        context,
-                        label: filterLabel,
-                        icon: AssetsConstants.settings2,
-                      ),
-                    ],
-                  ),
-                ),
-
-                const SizedBox(height: 12),
-
-                // 4. Products Grid (2 columns)
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 12),
-                  child: GridView.builder(
-                    shrinkWrap: true,
-                    physics: const NeverScrollableScrollPhysics(),
-                    itemCount: dummyProducts.length,
-                    gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                      crossAxisCount: 2,
-                      crossAxisSpacing: 12,
-                      mainAxisSpacing: 16,
-                      childAspectRatio: 0.65,
-                    ),
-                    itemBuilder: (context, index) {
-                      final product = dummyProducts[index];
-                      return GestureDetector(
-                        onTap: () {
-                          context.read<DashboardBloc>().add(
-                            SelectProductEvent(
-                              name: product.title,
-                              imageUrl: product.imageUrl,
-                              price: product.price,
-                              rating: product.rating,
-                            ),
-                          );
-                        },
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.stretch,
-                          children: [
-                            Expanded(
-                              child: Stack(
-                                children: [
-                                  ClipRRect(
-                                    borderRadius: BorderRadius.circular(4),
-                                    child: CachedNetworkImage(
-                                      imageUrl: product.imageUrl,
-                                      width: double.infinity,
-                                      height: double.infinity,
-                                      fit: BoxFit.cover,
-                                      placeholder: (_, __) => Container(color: context.palette.surfaceMuted),
-                                      errorWidget: (_, __, ___) => Container(color: context.palette.surfaceMuted),
-                                    ),
-                                  ),
-                                  Positioned(
-                                    top: 8,
-                                    right: isAr ? null : 8,
-                                    left: isAr ? 8 : null,
-                                    child: BlocBuilder<FavoritesBloc, FavoritesState>(
-                                      builder: (context, favState) {
-                                        final favProduct = FavoriteProduct(
-                                          title: product.title,
-                                          imageUrl: product.imageUrl,
-                                          price: product.price,
-                                          rating: product.rating,
-                                        );
-                                        final isFav = favState.favorites.contains(favProduct);
-                                        return Container(
-                                          decoration: BoxDecoration(
-                                            color: Colors.white.withOpacity(0.85),
-                                            shape: BoxShape.circle,
-                                          ),
-                                          child: IconButton(
-                                            constraints: const BoxConstraints(),
-                                            padding: const EdgeInsets.all(6),
-                                            icon: SvgPicture.asset(
-                                              isFav ? AssetsConstants.heartFilled : AssetsConstants.heart2,
-                                              width: 16,
-                                              height: 16,
-                                              colorFilter: ColorFilter.mode(
-                                                isFav ? AppColors.primary : context.palette.textPrimary,
-                                                BlendMode.srcIn,
-                                              ),
-                                            ),
-                                            onPressed: () {
-                                              context.read<FavoritesBloc>().add(ToggleFavoriteEvent(favProduct));
-                                            },
-                                          ),
-                                        );
-                                      },
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                            const SizedBox(height: 8),
-                            Text(
-                              product.title,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: AppStyle.bodyText.copyWith(
-                                fontSize: 13.5,
-                                fontWeight: FontWeight.w600,
-                                color: context.palette.textPrimary,
-                              ),
-                            ),
-                            const SizedBox(height: 2),
-                            Text(
-                              product.price,
-                              style: AppStyle.bodyText.copyWith(
-                                fontSize: 13,
-                                fontWeight: FontWeight.bold,
-                                color: context.palette.textPrimary.withOpacity(0.80),
-                              ),
-                            ),
-                            const SizedBox(height: 2),
-                            Row(
-                              children: [
-                                const Icon(
-                                  Icons.star,
-                                  size: 13,
-                                  color: Colors.amber,
-                                ),
-                                const SizedBox(width: 3),
-                                Text(
-                                  product.rating,
-                                  style: AppStyle.bodyText.copyWith(
-                                    fontSize: 11,
-                                    color: context.palette.textMuted,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ],
-                        ),
-                      );
-                    },
-                  ),
-                ),
-
-                const SizedBox(height: 32),
-              ],
             ),
-          ),
-        );
-      },
+
+            const SizedBox(height: 32),
+          ],
+        ),
+      ),
     );
   }
 
@@ -380,10 +185,7 @@ class BrandDetailScreen extends StatelessWidget {
       decoration: BoxDecoration(
         color: context.palette.background,
         borderRadius: BorderRadius.circular(4),
-        border: Border.all(
-          color: context.palette.divider,
-          width: 0.8,
-        ),
+        border: Border.all(color: context.palette.divider, width: 0.8),
       ),
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
       child: Row(

@@ -1,31 +1,33 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:sfa/core/localization/app_localizations.dart';
 import 'package:sfa/core/theme/app_palette.dart';
 import 'package:sfa/utils/color_constants.dart';
 import 'package:sfa/utils/loader.dart';
+import '../../models/address.dart';
+import '../../providers/address_provider.dart';
 
 /// Add/Edit screen for an entry of the address list shown on
-/// [AddressScreen]. Pass an existing address map (as stored in
-/// [AddressScreen]'s mock `_addresses` list) to pre-fill the form in edit
+/// [AddressScreen]. Pass an existing [Address] to pre-fill the form in edit
 /// mode; omit it to add a new address.
 ///
-/// On save, pops the route with the resulting `Map<String, String>` so the
-/// caller can update its list — mirrors the mock, bloc-less state that
-/// [AddressScreen] already uses.
-class AddEditAddressScreen extends StatefulWidget {
-  final Map<String, String>? address;
+/// On save, writes directly to [addressProvider] and pops — [AddressScreen]
+/// picks up the change automatically via `ref.watch`.
+class AddEditAddressScreen extends ConsumerStatefulWidget {
+  final Address? address;
 
   const AddEditAddressScreen({super.key, this.address});
 
   bool get isEditMode => address != null;
 
   @override
-  State<AddEditAddressScreen> createState() => _AddEditAddressScreenState();
+  ConsumerState<AddEditAddressScreen> createState() =>
+      _AddEditAddressScreenState();
 }
 
-class _AddEditAddressScreenState extends State<AddEditAddressScreen> {
+class _AddEditAddressScreenState extends ConsumerState<AddEditAddressScreen> {
   late final TextEditingController _nameController;
   late final TextEditingController _phoneController;
   late final TextEditingController _addressLine1Controller;
@@ -35,16 +37,12 @@ class _AddEditAddressScreenState extends State<AddEditAddressScreen> {
   void initState() {
     super.initState();
     final address = widget.address;
-    _nameController = TextEditingController(
-      text: address?['titleEn'] ?? address?['titleAr'] ?? '',
-    );
-    _phoneController = TextEditingController(text: address?['phone'] ?? '');
+    _nameController = TextEditingController(text: address?.titleEn ?? '');
+    _phoneController = TextEditingController(text: address?.phone ?? '');
     _addressLine1Controller = TextEditingController(
-      text: address?['line1En'] ?? address?['line1Ar'] ?? '',
+      text: address?.line1En ?? '',
     );
-    _cityAreaController = TextEditingController(
-      text: address?['line2En'] ?? address?['line2Ar'] ?? '',
-    );
+    _cityAreaController = TextEditingController(text: address?.line2En ?? '');
   }
 
   @override
@@ -67,18 +65,26 @@ class _AddEditAddressScreenState extends State<AddEditAddressScreen> {
       return;
     }
 
-    final result = <String, String>{
-      'titleAr': name,
-      'titleEn': name,
-      'line1Ar': line1,
-      'line1En': line1,
-      'line2Ar': line2,
-      'line2En': line2,
-      'phone': phone,
-    };
+    final existing = widget.address;
+    final address = Address(
+      id: existing?.id ?? DateTime.now().microsecondsSinceEpoch.toString(),
+      titleAr: name,
+      titleEn: name,
+      line1Ar: line1,
+      line1En: line1,
+      line2Ar: line2,
+      line2En: line2,
+      phone: phone,
+    );
+
+    if (widget.isEditMode) {
+      ref.read(addressProvider.notifier).updateAddress(address);
+    } else {
+      ref.read(addressProvider.notifier).addAddress(address);
+    }
 
     Loader.showSuccess(loc.translate('addressSavedSuccess'));
-    context.pop(result);
+    context.pop();
   }
 
   @override
@@ -180,7 +186,10 @@ class _AddEditAddressScreenState extends State<AddEditAddressScreen> {
                 child: OutlinedButton(
                   onPressed: () => context.pop(),
                   style: OutlinedButton.styleFrom(
-                    side: BorderSide(color: context.palette.divider, width: 1.5),
+                    side: BorderSide(
+                      color: context.palette.divider,
+                      width: 1.5,
+                    ),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(27),
                     ),
@@ -247,18 +256,27 @@ class _FormField extends StatelessWidget {
           style: TextStyle(color: context.palette.textPrimary),
           decoration: InputDecoration(
             hintText: hint,
-            hintStyle: TextStyle(color: context.palette.textMuted, fontSize: 13),
+            hintStyle: TextStyle(
+              color: context.palette.textMuted,
+              fontSize: 13,
+            ),
             contentPadding: const EdgeInsets.symmetric(
               horizontal: 20,
               vertical: 16,
             ),
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(16),
-              borderSide: BorderSide(color: context.palette.divider, width: 1.5),
+              borderSide: BorderSide(
+                color: context.palette.divider,
+                width: 1.5,
+              ),
             ),
             enabledBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(16),
-              borderSide: BorderSide(color: context.palette.divider, width: 1.5),
+              borderSide: BorderSide(
+                color: context.palette.divider,
+                width: 1.5,
+              ),
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(16),

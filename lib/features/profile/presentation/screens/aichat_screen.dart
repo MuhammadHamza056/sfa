@@ -5,6 +5,7 @@ import 'package:sfa/utils/app_style.dart';
 import 'package:sfa/utils/assets_constants.dart';
 import 'package:sfa/utils/color_constants.dart';
 import 'package:sfa/core/theme/app_palette.dart';
+import 'package:sfa/core/widgets/primary_app_bar.dart';
 
 class AIChatScreen extends StatefulWidget {
   const AIChatScreen({super.key});
@@ -45,93 +46,11 @@ class _AIChatScreenState extends State<AIChatScreen> {
 
     return Scaffold(
       backgroundColor: context.palette.background,
-      appBar: AppBar(
-        backgroundColor: context.palette.background,
-        elevation: 0,
-        scrolledUnderElevation: 0,
-        automaticallyImplyLeading: false,
-        titleSpacing: 0,
-        title: Directionality(
-          textDirection: isAr ? TextDirection.rtl : TextDirection.ltr,
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: Row(
-              children: [
-                IconButton(
-                  onPressed: () => Navigator.pop(context),
-                  icon: Transform(
-                    transform: Matrix4.rotationY(isAr ? 0 : 3.14159),
-                    alignment: Alignment.center,
-                    child: SvgPicture.asset(
-                      AssetsConstants.back,
-                      width: 22,
-                      height: 22,
-                      colorFilter: ColorFilter.mode(
-                        context.palette.textPrimary,
-                        BlendMode.srcIn,
-                      ),
-                    ),
-                  ),
-                ),
-                
-                // Search Button
-                IconButton(
-                  onPressed: () {},
-                  icon: SvgPicture.asset(
-                    AssetsConstants.search,
-                    width: 20,
-                    height: 20,
-                    colorFilter: ColorFilter.mode(
-                      context.palette.textPrimary,
-                      BlendMode.srcIn,
-                    ),
-                  ),
-                ),
-
-                const Spacer(),
-
-                // Title Text
-                Text(
-                  loc.translate('aiChatTitle'),
-                  style: AppStyle.welcomeTitle.copyWith(
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-
-                const Spacer(),
-
-                // Heart Icon
-                IconButton(
-                  onPressed: () {},
-                  icon: SvgPicture.asset(
-                    AssetsConstants.heart,
-                    width: 20,
-                    height: 20,
-                    colorFilter: ColorFilter.mode(
-                      context.palette.textPrimary,
-                      BlendMode.srcIn,
-                    ),
-                  ),
-                ),
-
-                // Cart Icon
-                IconButton(
-                  onPressed: () {},
-                  icon: SvgPicture.asset(
-                    AssetsConstants.shoppingBag,
-                    width: 20,
-                    height: 20,
-                    colorFilter: ColorFilter.mode(
-                      context.palette.textPrimary,
-                      BlendMode.srcIn,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
+      appBar: PrimaryAppBar(
+        title: loc.translate('aiChatTitle'),
+        fontSize: 20,
+        letterSpacing: 0,
+        showBackButton: true,
       ),
       body: SafeArea(
         child: Directionality(
@@ -154,12 +73,16 @@ class _AIChatScreenState extends State<AIChatScreen> {
                             shape: BoxShape.circle,
                             boxShadow: [
                               BoxShadow(
-                                color: const Color(0xFFFF4081).withValues(alpha: 0.15),
+                                color: const Color(
+                                  0xFFFF4081,
+                                ).withValues(alpha: 0.15),
                                 blurRadius: 40,
                                 spreadRadius: 10,
                               ),
                               BoxShadow(
-                                color: const Color(0xFFCA9A4E).withValues(alpha: 0.1),
+                                color: const Color(
+                                  0xFFCA9A4E,
+                                ).withValues(alpha: 0.1),
                                 blurRadius: 50,
                                 spreadRadius: 15,
                               ),
@@ -193,7 +116,9 @@ class _AIChatScreenState extends State<AIChatScreen> {
                           style: AppStyle.subtitleDesc.copyWith(
                             fontSize: 24,
                             fontWeight: FontWeight.bold,
-                            color: context.palette.textPrimary.withValues(alpha: 0.9),
+                            color: context.palette.textPrimary.withValues(
+                              alpha: 0.9,
+                            ),
                             height: 1.4,
                           ),
                           textAlign: TextAlign.center,
@@ -221,7 +146,7 @@ class _AIChatScreenState extends State<AIChatScreen> {
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       // Suggestions Carousel
-                       SizedBox(
+                      SizedBox(
                         height: 110,
                         child: ListView.builder(
                           reverse: isAr,
@@ -281,7 +206,9 @@ class _AIChatScreenState extends State<AIChatScreen> {
                                         fontSize: 12,
                                         fontWeight: FontWeight.bold,
                                       ),
-                                      textAlign: isAr ? TextAlign.right : TextAlign.left,
+                                      textAlign: isAr
+                                          ? TextAlign.right
+                                          : TextAlign.left,
                                       maxLines: 2,
                                       overflow: TextOverflow.ellipsis,
                                     ),
@@ -333,7 +260,9 @@ class _AIChatScreenState extends State<AIChatScreen> {
                                   child: TextField(
                                     controller: _messageController,
                                     decoration: InputDecoration(
-                                      hintText: loc.translate('aiChatInputHint'),
+                                      hintText: loc.translate(
+                                        'aiChatInputHint',
+                                      ),
                                       hintStyle: AppStyle.inputHint.copyWith(
                                         fontSize: 13,
                                       ),
@@ -351,7 +280,9 @@ class _AIChatScreenState extends State<AIChatScreen> {
                               // Send Button Svg
                               GestureDetector(
                                 onTap: () {
-                                  if (_messageController.text.trim().isNotEmpty) {
+                                  if (_messageController.text
+                                      .trim()
+                                      .isNotEmpty) {
                                     _messageController.clear();
                                   }
                                 },
@@ -364,7 +295,9 @@ class _AIChatScreenState extends State<AIChatScreen> {
                                   ),
                                   alignment: Alignment.center,
                                   child: Transform(
-                                    transform: Matrix4.rotationY(isAr ? 0 : 3.14159),
+                                    transform: Matrix4.rotationY(
+                                      isAr ? 0 : 3.14159,
+                                    ),
                                     alignment: Alignment.center,
                                     child: SvgPicture.asset(
                                       AssetsConstants.send,

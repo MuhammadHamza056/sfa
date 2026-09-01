@@ -65,10 +65,12 @@ class ProductCard extends StatelessWidget {
                   child: Consumer(
                     builder: (context, ref, _) {
                       final favProduct = FavoriteProduct(
+                        productId: product.id ?? '',
                         title: product.title,
                         imageUrl: product.imageUrl,
                         price: product.price,
                         rating: product.rating,
+                        brandName: product.brandName,
                       );
                       final isFav = ref
                           .watch(favoritesProvider)

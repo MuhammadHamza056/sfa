@@ -6,11 +6,16 @@ import 'package:sfa/core/localization/app_localizations.dart';
 import 'package:sfa/core/widgets/primary_app_bar.dart';
 import 'package:sfa/utils/Values.dart';
 import 'package:sfa/utils/assets_constants.dart';
+import 'package:sfa/utils/currency_formatter.dart';
 import 'package:sfa/core/theme/app_palette.dart';
 import 'package:sfa/utils/color_constants.dart';
 import 'package:sfa/utils/app_style.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:sfa/features/auth/providers/auth_provider.dart';
+import 'package:sfa/features/profile/data/profile_models.dart';
+import 'package:sfa/features/profile/providers/profile_data_provider.dart';
 import 'package:sfa/features/profile/providers/profile_provider.dart';
+import 'package:sfa/features/wallet/providers/wallet_providers.dart';
 
 class ProfileScreen extends ConsumerStatefulWidget {
   const ProfileScreen({super.key});
@@ -23,6 +28,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
   @override
   Widget build(BuildContext context) {
     final loc = AppLocalizations.of(context);
+    final isAr = loc.isArabic;
 
     final Widget tileArrow = Directionality(
       textDirection: TextDirection.ltr,
@@ -33,6 +39,11 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
       ),
     );
 
+    final profileAsync = ref.watch(profileDataProvider);
+    final membershipAsync = ref.watch(membershipProvider);
+    final balanceAsync = ref.watch(walletBalanceProvider);
+    final state = ref.watch(profileProvider);
+
     // Profile Picture with Gold Border
     final Widget profileHeader = Column(
       children: [
@@ -42,31 +53,51 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
             shape: BoxShape.circle,
             border: Border.all(color: AppColors.primary, width: 2),
           ),
-          child: const CircleAvatar(
+          child: CircleAvatar(
             radius: 54,
-            backgroundImage: NetworkImage(
-              'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150',
-            ),
+            backgroundColor: context.palette.surfaceMuted,
+            backgroundImage: profileAsync.valueOrNull?.avatarUrl != null
+                ? NetworkImage(profileAsync.value!.avatarUrl!)
+                : null,
+            child: profileAsync.valueOrNull?.avatarUrl == null
+                ? Icon(Icons.person, size: 48, color: context.palette.textMuted)
+                : null,
           ),
         ),
         const SizedBox(height: 12),
-        Text(
-          loc.isArabic ? 'سارة عبد العزيز' : 'Sara Abdulaziz',
-          style: AppStyle.welcomeTitle,
-        ),
-        const SizedBox(height: 4),
-        Text(
-          'sara.abdulaziz@example.com',
-          style: AppStyle.subtitleDesc.copyWith(
-            color: context.palette.textMuted,
+        profileAsync.when(
+          loading: () => const SizedBox(
+            height: 20,
+            width: 20,
+            child: CircularProgressIndicator(strokeWidth: 2),
+          ),
+          error: (error, _) => Text(
+            error.toString(),
+            style: AppStyle.subtitleDesc.copyWith(color: context.palette.textMuted),
+          ),
+          data: (profile) => Column(
+            children: [
+              Text(profile.name, style: AppStyle.welcomeTitle),
+              if (profile.email != null) ...[
+                const SizedBox(height: 4),
+                Text(
+                  profile.email!,
+                  style: AppStyle.subtitleDesc.copyWith(color: context.palette.textMuted),
+                ),
+              ],
+            ],
           ),
         ),
       ],
     );
 
     // Points Progress Card
-    Widget buildPointsProgressCard(BuildContext context, ProfileState state) {
-      final isAr = loc.isArabic;
+    Widget buildPointsProgressCard(MembershipData? membership) {
+      final tierLabel = membership?.tierName.resolve(isAr) ?? '';
+      final pointsLabel = membership != null
+          ? (isAr ? '${membership.pointsBalance} نقطة' : '${membership.pointsBalance} Points')
+          : '';
+
       return Container(
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
@@ -74,86 +105,37 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
           borderRadius: BorderRadius.circular(20),
           border: Border.all(color: context.palette.border, width: 1),
           boxShadow: [
-            BoxShadow(
-              color: context.palette.shadow,
-              blurRadius: 10,
-              offset: const Offset(0, 4),
-            ),
+            BoxShadow(color: context.palette.shadow, blurRadius: 10, offset: const Offset(0, 4)),
           ],
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            // Row 1: Bronze Membership (Right in RTL) and Points (Left in RTL)
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              textDirection: isAr ? TextDirection.rtl : TextDirection.ltr,
               children: [
-                if (isAr) ...[
-                  Row(
-                    children: [
-                      SvgPicture.asset(
-                        AssetsConstants.frame2,
-                        width: 18,
-                        colorFilter: ColorFilter.mode(
-                          AppColors.primary,
-                          BlendMode.srcIn,
-                        ),
-                      ),
-                      const SizedBox(width: 6),
-                      Text(
-                        'العضوية البرونزية',
-                        style: AppStyle.fieldLabel.copyWith(
-                          color: context.palette.textPrimary,
-                          fontSize: 15,
-                        ),
-                      ),
-                    ],
-                  ),
-                  Text(
-                    '520 نقطة',
-                    style: AppStyle.fieldLabel.copyWith(
-                      color: AppColors.primary,
-                      fontSize: 15,
+                Row(
+                  children: [
+                    SvgPicture.asset(
+                      AssetsConstants.frame2,
+                      width: 18,
+                      colorFilter: ColorFilter.mode(AppColors.primary, BlendMode.srcIn),
                     ),
-                  ),
-                ] else ...[
-                  Row(
-                    children: [
-                      SvgPicture.asset(
-                        AssetsConstants.frame2,
-                        width: 18,
-                        colorFilter: ColorFilter.mode(
-                          AppColors.primary,
-                          BlendMode.srcIn,
-                        ),
-                      ),
-                      const SizedBox(width: 6),
-                      Text(
-                        'Bronze Membership',
-                        style: AppStyle.fieldLabel.copyWith(
-                          color: context.palette.textPrimary,
-                          fontSize: 15,
-                        ),
-                      ),
-                    ],
-                  ),
-                  Text(
-                    '520 Points',
-                    style: AppStyle.fieldLabel.copyWith(
-                      color: AppColors.primary,
-                      fontSize: 15,
+                    const SizedBox(width: 6),
+                    Text(
+                      tierLabel,
+                      style: AppStyle.fieldLabel.copyWith(color: context.palette.textPrimary, fontSize: 15),
                     ),
-                  ),
-                ],
+                  ],
+                ),
+                Text(pointsLabel, style: AppStyle.fieldLabel.copyWith(color: AppColors.primary, fontSize: 15)),
               ],
             ),
             const SizedBox(height: 12),
-            // Row 2: Progress Indicator (Tappable)
             GestureDetector(
               behavior: HitTestBehavior.opaque,
-              onTap: () {
-                ref.read(profileProvider.notifier).toggleTooltip();
-              },
+              onTap: () => ref.read(profileProvider.notifier).toggleTooltip(),
               child: Padding(
                 padding: const EdgeInsets.symmetric(vertical: 8.0),
                 child: Stack(
@@ -166,17 +148,13 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                         borderRadius: BorderRadius.circular(4),
                       ),
                     ),
-                    // Progress Fill (520 / 1000 = 52%)
                     FractionallySizedBox(
-                      widthFactor: 0.52,
+                      widthFactor: membership?.progress ?? 0,
                       child: Container(
                         height: 8,
                         decoration: BoxDecoration(
                           gradient: LinearGradient(
-                            colors: [
-                              AppColors.primary.withValues(alpha: 0.6),
-                              AppColors.primary,
-                            ],
+                            colors: [AppColors.primary.withValues(alpha: 0.6), AppColors.primary],
                           ),
                           borderRadius: BorderRadius.circular(4),
                         ),
@@ -193,18 +171,13 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
 
     // Available Balance Card
     Widget buildBalanceCard() {
-      final isAr = loc.isArabic;
       return Container(
         padding: const EdgeInsets.all(20),
         decoration: BoxDecoration(
           color: AppColors.primary,
           borderRadius: BorderRadius.circular(24),
           boxShadow: [
-            BoxShadow(
-              color: AppColors.primary.withValues(alpha: 0.2),
-              blurRadius: 12,
-              offset: const Offset(0, 6),
-            ),
+            BoxShadow(color: AppColors.primary.withValues(alpha: 0.2), blurRadius: 12, offset: const Offset(0, 6)),
           ],
         ),
         child: Column(
@@ -214,73 +187,32 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
               alignment: isAr ? Alignment.centerRight : Alignment.centerLeft,
               child: Text(
                 isAr ? 'الرصيد المتاح' : 'Available Balance',
-                style: GoogleFonts.cairo(
-                  color: Colors.white.withValues(alpha: 0.9),
-                  fontSize: 15,
-                  fontWeight: FontWeight.w500,
-                ),
+                style: GoogleFonts.cairo(color: Colors.white.withValues(alpha: 0.9), fontSize: 15, fontWeight: FontWeight.w500),
               ),
             ),
             const SizedBox(height: 4),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.start,
-              crossAxisAlignment: CrossAxisAlignment.baseline,
-              textBaseline: TextBaseline.alphabetic,
-              children: [
-                if (isAr) ...[
-                  Text(
-                    '1478.00',
-                    style: GoogleFonts.cairo(
-                      color: Colors.white,
-                      fontSize: 42,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  const SizedBox(width: 6),
-                  Text(
-                    'ر.س.',
-                    style: GoogleFonts.cairo(
-                      color: Colors.white,
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ] else ...[
-                  Text(
-                    '1478.00',
-                    style: GoogleFonts.cairo(
-                      color: Colors.white,
-                      fontSize: 42,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  const SizedBox(width: 6),
-                  Text(
-                    'SAR',
-                    style: GoogleFonts.cairo(
-                      color: Colors.white,
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ],
-              ],
+            Align(
+              alignment: isAr ? Alignment.centerRight : Alignment.centerLeft,
+              child: balanceAsync.when(
+                loading: () => const SizedBox(
+                  height: 32,
+                  child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
+                ),
+                error: (error, _) => Text(error.toString(), style: GoogleFonts.cairo(color: Colors.white)),
+                data: (balance) => Text(
+                  CurrencyFormatter.fromHalalas(balance.balanceFils, isAr: isAr),
+                  style: GoogleFonts.cairo(color: Colors.white, fontSize: 32, fontWeight: FontWeight.bold),
+                ),
+              ),
             ),
             const SizedBox(height: 20),
             Container(
               height: 54,
-              decoration: BoxDecoration(
-                // Fixed brand maroon: this pill sits on the gold card, so it
-                // stays dark in both themes.
-                color: AppColors.textcolor,
-                borderRadius: BorderRadius.circular(27),
-              ),
+              decoration: BoxDecoration(color: AppColors.textcolor, borderRadius: BorderRadius.circular(27)),
               child: Material(
                 color: Colors.transparent,
                 child: InkWell(
-                  onTap: () {
-                    // Handle withdrawal
-                  },
+                  onTap: () => context.push('/wallet'),
                   borderRadius: BorderRadius.circular(27),
                   child: Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 20),
@@ -288,19 +220,14 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         Text(
-                          isAr
-                              ? 'سحب إلى الحساب البنكي'
-                              : 'Withdraw to bank account',
+                          isAr ? 'سحب إلى الحساب البنكي' : 'Withdraw to bank account',
                           style: AppStyle.walletTransferButton,
                         ),
                         SvgPicture.asset(
                           AssetsConstants.landmark,
                           width: 18,
                           height: 18,
-                          colorFilter: const ColorFilter.mode(
-                            Colors.white,
-                            BlendMode.srcIn,
-                          ),
+                          colorFilter: const ColorFilter.mode(Colors.white, BlendMode.srcIn),
                         ),
                       ],
                     ),
@@ -316,16 +243,11 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     // AI Agent button
     final Widget aiAgentBtn = Container(
       height: 52,
-      decoration: BoxDecoration(
-        gradient: AppColors.primaryGradient,
-        borderRadius: BorderRadius.circular(30),
-      ),
+      decoration: BoxDecoration(gradient: AppColors.primaryGradient, borderRadius: BorderRadius.circular(30)),
       child: Material(
         color: Colors.transparent,
         child: InkWell(
-          onTap: () {
-            context.push('/ai-chat');
-          },
+          onTap: () => context.push('/ai-chat'),
           borderRadius: BorderRadius.circular(30),
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 24),
@@ -335,18 +257,12 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                 SvgPicture.asset(
                   AssetsConstants.astroid,
                   width: 18,
-                  colorFilter: ColorFilter.mode(
-                    // The gradient behind this button is light in both themes.
-                    AppColors.textcolor,
-                    BlendMode.srcIn,
-                  ),
+                  colorFilter: ColorFilter.mode(AppColors.textcolor, BlendMode.srcIn),
                 ),
                 const SizedBox(width: 8),
                 Text(
                   loc.translate('aiAgent'),
-                  style: AppStyle.buttonTextSecondary.copyWith(
-                    color: AppColors.textcolor,
-                  ),
+                  style: AppStyle.buttonTextSecondary.copyWith(color: AppColors.textcolor),
                 ),
               ],
             ),
@@ -357,8 +273,9 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
 
     // Logout button
     final Widget logoutBtn = OutlinedButton(
-      onPressed: () {
-        context.go('/login');
+      onPressed: () async {
+        await ref.read(authProvider.notifier).logout();
+        if (context.mounted) context.go('/login');
       },
       style: OutlinedButton.styleFrom(
         padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 20),
@@ -368,12 +285,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text(
-            loc.translate('logout'),
-            style: AppStyle.buttonTextSecondary.copyWith(
-              color: AppColors.redcolor,
-            ),
-          ),
+          Text(loc.translate('logout'), style: AppStyle.buttonTextSecondary.copyWith(color: AppColors.redcolor)),
           SvgPicture.asset(
             AssetsConstants.logOut,
             width: 18,
@@ -383,17 +295,12 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
       ),
     );
 
-    final state = ref.watch(profileProvider);
-
     return Scaffold(
       appBar: PrimaryAppBar(title: loc.translate('myAccount')),
       backgroundColor: context.palette.backgroundSubtle,
       body: SafeArea(
         child: SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(
-            horizontal: Values.horizontalPadding,
-            vertical: 20,
-          ),
+          padding: const EdgeInsets.symmetric(horizontal: Values.horizontalPadding, vertical: 20),
           child: Directionality(
             textDirection: loc.isArabic ? TextDirection.rtl : TextDirection.ltr,
             child: Column(
@@ -408,7 +315,14 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                     Column(
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
-                        buildPointsProgressCard(context, state),
+                        membershipAsync.when(
+                          loading: () => buildPointsProgressCard(null),
+                          error: (error, _) => Text(
+                            error.toString(),
+                            style: AppStyle.bodyText.copyWith(color: context.palette.textMuted),
+                          ),
+                          data: (membership) => buildPointsProgressCard(membership),
+                        ),
                         const SizedBox(height: 16),
                         buildBalanceCard(),
                       ],
@@ -434,62 +348,34 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                                   decoration: BoxDecoration(
                                     color: context.palette.surface,
                                     border: Border(
-                                      top: BorderSide(
-                                        color: context.palette.divider,
-                                        width: 0.8,
-                                      ),
-                                      left: BorderSide(
-                                        color: context.palette.divider,
-                                        width: 0.8,
-                                      ),
+                                      top: BorderSide(color: context.palette.divider, width: 0.8),
+                                      left: BorderSide(color: context.palette.divider, width: 0.8),
                                     ),
                                   ),
                                 ),
                               ),
                             ),
                             Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 14,
-                                vertical: 8,
-                              ),
+                              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
                               decoration: BoxDecoration(
                                 color: context.palette.surface,
                                 borderRadius: BorderRadius.circular(12),
                                 boxShadow: [
-                                  BoxShadow(
-                                    color: context.palette.shadow,
-                                    blurRadius: 8,
-                                    offset: const Offset(0, 4),
-                                  ),
+                                  BoxShadow(color: context.palette.shadow, blurRadius: 8, offset: const Offset(0, 4)),
                                 ],
-                                border: Border.all(
-                                  color: context.palette.divider,
-                                  width: 0.8,
-                                ),
+                                border: Border.all(color: context.palette.divider, width: 0.8),
                               ),
                               child: Column(
                                 mainAxisSize: MainAxisSize.min,
-                                crossAxisAlignment: loc.isArabic
-                                    ? CrossAxisAlignment.end
-                                    : CrossAxisAlignment.start,
+                                crossAxisAlignment: loc.isArabic ? CrossAxisAlignment.end : CrossAxisAlignment.start,
                                 children: [
                                   Text(
-                                    loc.isArabic ? '1000 نقطة' : '1000 Points',
-                                    style: GoogleFonts.cairo(
-                                      color: AppColors.primary,
-                                      fontSize: 12,
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                  ),
-                                  Text(
-                                    loc.isArabic
-                                        ? 'العضوية الذهبية'
-                                        : 'Golden Membership',
-                                    style: GoogleFonts.cairo(
-                                      color: context.palette.textPrimary,
-                                      fontSize: 12,
-                                      fontWeight: FontWeight.bold,
-                                    ),
+                                    membershipAsync.valueOrNull != null
+                                        ? (isAr
+                                            ? '${membershipAsync.value!.nextTierPoints} نقطة للترقية'
+                                            : '${membershipAsync.value!.nextTierPoints} points to next tier')
+                                        : '',
+                                    style: GoogleFonts.cairo(color: AppColors.primary, fontSize: 12, fontWeight: FontWeight.bold),
                                   ),
                                 ],
                               ),
@@ -501,13 +387,6 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                 ),
                 const SizedBox(height: 24),
 
-                // Menu items
-                // _buildMenuTile(
-                //   icon: AssetsConstants.circleUser2,
-                //   title: loc.translate('accountManagement'),
-                //   trailing: tileArrow,
-                //   onTap: () {},
-                // ),
                 _buildMenuTile(
                   icon: AssetsConstants.mapPin,
                   title: loc.translate('addresses'),
@@ -535,12 +414,8 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                     activeColor: Colors.white,
                     inactiveThumbColor: Colors.white,
                     inactiveTrackColor: Colors.grey.shade200,
-                    trackOutlineColor: const WidgetStatePropertyAll(
-                      Colors.transparent,
-                    ),
-                    onChanged: (val) {
-                      ref.read(profileProvider.notifier).toggleDarkMode(val);
-                    },
+                    trackOutlineColor: const WidgetStatePropertyAll(Colors.transparent),
+                    onChanged: (val) => ref.read(profileProvider.notifier).toggleDarkMode(val),
                   ),
                   onTap: () {},
                 ),
@@ -571,10 +446,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
           leading: SvgPicture.asset(
             icon,
             width: 22,
-            colorFilter: ColorFilter.mode(
-              context.palette.icon,
-              BlendMode.srcIn,
-            ),
+            colorFilter: ColorFilter.mode(context.palette.icon, BlendMode.srcIn),
           ),
           title: Text(title, style: AppStyle.fieldLabel.copyWith(fontSize: 15)),
           trailing: trailing,

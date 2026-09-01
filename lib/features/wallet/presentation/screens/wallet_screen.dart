@@ -1,54 +1,97 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 import 'package:sfa/core/localization/app_localizations.dart';
 import 'package:sfa/utils/app_style.dart';
 import 'package:sfa/utils/assets_constants.dart';
 import 'package:sfa/utils/color_constants.dart';
+import 'package:sfa/utils/currency_formatter.dart';
+import 'package:sfa/utils/loader.dart';
+import 'package:sfa/features/wallet/providers/wallet_providers.dart';
+import 'package:sfa/features/wallet/presentation/widgets/transaction_tile.dart';
 import 'package:sfa/core/theme/app_palette.dart';
 
-class WalletScreen extends StatelessWidget {
+class WalletScreen extends ConsumerWidget {
   const WalletScreen({super.key});
 
+  Future<void> _onWithdraw(BuildContext context, WidgetRef ref, AppLocalizations loc) async {
+    final amountController = TextEditingController();
+    final bankController = TextEditingController();
+    final ibanController = TextEditingController();
+    final nameController = TextEditingController();
+
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(loc.translate('transferToBank')),
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(
+                controller: amountController,
+                keyboardType: TextInputType.number,
+                decoration: InputDecoration(hintText: loc.isArabic ? 'المبلغ (ر.س.)' : 'Amount (SAR)'),
+              ),
+              TextField(
+                controller: nameController,
+                decoration: InputDecoration(hintText: loc.isArabic ? 'اسم صاحب الحساب' : 'Account holder name'),
+              ),
+              TextField(
+                controller: bankController,
+                decoration: InputDecoration(hintText: loc.isArabic ? 'اسم البنك' : 'Bank name'),
+              ),
+              TextField(
+                controller: ibanController,
+                textDirection: TextDirection.ltr,
+                decoration: const InputDecoration(hintText: 'IBAN'),
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(onPressed: () => context.pop(false), child: Text(loc.translate('cancel'))),
+          TextButton(onPressed: () => context.pop(true), child: Text(loc.translate('transferToBank'))),
+        ],
+      ),
+    );
+    if (confirmed != true) return;
+
+    final amountSar = double.tryParse(amountController.text.trim());
+    if (amountSar == null || ibanController.text.trim().isEmpty) {
+      Loader.showError(loc.translate('fieldRequired'));
+      return;
+    }
+
+    final result = await ref.read(walletRepositoryProvider).withdraw(
+          amountFils: (amountSar * 100).round(),
+          bankName: bankController.text.trim(),
+          iban: ibanController.text.trim(),
+          accountHolderName: nameController.text.trim(),
+        );
+    result.when(
+      success: (_) {
+        ref.invalidate(walletBalanceProvider);
+        ref.invalidate(walletTransactionsProvider);
+        Loader.showSuccess(loc.isArabic ? 'تم إرسال طلب السحب' : 'Withdrawal request sent');
+      },
+      failure: (error) => Loader.showError(error.message),
+    );
+  }
+
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final loc = AppLocalizations.of(context);
     final isAr = loc.isArabic;
 
-    // Localized Strings
     final availableBalance = loc.translate('availableBalance');
     final transferToBank = loc.translate('transferToBank');
     final latestTransactions = loc.translate('latestTransactions');
     final viewAllTransactions = loc.translate('viewAllTransactions');
-    final sarText = isAr ? 'ر.س.' : 'SAR';
 
-    // Mock Transactions Data
-    final transactions = [
-      {
-        'title': loc.translate('refundForOrder').replaceAll('{id}', '100234'),
-        'date': loc.translate('may15'),
-        'amount': 2500.00,
-        'isAdd': true,
-      },
-      {
-        'title': loc.translate('orderLabel').replaceAll('{id}', '2245'),
-        'date': loc.translate('may04'),
-        'amount': -1300.00,
-        'isAdd': false,
-      },
-      {
-        'title': loc.translate('refundForOrder').replaceAll('{id}', '100234'),
-        'date': loc.translate('may15'),
-        'amount': 2500.00,
-        'isAdd': true,
-      },
-      {
-        'title': loc.translate('refundForOrder').replaceAll('{id}', '100234'),
-        'date': loc.translate('may15'),
-        'amount': 2500.00,
-        'isAdd': true,
-      },
-    ];
+    final balanceAsync = ref.watch(walletBalanceProvider);
+    final transactionsAsync = ref.watch(walletTransactionsProvider);
 
     return Scaffold(
       backgroundColor: context.palette.background,
@@ -67,65 +110,46 @@ class WalletScreen extends StatelessWidget {
                   borderRadius: BorderRadius.circular(24),
                   color: AppColors.primary,
                   boxShadow: [
-                    BoxShadow(
-                      color: AppColors.primary.withValues(alpha: 0.3),
-                      blurRadius: 16,
-                      offset: const Offset(0, 8),
-                    ),
+                    BoxShadow(color: AppColors.primary.withValues(alpha: 0.3), blurRadius: 16, offset: const Offset(0, 8)),
                   ],
                 ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // Balance Header text
                     Text(availableBalance, style: AppStyle.walletBalanceLabel),
                     const SizedBox(height: 8),
-                    // Amount row
-                    Row(
-                      crossAxisAlignment: CrossAxisAlignment.baseline,
-                      textBaseline: TextBaseline.alphabetic,
-                      children: [
-                        Text(
-                          '1478.00',
-                          style: AppStyle.walletBalanceAmount.copyWith(
-                            height: 1.1,
-                          ),
-                        ),
-                        const SizedBox(width: 8),
-                        Text(sarText, style: AppStyle.walletSarLabel),
-                      ],
+                    balanceAsync.when(
+                      loading: () => const SizedBox(
+                        height: 32,
+                        child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
+                      ),
+                      error: (error, _) => Text(
+                        error.toString(),
+                        style: AppStyle.walletTxDate.copyWith(color: Colors.white),
+                      ),
+                      data: (balance) => Text(
+                        CurrencyFormatter.fromHalalas(balance.balanceFils, isAr: isAr),
+                        style: AppStyle.walletBalanceAmount.copyWith(height: 1.1),
+                      ),
                     ),
                     const SizedBox(height: 24),
-
-                    // Dark Strip button
                     Material(
-                      color: context.palette.textPrimary, // #451425 brand text color
+                      color: context.palette.textPrimary,
                       borderRadius: BorderRadius.circular(20),
                       clipBehavior: Clip.antiAlias,
                       child: InkWell(
-                        onTap: () {
-                          // Handle transfer logic
-                        },
+                        onTap: () => _onWithdraw(context, ref, loc),
                         child: Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 16,
-                            vertical: 14,
-                          ),
+                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
                           child: Row(
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
-                              Text(
-                                transferToBank,
-                                style: AppStyle.walletTransferButton,
-                              ),
+                              Text(transferToBank, style: AppStyle.walletTransferButton),
                               SvgPicture.asset(
-                                AssetsConstants.landmark, // Use landmark svg
+                                AssetsConstants.landmark,
                                 width: 18,
                                 height: 18,
-                                colorFilter: const ColorFilter.mode(
-                                  Colors.white,
-                                  BlendMode.srcIn,
-                                ),
+                                colorFilter: const ColorFilter.mode(Colors.white, BlendMode.srcIn),
                               ),
                             ],
                           ),
@@ -137,103 +161,44 @@ class WalletScreen extends StatelessWidget {
               ),
               const SizedBox(height: 32),
 
-              // ── Section Title "أحدث العمليات" ──
               Text(latestTransactions, style: AppStyle.walletSectionHeader),
               const SizedBox(height: 16),
 
-              // ── Transactions List ──
-              ...transactions.map((tx) {
-                final title = tx['title'];
-                final date = tx['date'];
-                final amount = tx['amount'] as double;
-                final isAdd = tx['isAdd'] as bool;
-
-                final amountText = isAr
-                    ? '${isAdd ? '+' : '-'}${amount.abs().toStringAsFixed(2)} $sarText'
-                    : '${isAdd ? '+' : '-'}${amount.abs().toStringAsFixed(2)} $sarText';
-
-                return Container(
-                  margin: const EdgeInsets.only(bottom: 16),
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: context.palette.backgroundSubtle,
-                    borderRadius: BorderRadius.circular(18),
-                    border: Border.all(
-                      color: context.palette.divider,
-                      width: 1,
-                    ),
-                  ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      // Details and Arrow Icon (Left side in LTR, Right side in RTL)
-                      Row(
-                        children: [
-                          SvgPicture.asset(
-                            isAdd
-                                ? AssetsConstants.frame52
-                                : AssetsConstants.frame53,
-                            width: 45,
-                            height: 45,
-                          ),
-                          const SizedBox(width: 12),
-                          Column(
-                            crossAxisAlignment: isAr
-                                ? CrossAxisAlignment.end
-                                : CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                title as String,
-                                style: AppStyle.walletTxTitle,
-                              ),
-                              const SizedBox(height: 4),
-                              Text(
-                                date as String,
-                                style: AppStyle.walletTxDate.copyWith(color: context.palette.textMuted),
-                              ),
-                            ],
-                          ),
-                        ],
-                      ),
-
-                      // Amount (Right side in LTR, Left side in RTL)
-                      Text(
-                        amountText,
-                        style: AppStyle.walletTxAmount.copyWith(
-                          color: isAdd
-                              ? const Color(0xFF2E7D32)
-                              : const Color(0xFFD32F2F),
-                        ),
-                      ),
-                    ],
-                  ),
-                );
-              }),
+              transactionsAsync.when(
+                loading: () => const Center(child: CircularProgressIndicator()),
+                error: (error, _) => Text(
+                  error.toString(),
+                  style: AppStyle.bodyText.copyWith(color: context.palette.textMuted),
+                ),
+                data: (transactions) {
+                  if (transactions.isEmpty) {
+                    return Text(
+                      isAr ? 'لا توجد عمليات بعد' : 'No transactions yet',
+                      style: AppStyle.bodyText.copyWith(color: context.palette.textMuted),
+                    );
+                  }
+                  return Column(
+                    children: transactions.take(5).map((tx) => TransactionTile(tx: tx, isAr: isAr)).toList(),
+                  );
+                },
+              ),
 
               const SizedBox(height: 24),
 
-              // ── View All Transactions Link ──
               TextButton(
-                onPressed: () {
-                  context.push('/all-transactions');
-                },
+                onPressed: () => context.push('/all-transactions'),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     Text(viewAllTransactions, style: AppStyle.walletViewAll),
                     const SizedBox(width: 8),
                     Transform.rotate(
-                      angle: isAr
-                          ? 3.14159
-                          : 0, // Point left in RTL (Arabic), right in LTR (English)
+                      angle: isAr ? 3.14159 : 0,
                       child: SvgPicture.asset(
                         AssetsConstants.moveLeft,
                         width: 18,
                         height: 18,
-                        colorFilter: const ColorFilter.mode(
-                          Color(0xFFC79A52),
-                          BlendMode.srcIn,
-                        ),
+                        colorFilter: const ColorFilter.mode(Color(0xFFC79A52), BlendMode.srcIn),
                       ),
                     ),
                   ],

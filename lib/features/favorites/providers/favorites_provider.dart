@@ -1,9 +1,13 @@
-import 'dart:convert';
-
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
+import '../../../core/hive_services.dart';
+import '../../../core/network/api_client.dart';
+import '../data/favorites_repository.dart';
 import '../models/favorite_product.dart';
+
+final favoritesRepositoryProvider = Provider<FavoritesRepository>((ref) {
+  return FavoritesRepository(ApiClient.instance);
+});
 
 class FavoritesState {
   final List<FavoriteProduct> favorites;
@@ -29,55 +33,41 @@ class FavoritesState {
   }
 }
 
-/// Replaces the old `FavoritesBloc`. Persists to secure storage the same
-/// way; the only behavioral difference is that loading now happens lazily
-/// on first read instead of being kicked off explicitly at app start.
+/// M82-M84. Backed by the real API now (was local `flutter_secure_storage`
+/// persistence before) — [toggle] is optimistic (updates state immediately)
+/// and rolls back if the API call fails.
 class FavoritesNotifier extends Notifier<FavoritesState> {
-  static const _storage = FlutterSecureStorage(
-    aOptions: AndroidOptions(encryptedSharedPreferences: true),
-  );
-  static const String _favoritesKey = 'favorite_products';
+  FavoritesRepository get _repository => ref.read(favoritesRepositoryProvider);
 
   @override
   FavoritesState build() {
-    _load();
+    if (SecureStorage.isAuthenticated) _load();
     return const FavoritesState(isLoading: true);
   }
 
   Future<void> _load() async {
-    try {
-      final jsonString = await _storage.read(key: _favoritesKey);
-      if (jsonString != null) {
-        final List<dynamic> jsonList = jsonDecode(jsonString);
-        final favorites = jsonList
-            .map((item) => FavoriteProduct.fromJson(item as Map<String, dynamic>))
-            .toList();
-        state = state.copyWith(favorites: favorites, isLoading: false);
-      } else {
-        state = state.copyWith(favorites: [], isLoading: false);
-      }
-    } catch (_) {
-      state = state.copyWith(favorites: [], isLoading: false);
-    }
+    final result = await _repository.getFavorites();
+    state = state.copyWith(favorites: result.dataOrNull ?? const [], isLoading: false);
   }
 
+  Future<void> refresh() => _load();
+
   Future<void> toggle(FavoriteProduct product) async {
-    final updatedFavorites = List<FavoriteProduct>.from(state.favorites);
-    if (updatedFavorites.contains(product)) {
-      updatedFavorites.remove(product);
-    } else {
-      updatedFavorites.add(product);
-    }
+    final isFavorited = state.favorites.contains(product);
+    final previous = state.favorites;
 
-    state = state.copyWith(favorites: updatedFavorites);
+    state = state.copyWith(
+      favorites: isFavorited
+          ? previous.where((p) => p != product).toList()
+          : [...previous, product],
+    );
 
-    try {
-      final jsonString = jsonEncode(
-        updatedFavorites.map((item) => item.toJson()).toList(),
-      );
-      await _storage.write(key: _favoritesKey, value: jsonString);
-    } catch (_) {
-      // Handle or log error
+    final result = isFavorited
+        ? await _repository.removeFavorite(product.productId)
+        : await _repository.addFavorite(product.productId);
+
+    if (!result.isSuccess) {
+      state = state.copyWith(favorites: previous);
     }
   }
 

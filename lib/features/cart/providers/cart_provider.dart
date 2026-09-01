@@ -1,82 +1,104 @@
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:intl/intl.dart';
 
-import 'package:sfa/core/models/product.dart';
+import '../../../core/hive_services.dart';
+import '../../../core/network/api_client.dart';
+import '../../../core/network/api_result.dart';
+import '../data/cart_models.dart';
+import '../data/cart_repository.dart';
 
-import '../models/cart_item.dart';
+final cartRepositoryProvider = Provider<CartRepository>((ref) {
+  return CartRepository(ApiClient.instance);
+});
 
-class CartNotifier extends Notifier<List<CartItem>> {
+/// M27-M36. Cart requires auth, so [build] skips the network call entirely
+/// for a signed-out session instead of surfacing a 401 as a screen error.
+class CartNotifier extends AsyncNotifier<CartData> {
+  CartRepository get _repository => ref.read(cartRepositoryProvider);
+
   @override
-  List<CartItem> build() => [];
-
-  /// Adds a line for the given product/color/size, or bumps its quantity
-  /// by one if that exact combination is already in the cart.
-  void addItem({
-    required Product product,
-    required Color color,
-    required String size,
-  }) {
-    final id = CartItem.keyFor(title: product.title, color: color, size: size);
-    final index = state.indexWhere((item) => item.id == id);
-
-    if (index != -1) {
-      final updated = [...state];
-      updated[index] = updated[index].copyWith(
-        quantity: updated[index].quantity + 1,
-      );
-      state = updated;
-    } else {
-      state = [
-        ...state,
-        CartItem(
-          id: id,
-          imageUrl: product.imageUrl,
-          brand: product.brandName ?? '',
-          title: product.title,
-          price: product.price,
-          color: color,
-          size: size,
-        ),
-      ];
-    }
+  Future<CartData> build() async {
+    if (!SecureStorage.isAuthenticated) return const CartData();
+    final result = await _repository.getCart();
+    return result.dataOrNull ?? const CartData();
   }
 
-  void removeItem(String id) {
-    state = state.where((item) => item.id != id).toList();
+  /// Runs a mutation while keeping the last-known cart visible (as
+  /// `state.value`) so the screen can show a spinner over existing content
+  /// instead of blanking out; a failure keeps that same previous data.
+  Future<void> _mutate(Future<ApiResult<CartData>> Function() call) async {
+    state = const AsyncLoading<CartData>().copyWithPrevious(state);
+    final result = await call();
+    result.when(
+      success: (data) => state = AsyncData(data),
+      failure: (error) =>
+          state = AsyncError<CartData>(error, StackTrace.current).copyWithPrevious(state),
+    );
+  }
+
+  Future<void> refresh() => _mutate(_repository.getCart);
+
+  /// M28
+  Future<void> addItem({
+    required String productId,
+    int quantity = 1,
+    String? selectedSize,
+    String? selectedColor,
+  }) {
+    return _mutate(() => _repository.addItem(
+          productId: productId,
+          quantity: quantity,
+          selectedSize: selectedSize,
+          selectedColor: selectedColor,
+        ));
+  }
+
+  /// M29
+  Future<void> updateQuantity(String cartItemId, int quantity) {
+    return _mutate(() => _repository.updateItem(cartItemId, quantity: quantity));
+  }
+
+  /// M30
+  Future<void> removeItem(String cartItemId) {
+    return _mutate(() => _repository.removeItem(cartItemId));
+  }
+
+  /// M31
+  Future<void> moveToFavorite(String cartItemId) {
+    return _mutate(() => _repository.moveToFavorite(cartItemId));
+  }
+
+  /// M32
+  Future<void> applyCoupon(String code) {
+    return _mutate(() => _repository.applyCoupon(code));
+  }
+
+  /// M33
+  Future<void> removeCoupon() {
+    return _mutate(_repository.removeCoupon);
+  }
+
+  /// M34
+  Future<void> setGiftWrap({
+    required bool giftWrap,
+    String? giftMessage,
+  }) {
+    return _mutate(() => _repository.setGiftWrap(
+          giftWrap: giftWrap,
+          giftMessage: giftMessage,
+        ));
+  }
+
+  /// M35
+  Future<void> redeemPoints(int points) {
+    return _mutate(() => _repository.redeemPoints(points));
   }
 }
 
-final cartProvider = NotifierProvider<CartNotifier, List<CartItem>>(
+final cartProvider = AsyncNotifierProvider<CartNotifier, CartData>(
   CartNotifier.new,
 );
 
-/// Total item count for the cart badge shown in every app bar — sums
-/// quantities rather than counting lines, so "2x of the same item" reads
-/// as 2, not 1.
+/// Total item count for the cart badge shown in every app bar.
 final cartItemCountProvider = Provider<int>((ref) {
-  return ref
-      .watch(cartProvider)
-      .fold<int>(0, (sum, item) => sum + item.quantity);
+  return ref.watch(cartProvider).valueOrNull?.itemsCount ?? 0;
 });
-
-/// Sum of `quantity * unit price`, parsed out of the same formatted price
-/// strings the rest of the app displays (e.g. "1,250 SAR" / "1,250 ر.س.").
-double cartSubtotal(List<CartItem> items) {
-  return items.fold<double>(0, (sum, item) {
-    final numeric = item.price.replaceAll(RegExp(r'[^0-9.]'), '');
-    final value = double.tryParse(numeric) ?? 0;
-    return sum + value * item.quantity;
-  });
-}
-
-final cartSubtotalProvider = Provider<double>((ref) {
-  return cartSubtotal(ref.watch(cartProvider));
-});
-
-/// Renders an amount back into the same "1,250 SAR" / "1,250 ر.س." shape
-/// used throughout the mock product data.
-String formatCartPrice(double amount, bool isArabic) {
-  final formatted = NumberFormat('#,##0').format(amount);
-  return isArabic ? '$formatted ر.س.' : '$formatted SAR';
-}

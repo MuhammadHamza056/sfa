@@ -10,70 +10,45 @@ import 'package:sfa/core/models/product.dart';
 import 'package:sfa/core/widgets/product_card.dart';
 import 'package:sfa/utils/assets_constants.dart';
 import 'package:sfa/utils/color_constants.dart';
-import 'package:sfa/features/favorites/models/favorite_product.dart';
-import 'package:sfa/features/favorites/models/wishlist_product.dart';
+import 'package:sfa/features/favorites/data/wishlist_models.dart';
 import 'package:sfa/features/favorites/providers/favorites_provider.dart';
+import 'package:sfa/features/favorites/providers/wishlists_providers.dart';
 import 'package:sfa/core/theme/app_palette.dart';
 import 'package:sfa/core/theme/always_light.dart';
 
 class FavoritesScreen extends ConsumerWidget {
   const FavoritesScreen({super.key});
 
+  Future<void> _onAddWishlist(BuildContext context, WidgetRef ref, AppLocalizations loc) async {
+    final controller = TextEditingController();
+    final title = await showDialog<String>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(loc.translate('addWishlist')),
+        content: TextField(
+          controller: controller,
+          decoration: InputDecoration(hintText: loc.isArabic ? 'اسم القائمة' : 'Wishlist name'),
+        ),
+        actions: [
+          TextButton(onPressed: () => context.pop(), child: Text(loc.translate('cancel'))),
+          TextButton(
+            onPressed: () => context.pop(controller.text.trim()),
+            child: Text(loc.translate('addWishlist')),
+          ),
+        ],
+      ),
+    );
+    if (title == null || title.isEmpty) return;
+    final result = await ref.read(wishlistsRepositoryProvider).createWishlist(title);
+    if (result.isSuccess) {
+      ref.invalidate(wishlistsListProvider);
+    }
+  }
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final loc = AppLocalizations.of(context);
     final isAr = loc.isArabic;
-
-    // Mock Wishlist Data
-    final mockWishlistProducts = [
-      WishlistProduct(
-        brand: loc.translate('brandJuba'),
-        name: loc.translate('brandProductDesertRose'),
-        price: loc.translate('brandProductPrice1250'),
-        imageUrl:
-            'https://images.unsplash.com/photo-1509631179647-0177331693ae?w=800&q=80',
-        color: const Color(0xFFCBA9A0),
-        size: 'M',
-      ),
-      WishlistProduct(
-        brand: loc.translate('brandJuba'),
-        name: loc.translate('brandProductDesertRose'),
-        price: loc.translate('brandProductPrice1250'),
-        imageUrl:
-            'https://images.unsplash.com/photo-1605763240000-7e93b172d754?w=800&q=80',
-        color: const Color(0xFF8C8C8C),
-        size: 'M',
-      ),
-    ];
-
-    final List<Map<String, dynamic>> wishlists = [
-      {
-        'title': loc.translate('eidGifts'),
-        'count': 8,
-        'images': [
-          'https://images.unsplash.com/photo-1609357518652-6cf0416f0cbe?w=300',
-          'https://images.unsplash.com/photo-1595777457583-95e059d581b8?w=300',
-          'https://images.unsplash.com/photo-1605763240000-7e93b172d754?w=300',
-        ],
-        'addedByName': 'سارة عبد العزيز',
-        'avatarUrl':
-            'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=200&q=80',
-        'products': mockWishlistProducts,
-      },
-      {
-        'title': loc.translate('summerOutfits'),
-        'count': 4,
-        'images': [
-          'https://images.unsplash.com/photo-1572804013309-59a88b7e92f1?w=300',
-          'https://images.unsplash.com/photo-1605763240000-7e93b172d754?w=300',
-          'https://images.unsplash.com/photo-1509631179647-0177331693ae?w=300',
-        ],
-        'addedByName': 'سارة عبد العزيز',
-        'avatarUrl':
-            'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=200&q=80',
-        'products': mockWishlistProducts,
-      },
-    ];
 
     final favoritesState = ref.watch(favoritesProvider);
     final selectedTab = favoritesState.selectedTab;
@@ -92,15 +67,11 @@ class FavoritesScreen extends ConsumerWidget {
                   // Wishlists Tab
                   Expanded(
                     child: GestureDetector(
-                      onTap: () {
-                        ref.read(favoritesProvider.notifier).changeTab(0);
-                      },
+                      onTap: () => ref.read(favoritesProvider.notifier).changeTab(0),
                       child: Container(
                         padding: const EdgeInsets.symmetric(vertical: 12),
                         decoration: BoxDecoration(
-                          color: selectedTab == 0
-                              ? AppColors.primary
-                              : context.palette.surfaceMuted,
+                          color: selectedTab == 0 ? AppColors.primary : context.palette.surfaceMuted,
                           borderRadius: BorderRadius.circular(8),
                         ),
                         alignment: Alignment.center,
@@ -109,9 +80,7 @@ class FavoritesScreen extends ConsumerWidget {
                           style: GoogleFonts.cairo(
                             fontSize: 15,
                             fontWeight: FontWeight.bold,
-                            color: selectedTab == 0
-                                ? Colors.white
-                                : context.palette.textMuted,
+                            color: selectedTab == 0 ? Colors.white : context.palette.textMuted,
                           ),
                         ),
                       ),
@@ -121,15 +90,11 @@ class FavoritesScreen extends ConsumerWidget {
                   // Favorites Tab
                   Expanded(
                     child: GestureDetector(
-                      onTap: () {
-                        ref.read(favoritesProvider.notifier).changeTab(1);
-                      },
+                      onTap: () => ref.read(favoritesProvider.notifier).changeTab(1),
                       child: Container(
                         padding: const EdgeInsets.symmetric(vertical: 12),
                         decoration: BoxDecoration(
-                          color: selectedTab == 1
-                              ? AppColors.primary
-                              : context.palette.surfaceMuted,
+                          color: selectedTab == 1 ? AppColors.primary : context.palette.surfaceMuted,
                           borderRadius: BorderRadius.circular(8),
                         ),
                         alignment: Alignment.center,
@@ -138,9 +103,7 @@ class FavoritesScreen extends ConsumerWidget {
                           style: GoogleFonts.cairo(
                             fontSize: 15,
                             fontWeight: FontWeight.bold,
-                            color: selectedTab == 1
-                                ? Colors.white
-                                : context.palette.textMuted,
+                            color: selectedTab == 1 ? Colors.white : context.palette.textMuted,
                           ),
                         ),
                       ),
@@ -171,13 +134,9 @@ class FavoritesScreen extends ConsumerWidget {
 
             // Main Content Area
             Expanded(
-              child: _buildMainContent(
-                context,
-                selectedTab: selectedTab,
-                wishlists: wishlists,
-                favoriteProducts: favoritesState.favorites,
-                isAr: isAr,
-              ),
+              child: selectedTab == 0
+                  ? _WishlistsTab(isAr: isAr)
+                  : _FavoritesTab(favoritesState: favoritesState, isAr: isAr),
             ),
 
             // Add Wishlist button at bottom (only visible for Wishlists tab)
@@ -185,17 +144,11 @@ class FavoritesScreen extends ConsumerWidget {
               Padding(
                 padding: const EdgeInsets.all(16.0),
                 child: OutlinedButton(
-                  onPressed: () {},
+                  onPressed: () => _onAddWishlist(context, ref, loc),
                   style: OutlinedButton.styleFrom(
-                    side: BorderSide(
-                      color: context.palette.textPrimary.withValues(alpha: 0.3),
-                      width: 1,
-                    ),
+                    side: BorderSide(color: context.palette.textPrimary.withValues(alpha: 0.3), width: 1),
                     shape: const StadiumBorder(),
-                    padding: const EdgeInsets.symmetric(
-                      vertical: 14,
-                      horizontal: 24,
-                    ),
+                    padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 24),
                     minimumSize: const Size(double.infinity, 50),
                     backgroundColor: context.palette.background,
                   ),
@@ -204,17 +157,9 @@ class FavoritesScreen extends ConsumerWidget {
                     children: [
                       Text(
                         loc.translate('addWishlist'),
-                        style: GoogleFonts.cairo(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                          color: context.palette.textPrimary,
-                        ),
+                        style: GoogleFonts.cairo(fontSize: 16, fontWeight: FontWeight.bold, color: context.palette.textPrimary),
                       ),
-                      Icon(
-                        Icons.add,
-                        color: context.palette.textPrimary,
-                        size: 20,
-                      ),
+                      Icon(Icons.add, color: context.palette.textPrimary, size: 20),
                     ],
                   ),
                 ),
@@ -224,33 +169,24 @@ class FavoritesScreen extends ConsumerWidget {
       ),
     );
   }
+}
 
-  Widget _buildMainContent(
-    BuildContext context, {
-    required int selectedTab,
-    required List<Map<String, dynamic>> wishlists,
-    required List<FavoriteProduct> favoriteProducts,
-    required bool isAr,
-  }) {
-    if (selectedTab == 0) {
-      return ListView.builder(
-        padding: const EdgeInsets.symmetric(horizontal: 16),
-        itemCount: wishlists.length,
-        itemBuilder: (context, index) {
-          final list = wishlists[index];
-          return _buildWishlistCard(context, list, isAr);
-        },
-      );
+class _FavoritesTab extends StatelessWidget {
+  final FavoritesState favoritesState;
+  final bool isAr;
+
+  const _FavoritesTab({required this.favoritesState, required this.isAr});
+
+  @override
+  Widget build(BuildContext context) {
+    if (favoritesState.isLoading) {
+      return const Center(child: CircularProgressIndicator());
     }
-
-    if (favoriteProducts.isEmpty) {
+    if (favoritesState.favorites.isEmpty) {
       return Center(
         child: Text(
           isAr ? 'لا توجد منتجات مفضلة بعد' : 'No favorite products yet',
-          style: GoogleFonts.cairo(
-            fontSize: 16,
-            color: context.palette.textMuted,
-          ),
+          style: GoogleFonts.cairo(fontSize: 16, color: context.palette.textMuted),
         ),
       );
     }
@@ -263,43 +199,63 @@ class FavoritesScreen extends ConsumerWidget {
         crossAxisSpacing: 12,
         mainAxisSpacing: 12,
       ),
-      itemCount: favoriteProducts.length,
+      itemCount: favoritesState.favorites.length,
       itemBuilder: (context, index) {
-        final product = favoriteProducts[index];
+        final product = favoritesState.favorites[index];
         return ProductCard(
           isAr: isAr,
           product: Product(
+            id: product.productId,
             imageUrl: product.imageUrl,
             title: product.title,
             price: product.price,
             rating: product.rating,
+            brandName: product.brandName,
           ),
         );
       },
     );
   }
+}
 
-  Widget _buildWishlistCard(
-    BuildContext context,
-    Map<String, dynamic> wishlist,
-    bool isAr,
-  ) {
-    final List<String> images = wishlist['images'];
+class _WishlistsTab extends ConsumerWidget {
+  final bool isAr;
+
+  const _WishlistsTab({required this.isAr});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final wishlistsAsync = ref.watch(wishlistsListProvider);
+
+    return wishlistsAsync.when(
+      loading: () => const Center(child: CircularProgressIndicator()),
+      error: (error, _) => Center(
+        child: Text(error.toString(), style: TextStyle(color: context.palette.textMuted)),
+      ),
+      data: (wishlists) {
+        if (wishlists.isEmpty) {
+          return Center(
+            child: Text(
+              isAr ? 'لا توجد قوائم أمنيات بعد' : 'No wishlists yet',
+              style: GoogleFonts.cairo(fontSize: 16, color: context.palette.textMuted),
+            ),
+          );
+        }
+        return ListView.builder(
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          itemCount: wishlists.length,
+          itemBuilder: (context, index) => _buildWishlistCard(context, wishlists[index], isAr),
+        );
+      },
+    );
+  }
+
+  Widget _buildWishlistCard(BuildContext context, WishlistSummary wishlist, bool isAr) {
     final loc = AppLocalizations.of(context);
 
     return AlwaysLight(
       child: GestureDetector(
-        onTap: () {
-          context.push(
-            '/wishlist-detail',
-            extra: {
-              'title': wishlist['title'],
-              'addedByName': wishlist['addedByName'],
-              'avatarUrl': wishlist['avatarUrl'],
-              'products': wishlist['products'],
-            },
-          );
-        },
+        onTap: () => context.push('/wishlist-detail/${wishlist.id}'),
         child: Container(
           margin: const EdgeInsets.only(bottom: 16),
           padding: const EdgeInsets.all(16),
@@ -308,60 +264,30 @@ class FavoritesScreen extends ConsumerWidget {
             borderRadius: BorderRadius.circular(16),
             border: Border.all(color: const Color(0xFFF3EFE9), width: 1),
             boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.02),
-                blurRadius: 10,
-                offset: const Offset(0, 4),
-              ),
+              BoxShadow(color: Colors.black.withValues(alpha: 0.02), blurRadius: 10, offset: const Offset(0, 4)),
             ],
           ),
           child: Column(
             children: [
-              // Three images row
+              // Cover images row
               Row(
                 children: List.generate(3, (imgIndex) {
+                  final url = imgIndex < wishlist.coverImages.length ? wishlist.coverImages[imgIndex] : null;
                   return Expanded(
                     child: Padding(
-                      padding: EdgeInsets.only(
-                        left: imgIndex == 2 ? 0 : 8.0,
-                        right: imgIndex == 0 ? 0 : 8.0,
-                      ),
-                      child: Stack(
-                        children: [
-                          AspectRatio(
-                            aspectRatio: 0.9,
-                            child: ClipRRect(
-                              borderRadius: BorderRadius.circular(12),
-                              child: Image.network(
-                                images[imgIndex],
-                                fit: BoxFit.cover,
-                                errorBuilder: (context, error, stackTrace) =>
-                                    Container(color: Colors.grey.shade200),
-                              ),
-                            ),
-                          ),
-                          // Heart button badge
-                          Positioned(
-                            top: 8,
-                            right: 8,
-                            child: Container(
-                              padding: const EdgeInsets.all(6),
-                              decoration: const BoxDecoration(
-                                color: Colors.white,
-                                shape: BoxShape.circle,
-                              ),
-                              child: SvgPicture.asset(
-                                AssetsConstants.heart,
-                                width: 14,
-                                height: 14,
-                                colorFilter: ColorFilter.mode(
-                                  AppColors.primary,
-                                  BlendMode.srcIn,
+                      padding: EdgeInsets.only(left: imgIndex == 2 ? 0 : 8.0, right: imgIndex == 0 ? 0 : 8.0),
+                      child: AspectRatio(
+                        aspectRatio: 0.9,
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(12),
+                          child: url == null
+                              ? Container(color: Colors.grey.shade200)
+                              : Image.network(
+                                  url,
+                                  fit: BoxFit.cover,
+                                  errorBuilder: (context, error, stackTrace) => Container(color: Colors.grey.shade200),
                                 ),
-                              ),
-                            ),
-                          ),
-                        ],
+                        ),
                       ),
                     ),
                   );
@@ -373,77 +299,51 @@ class FavoritesScreen extends ConsumerWidget {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  // Title and Product Count
                   Column(
-                    crossAxisAlignment: isAr
-                        ? CrossAxisAlignment.end
-                        : CrossAxisAlignment.start,
+                    crossAxisAlignment: isAr ? CrossAxisAlignment.end : CrossAxisAlignment.start,
                     children: [
                       Text(
-                        wishlist['title'],
-                        style: GoogleFonts.cairo(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                          color: context.palette.textPrimary,
-                        ),
+                        wishlist.title,
+                        style: GoogleFonts.cairo(fontSize: 16, fontWeight: FontWeight.bold, color: context.palette.textPrimary),
                       ),
                       Text(
-                        '${wishlist['count']} ${loc.translate('productsCount')}',
-                        style: GoogleFonts.cairo(
-                          fontSize: 12,
-                          color: context.palette.textMuted,
-                        ),
+                        '${wishlist.itemCount} ${loc.translate('productsCount')}',
+                        style: GoogleFonts.cairo(fontSize: 12, color: context.palette.textMuted),
                       ),
                     ],
                   ),
-
-                  // Share Button
                   Theme(
-                    data: Theme.of(context).copyWith(
-                      cardColor: const Color(
-                        0xFFF5EFEB,
-                      ), // beige background matching screenshot
-                    ),
+                    data: Theme.of(context).copyWith(cardColor: const Color(0xFFF5EFEB)),
                     child: PopupMenuButton<int>(
                       offset: const Offset(0, 40),
                       elevation: 4,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                       icon: Container(
                         decoration: BoxDecoration(
                           shape: BoxShape.circle,
-                          border: Border.all(
-                            color: context.palette.textPrimary.withValues(
-                              alpha: 0.1,
-                            ),
-                            width: 1,
-                          ),
+                          border: Border.all(color: context.palette.textPrimary.withValues(alpha: 0.1), width: 1),
                         ),
                         padding: const EdgeInsets.all(8),
                         child: SvgPicture.asset(
                           AssetsConstants.iconShare2,
                           width: 18,
                           height: 18,
-                          colorFilter: ColorFilter.mode(
-                            context.palette.textPrimary,
-                            BlendMode.srcIn,
-                          ),
+                          colorFilter: ColorFilter.mode(context.palette.textPrimary, BlendMode.srcIn),
                         ),
                       ),
                       padding: EdgeInsets.zero,
                       constraints: const BoxConstraints(),
-                      onSelected: (val) {
-                        if (val == 1) {
-                          final link =
-                              'https://sfa.sa/wishlist/${wishlist['title'].hashCode}';
-                          Clipboard.setData(ClipboardData(text: link));
-                          Share.share(
-                            isAr
-                                ? 'ألقِ نظرة على قائمة أمنياتي: $link'
-                                : 'Check out my wishlist: $link',
-                          );
-                        }
+                      onSelected: (val) async {
+                        if (val != 1) return;
+                        final result = await ProviderScope.containerOf(context)
+                            .read(wishlistsRepositoryProvider)
+                            .getShareLink(wishlist.id);
+                        final link = result.dataOrNull?.shareUrl;
+                        if (link == null) return;
+                        Clipboard.setData(ClipboardData(text: link));
+                        Share.share(
+                          isAr ? 'ألقِ نظرة على قائمة أمنياتي: $link' : 'Check out my wishlist: $link',
+                        );
                       },
                       itemBuilder: (context) => [
                         PopupMenuItem(
@@ -451,19 +351,11 @@ class FavoritesScreen extends ConsumerWidget {
                           child: Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [
-                              Icon(
-                                Icons.copy_rounded,
-                                color: context.palette.textPrimary,
-                                size: 18,
-                              ),
+                              Icon(Icons.copy_rounded, color: context.palette.textPrimary, size: 18),
                               const SizedBox(width: 8),
                               Text(
                                 loc.translate('copyShareLink'),
-                                style: GoogleFonts.cairo(
-                                  fontSize: 13,
-                                  fontWeight: FontWeight.bold,
-                                  color: context.palette.textPrimary,
-                                ),
+                                style: GoogleFonts.cairo(fontSize: 13, fontWeight: FontWeight.bold, color: context.palette.textPrimary),
                               ),
                             ],
                           ),

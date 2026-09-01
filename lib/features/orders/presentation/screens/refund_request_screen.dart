@@ -3,7 +3,9 @@ import 'package:go_router/go_router.dart';
 import 'package:sfa/core/localization/app_localizations.dart';
 import 'package:sfa/utils/color_constants.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:sfa/features/orders/providers/orders_data_provider.dart';
 import 'package:sfa/features/orders/providers/orders_provider.dart';
+import 'package:sfa/features/orders/providers/refunds_providers.dart';
 import 'package:sfa/utils/loader.dart';
 import 'package:sfa/core/theme/app_palette.dart';
 import 'package:sfa/core/widgets/primary_app_bar.dart';
@@ -19,46 +21,35 @@ class RefundRequestScreen extends ConsumerStatefulWidget {
 }
 
 class _RefundRequestScreenState extends ConsumerState<RefundRequestScreen> {
-  // Mock products list for the refund page
-  final List<Map<String, dynamic>> _products = [
-    {
-      'id': '1',
-      'brand': 'جوبا',
-      'brandEn': 'Juba',
-      'title': 'وردة الصحراء المطرزة',
-      'titleEn': 'Embroidered Desert Rose',
-      'price': 1250,
-      'size': 'M',
-      'colorName': 'اللون',
-      'colorNameEn': 'Color',
-      'color': const Color(0xFFD6B5A7),
-      'imageUrl':
-          'https://images.unsplash.com/photo-1509631179647-0177331693ae?w=400&q=80',
-      'isSelected': false,
-    },
-    {
-      'id': '2',
-      'brand': 'جوبا',
-      'brandEn': 'Juba',
-      'title': 'وردة الصحراء المطرزة',
-      'titleEn': 'Embroidered Desert Rose',
-      'price': 1250,
-      'size': 'M',
-      'colorName': 'اللون',
-      'colorNameEn': 'Color',
-      'color': const Color(0xFFD6B5A7),
-      'imageUrl':
-          'https://images.unsplash.com/photo-1529139574466-a303027c1d8b?w=400&q=80',
-      'isSelected': false,
-    },
-  ];
+  bool _submitting = false;
 
-  final TextEditingController _notesController = TextEditingController();
+  Future<void> _onSubmit(AppLocalizations loc, OrdersState state) async {
+    final selectedIds = state.selectedProducts.entries
+        .where((e) => e.value)
+        .map((e) => e.key)
+        .toList();
+    if (selectedIds.isEmpty) {
+      Loader.showError(loc.translate('selectAtLeastOneProduct'));
+      return;
+    }
+    if (state.selectedReason == null) {
+      Loader.showError(loc.translate('reasonPlaceholder'));
+      return;
+    }
 
-  @override
-  void dispose() {
-    _notesController.dispose();
-    super.dispose();
+    setState(() => _submitting = true);
+    final result = await ref.read(refundsRepositoryProvider).submitRefundRequest(
+          orderId: widget.orderId,
+          reason: state.selectedReason!,
+          items: selectedIds.map((id) => {'itemId': id, 'quantity': 1}).toList(),
+        );
+    if (!mounted) return;
+    setState(() => _submitting = false);
+
+    result.when(
+      success: (refund) => context.push('/refund-status/${refund.refundId}'),
+      failure: (error) => Loader.showError(error.message),
+    );
   }
 
   @override
@@ -67,76 +58,48 @@ class _RefundRequestScreenState extends ConsumerState<RefundRequestScreen> {
     final isAr = loc.isArabic;
     final textDir = isAr ? TextDirection.rtl : TextDirection.ltr;
 
-    // Localized values
-    final titleText =
-        '${loc.translate('refundRequestTitle')} #${widget.orderId}';
+    final titleText = '${loc.translate('refundRequestTitle')} #${widget.orderId}';
     final orderNumLabel = loc.translate('orderNumberLabel');
     final orderDateLabel = loc.translate('orderDateLabel');
-    final orderDateValue = loc.translate('orderDateValue');
     final sectionTitle = loc.translate('productsToReturn');
-    final productsCountText = loc.translate('productsCountText');
-    final sizeLabel = loc.translate('sizeLabel');
     final reasonLabel = loc.translate('reasonForReturn');
 
-    final returnReasons = [
-      loc.translate('reasonSizeNotFitting'),
-      loc.translate('reasonDefective'),
-      loc.translate('reasonNoLongerNeeded'),
-      loc.translate('reasonWrongProduct'),
-    ];
-
     final state = ref.watch(ordersProvider);
+    final returnableAsync = ref.watch(returnableItemsProvider(widget.orderId));
+    final reasonsAsync = ref.watch(refundReasonsProvider);
+    final ordersAsync = ref.watch(ordersDataProvider);
+    final order = ordersAsync.valueOrNull?.where((o) => o.id == widget.orderId).firstOrNull;
 
     return Directionality(
       textDirection: textDir,
       child: Scaffold(
         backgroundColor: context.palette.background,
-
-        // ─── Top App Bar ──────────────────────────────────────────────
         appBar: PrimaryAppBar(
           title: 'SFA',
           showBackButton: true,
           onCartTap: () => context.go('/cart'),
           onHeartTap: () => context.go('/favorites'),
         ),
-
-        // ─── Body ─────────────────────────────────────────────────────
         body: ListView(
           padding: const EdgeInsets.all(24.0),
           children: [
-            // Title: "طلب إرجاع #84739201"
             Text(
               titleText,
-              style: TextStyle(
-                fontSize: 22,
-                fontWeight: FontWeight.bold,
-                color: context.palette.textPrimary,
-              ),
+              style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: context.palette.textPrimary),
               textAlign: isAr ? TextAlign.right : TextAlign.left,
             ),
             const SizedBox(height: 8),
             Divider(thickness: 1, color: context.palette.divider),
             const SizedBox(height: 12),
 
-            // Order Info Grid (Order Number & Date)
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Text(
-                  '#${widget.orderId}',
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                    color: context.palette.textPrimary,
-                  ),
+                  '#${order?.orderNumber ?? widget.orderId}',
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: context.palette.textPrimary),
                 ),
-                Text(
-                  orderNumLabel,
-                  style: TextStyle(
-                    fontSize: 14,
-                    color: context.palette.textMuted,
-                  ),
-                ),
+                Text(orderNumLabel, style: TextStyle(fontSize: 14, color: context.palette.textMuted)),
               ],
             ),
             const SizedBox(height: 8),
@@ -144,464 +107,216 @@ class _RefundRequestScreenState extends ConsumerState<RefundRequestScreen> {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Text(
-                  orderDateValue,
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                    color: context.palette.textPrimary,
-                  ),
+                  order?.createdAt != null
+                      ? '${order!.createdAt!.year}/${order.createdAt!.month}/${order.createdAt!.day}'
+                      : '—',
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: context.palette.textPrimary),
                 ),
-                Text(
-                  orderDateLabel,
-                  style: TextStyle(
-                    fontSize: 14,
-                    color: context.palette.textMuted,
-                  ),
-                ),
+                Text(orderDateLabel, style: TextStyle(fontSize: 14, color: context.palette.textMuted)),
               ],
             ),
             const SizedBox(height: 24),
 
-            // Products header with dropdown toggle
             GestureDetector(
-              onTap: () {
-                ref.read(ordersProvider.notifier).toggleProductsExpanded();
-              },
+              onTap: () => ref.read(ordersProvider.notifier).toggleProductsExpanded(),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Text(
                     sectionTitle,
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                      color: context.palette.textPrimary,
-                    ),
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: context.palette.textPrimary),
                   ),
-                  Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: isAr
-                        ? [
-                            Text(
-                              productsCountText,
-                              style: TextStyle(
-                                fontSize: 14,
-                                color: context.palette.textMuted,
-                              ),
-                            ),
-                            const SizedBox(width: 8),
-                            Icon(
-                              state.isProductsExpanded
-                                  ? Icons.keyboard_arrow_up
-                                  : Icons.keyboard_arrow_down,
-                              color: context.palette.textPrimary,
-                            ),
-                          ]
-                        : [
-                            Text(
-                              productsCountText,
-                              style: TextStyle(
-                                fontSize: 14,
-                                color: context.palette.textMuted,
-                              ),
-                            ),
-                            const SizedBox(width: 8),
-                            Icon(
-                              state.isProductsExpanded
-                                  ? Icons.keyboard_arrow_up
-                                  : Icons.keyboard_arrow_down,
-                              color: context.palette.textPrimary,
-                            ),
-                          ],
+                  Icon(
+                    state.isProductsExpanded ? Icons.keyboard_arrow_up : Icons.keyboard_arrow_down,
+                    color: context.palette.textPrimary,
                   ),
                 ],
               ),
             ),
             const SizedBox(height: 16),
 
-            if (state.isProductsExpanded) ...[
-              // Products List
-              ..._products.map((product) {
-                final productId = product['id'] as String;
-                final isProductSelected =
-                    state.selectedProducts[productId] ?? false;
-
-                return Container(
-                  margin: const EdgeInsets.only(bottom: 16),
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: context.palette.backgroundSubtle,
-                    borderRadius: BorderRadius.circular(20),
-                    border: Border.all(
-                      color: isProductSelected
-                          ? AppColors.primary
-                          : Colors.transparent,
-                      width: 1.5,
-                    ),
-                  ),
-                  child: Row(
-                    textDirection: isAr ? TextDirection.rtl : TextDirection.ltr,
-                    children: isAr
-                        ? [
-                            // RTL (Arabic): Checkbox on the left, Text in middle, Image on the right
-                            Checkbox(
-                              value: isProductSelected,
-                              activeColor: AppColors.primary,
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(4),
+            if (state.isProductsExpanded)
+              returnableAsync.when(
+                loading: () => const Center(child: CircularProgressIndicator()),
+                error: (error, _) => Text(
+                  error.toString(),
+                  style: TextStyle(color: context.palette.textMuted),
+                ),
+                data: (items) {
+                  if (items.isEmpty) {
+                    return Text(
+                      isAr ? 'لا توجد عناصر قابلة للإرجاع' : 'No returnable items',
+                      style: TextStyle(color: context.palette.textMuted),
+                    );
+                  }
+                  return Column(
+                    children: items.map((item) {
+                      final isSelected = state.selectedProducts[item.itemId] ?? false;
+                      return Container(
+                        margin: const EdgeInsets.only(bottom: 16),
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: context.palette.backgroundSubtle,
+                          borderRadius: BorderRadius.circular(20),
+                          border: Border.all(
+                            color: isSelected ? AppColors.primary : Colors.transparent,
+                            width: 1.5,
+                          ),
+                        ),
+                        child: Opacity(
+                          opacity: item.eligible ? 1 : 0.5,
+                          child: Row(
+                            textDirection: isAr ? TextDirection.rtl : TextDirection.ltr,
+                            children: [
+                              Checkbox(
+                                value: isSelected,
+                                activeColor: AppColors.primary,
+                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
+                                side: BorderSide(color: context.palette.textMuted, width: 1.5),
+                                onChanged: item.eligible
+                                    ? (val) => ref
+                                        .read(ordersProvider.notifier)
+                                        .toggleProductSelection(item.itemId, val ?? false)
+                                    : null,
                               ),
-                              side: BorderSide(
-                                color: context.palette.textMuted,
-                                width: 1.5,
-                              ),
-                              onChanged: (val) {
-                                ref
-                                    .read(ordersProvider.notifier)
-                                    .toggleProductSelection(
-                                      productId,
-                                      val ?? false,
-                                    );
-                              },
-                            ),
-                            const SizedBox(width: 12),
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.end,
-                                children: [
-                                  Text(
-                                    product['brand'] as String,
-                                    style: TextStyle(
-                                      fontSize: 13,
-                                      color: context.palette.textMuted,
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment:
+                                      isAr ? CrossAxisAlignment.end : CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      item.name.resolve(isAr),
+                                      style: TextStyle(
+                                        fontSize: 15,
+                                        fontWeight: FontWeight.bold,
+                                        color: context.palette.textPrimary,
+                                      ),
                                     ),
-                                  ),
-                                  const SizedBox(height: 4),
-                                  Text(
-                                    product['title'] as String,
-                                    style: TextStyle(
-                                      fontSize: 15,
-                                      fontWeight: FontWeight.bold,
-                                      color: context.palette.textPrimary,
+                                    const SizedBox(height: 4),
+                                    Text(
+                                      'x${item.quantity}',
+                                      style: TextStyle(fontSize: 13, color: context.palette.textMuted),
                                     ),
-                                    textAlign: TextAlign.right,
-                                  ),
-                                  const SizedBox(height: 8),
-                                  Row(
-                                    mainAxisAlignment: MainAxisAlignment.end,
-                                    children: [
+                                    if (!item.eligible && item.reason != null)
                                       Text(
-                                        '${product['price']} ر.س.',
-                                        style: TextStyle(
-                                          fontSize: 15,
-                                          fontWeight: FontWeight.bold,
-                                          color: AppColors.primary,
-                                        ),
+                                        item.reason!,
+                                        style: const TextStyle(fontSize: 12, color: Colors.redAccent),
                                       ),
-                                      const SizedBox(width: 12),
-                                      Container(
-                                        padding: const EdgeInsets.symmetric(
-                                          horizontal: 8,
-                                          vertical: 4,
-                                        ),
-                                        decoration: BoxDecoration(
-                                          color: context.palette.divider,
-                                          borderRadius: BorderRadius.circular(
-                                            6,
-                                          ),
-                                        ),
-                                        child: Text(
-                                          product['size'] as String,
-                                          style: TextStyle(
-                                            fontSize: 13,
-                                            fontWeight: FontWeight.bold,
-                                            color: context.palette.textPrimary,
-                                          ),
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ],
+                                  ],
+                                ),
                               ),
-                            ),
-                            const SizedBox(width: 12),
-                            ClipRRect(
-                              borderRadius: BorderRadius.circular(12),
-                              child: Image.network(
-                                product['imageUrl'] as String,
-                                width: 110,
-                                height: 110,
-                                fit: BoxFit.cover,
+                              const SizedBox(width: 12),
+                              ClipRRect(
+                                borderRadius: BorderRadius.circular(12),
+                                child: Image.network(
+                                  item.image,
+                                  width: 80,
+                                  height: 80,
+                                  fit: BoxFit.cover,
+                                  errorBuilder: (_, __, ___) =>
+                                      Container(width: 80, height: 80, color: context.palette.surfaceMuted),
+                                ),
                               ),
-                            ),
-                          ]
-                        : [
-                            // LTR (English): Image on the left, Text in middle, Checkbox on the right
-                            ClipRRect(
-                              borderRadius: BorderRadius.circular(12),
-                              child: Image.network(
-                                product['imageUrl'] as String,
-                                width: 110,
-                                height: 110,
-                                fit: BoxFit.cover,
-                              ),
-                            ),
-                            const SizedBox(width: 12),
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    product['brandEn'] as String,
-                                    style: TextStyle(
-                                      fontSize: 13,
-                                      color: context.palette.textMuted,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 4),
-                                  Text(
-                                    product['titleEn'] as String,
-                                    style: TextStyle(
-                                      fontSize: 15,
-                                      fontWeight: FontWeight.bold,
-                                      color: context.palette.textPrimary,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 8),
-                                  Row(
-                                    children: [
-                                      Text(
-                                        '${product['price']} SAR',
-                                        style: TextStyle(
-                                          fontSize: 15,
-                                          fontWeight: FontWeight.bold,
-                                          color: AppColors.primary,
-                                        ),
-                                      ),
-                                      const SizedBox(width: 12),
-                                      Container(
-                                        padding: const EdgeInsets.symmetric(
-                                          horizontal: 8,
-                                          vertical: 4,
-                                        ),
-                                        decoration: BoxDecoration(
-                                          color: context.palette.divider,
-                                          borderRadius: BorderRadius.circular(
-                                            6,
-                                          ),
-                                        ),
-                                        child: Text(
-                                          product['size'] as String,
-                                          style: TextStyle(
-                                            fontSize: 13,
-                                            fontWeight: FontWeight.bold,
-                                            color: context.palette.textPrimary,
-                                          ),
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ],
-                              ),
-                            ),
-                            const SizedBox(width: 12),
-                            Checkbox(
-                              value: isProductSelected,
-                              activeColor: AppColors.primary,
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(4),
-                              ),
-                              side: BorderSide(
-                                color: context.palette.textMuted,
-                                width: 1.5,
-                              ),
-                              onChanged: (val) {
-                                ref
-                                    .read(ordersProvider.notifier)
-                                    .toggleProductSelection(
-                                      productId,
-                                      val ?? false,
-                                    );
-                              },
-                            ),
-                          ],
-                  ),
-                );
-              }).toList(),
-            ],
+                            ],
+                          ),
+                        ),
+                      );
+                    }).toList(),
+                  );
+                },
+              ),
 
             const SizedBox(height: 24),
 
-            // ─── Reason dropdown field styled to match design ───
             Align(
               alignment: isAr ? Alignment.centerRight : Alignment.centerLeft,
               child: Text(
                 reasonLabel,
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                  color: context.palette.textPrimary,
-                ),
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: context.palette.textPrimary),
               ),
             ),
             const SizedBox(height: 8),
-            DropdownButtonFormField<String>(
-              value: state.selectedReason,
-              hint: Align(
-                alignment: isAr ? Alignment.centerRight : Alignment.centerLeft,
-                child: Text(
-                  loc.translate('reasonPlaceholder'),
-                  style: TextStyle(color: context.palette.textMuted),
-                ),
-              ),
-              icon: Icon(
-                Icons.keyboard_arrow_down,
-                color: context.palette.textPrimary,
-              ),
-              decoration: InputDecoration(
-                contentPadding: const EdgeInsets.symmetric(
-                  horizontal: 20,
-                  vertical: 16,
-                ),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(16),
-                  borderSide: BorderSide(
-                    color: context.palette.divider,
-                    width: 1.5,
+            reasonsAsync.when(
+              loading: () => const Center(child: CircularProgressIndicator()),
+              error: (error, _) => Text(error.toString(), style: TextStyle(color: context.palette.textMuted)),
+              data: (reasons) => DropdownButtonFormField<String>(
+                initialValue: state.selectedReason,
+                hint: Align(
+                  alignment: isAr ? Alignment.centerRight : Alignment.centerLeft,
+                  child: Text(
+                    loc.translate('reasonPlaceholder'),
+                    style: TextStyle(color: context.palette.textMuted),
                   ),
                 ),
-                enabledBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(16),
-                  borderSide: BorderSide(
-                    color: context.palette.textMuted,
-                    width: 1.5,
+                icon: Icon(Icons.keyboard_arrow_down, color: context.palette.textPrimary),
+                decoration: InputDecoration(
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(16),
+                    borderSide: BorderSide(color: context.palette.divider, width: 1.5),
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(16),
+                    borderSide: BorderSide(color: context.palette.textMuted, width: 1.5),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(16),
+                    borderSide: BorderSide(color: context.palette.textPrimary, width: 1.5),
                   ),
                 ),
-                focusedBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(16),
-                  borderSide: BorderSide(
-                    color: context.palette.textPrimary,
-                    width: 1.5,
-                  ),
-                ),
-              ),
-              items: returnReasons.map((String value) {
-                return DropdownMenuItem<String>(
-                  value: value,
-                  child: Align(
-                    alignment: isAr
-                        ? Alignment.centerRight
-                        : Alignment.centerLeft,
-                    child: Text(value),
-                  ),
-                );
-              }).toList(),
-              onChanged: (val) {
-                ref.read(ordersProvider.notifier).changeRefundReason(val);
-              },
-            ),
-            const SizedBox(height: 24),
-
-            // ─── Additional notes text area styled to match design ───
-            Align(
-              alignment: isAr ? Alignment.centerRight : Alignment.centerLeft,
-              child: Text(
-                loc.translate('additionalNotesOptional'),
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                  color: context.palette.textPrimary,
-                ),
-              ),
-            ),
-            const SizedBox(height: 8),
-            TextField(
-              controller: _notesController,
-              maxLines: 4,
-              textAlign: isAr ? TextAlign.right : TextAlign.left,
-              decoration: InputDecoration(
-                contentPadding: const EdgeInsets.symmetric(
-                  horizontal: 20,
-                  vertical: 16,
-                ),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(16),
-                  borderSide: BorderSide(
-                    color: context.palette.divider,
-                    width: 1.5,
-                  ),
-                ),
-                enabledBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(16),
-                  borderSide: BorderSide(
-                    color: context.palette.textMuted,
-                    width: 1.5,
-                  ),
-                ),
-                focusedBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(16),
-                  borderSide: BorderSide(
-                    color: context.palette.textPrimary,
-                    width: 1.5,
-                  ),
-                ),
+                items: reasons.map((reason) {
+                  return DropdownMenuItem<String>(
+                    value: reason.code,
+                    child: Align(
+                      alignment: isAr ? Alignment.centerRight : Alignment.centerLeft,
+                      child: Text(reason.name.resolve(isAr)),
+                    ),
+                  );
+                }).toList(),
+                onChanged: (val) => ref.read(ordersProvider.notifier).changeRefundReason(val),
               ),
             ),
             const SizedBox(height: 32),
 
-            // ─── Confirm Refund Button "تأكيد طلب إرجاع" ───
             ElevatedButton(
-              onPressed: () {
-                final selectedCount = _products
-                    .where((p) => state.selectedProducts[p['id']] == true)
-                    .length;
-                if (selectedCount == 0) {
-                  Loader.showError(loc.translate('selectAtLeastOneProduct'));
-                  return;
-                }
-
-                context.push('/refund-status/${widget.orderId}');
-              },
+              onPressed: _submitting ? null : () => _onSubmit(loc, state),
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.goldAccent,
                 minimumSize: const Size(double.infinity, 56),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(30),
-                ),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
                 elevation: 0,
               ),
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      loc.translate('confirmReturnRequest'),
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
+              child: _submitting
+                  ? const Center(
+                      child: SizedBox(
+                        height: 22,
+                        width: 22,
+                        child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                      ),
+                    )
+                  : Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(
+                            loc.translate('confirmReturnRequest'),
+                            style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold),
+                          ),
+                          Icon(isAr ? Icons.west : Icons.east, color: Colors.white, size: 20),
+                        ],
                       ),
                     ),
-                    Icon(
-                      isAr ? Icons.west : Icons.east,
-                      color: Colors.white,
-                      size: 20,
-                    ),
-                  ],
-                ),
-              ),
             ),
             const SizedBox(height: 16),
 
-            // ─── Cancel Button "إلغاء" (Black Color style) ───
             OutlinedButton(
               onPressed: () => context.pop(),
               style: OutlinedButton.styleFrom(
                 minimumSize: const Size(double.infinity, 56),
                 side: BorderSide(color: context.palette.textMuted, width: 1.5),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(30),
-                ),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
                 backgroundColor: context.palette.background,
               ),
               child: Padding(
@@ -611,17 +326,9 @@ class _RefundRequestScreenState extends ConsumerState<RefundRequestScreen> {
                   children: [
                     Text(
                       loc.translate('cancel'),
-                      style: TextStyle(
-                        color: context.palette.textPrimary,
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                      ),
+                      style: TextStyle(color: context.palette.textPrimary, fontSize: 16, fontWeight: FontWeight.bold),
                     ),
-                    Icon(
-                      isAr ? Icons.west : Icons.east,
-                      color: context.palette.textPrimary,
-                      size: 20,
-                    ),
+                    Icon(isAr ? Icons.west : Icons.east, color: context.palette.textPrimary, size: 20),
                   ],
                 ),
               ),
@@ -632,4 +339,9 @@ class _RefundRequestScreenState extends ConsumerState<RefundRequestScreen> {
       ),
     );
   }
+
+}
+
+extension _FirstOrNull<T> on Iterable<T> {
+  T? get firstOrNull => isEmpty ? null : first;
 }

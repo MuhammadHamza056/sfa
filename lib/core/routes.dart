@@ -42,7 +42,8 @@ import '../features/address/presentation/screens/add_edit_address_screen.dart';
 import '../features/brands/presentation/screens/product_reviews_screen.dart';
 import '../features/brands/presentation/screens/write_review_screen.dart';
 import '../features/favorites/presentation/screens/wishlist_detail_screen.dart';
-import '../features/favorites/models/wishlist_product.dart';
+import '../features/brands/models/brand_nav_args.dart';
+import '../features/checkout/data/checkout_models.dart';
 
 final _rootNavigatorKey = GlobalKey<NavigatorState>();
 
@@ -144,9 +145,9 @@ final router = GoRouter(
       path: '/brand-detail',
       parentNavigatorKey: _rootNavigatorKey,
       builder: (context, state) {
-        final brandName = state.extra as String? ?? 'brandJuba';
+        final args = state.extra as BrandNavArgs?;
         return Scaffold(
-          body: BrandDetailScreen(brandName: brandName),
+          body: BrandDetailScreen(brandId: args?.id ?? '', initialName: args?.name),
           bottomNavigationBar: const AppBottomNavBar(),
         );
       },
@@ -173,15 +174,21 @@ final router = GoRouter(
     GoRoute(
       path: '/payment-success',
       parentNavigatorKey: _rootNavigatorKey,
-      builder: (context, state) => const PaymentSuccessScreen(),
+      builder: (context, state) {
+        final order = state.extra as CheckoutConfirmResult?;
+        return PaymentSuccessScreen(order: order);
+      },
     ),
     GoRoute(
-      path: '/order-tracking',
+      path: '/order-tracking/:id',
       parentNavigatorKey: _rootNavigatorKey,
-      builder: (context, state) => Scaffold(
-        body: const OrderTrackingScreen(),
-        bottomNavigationBar: const AppBottomNavBar(overrideIndex: 3),
-      ),
+      builder: (context, state) {
+        final orderId = state.pathParameters['id'] ?? '';
+        return Scaffold(
+          body: OrderTrackingScreen(orderId: orderId),
+          bottomNavigationBar: const AppBottomNavBar(overrideIndex: 3),
+        );
+      },
     ),
     GoRoute(
       path: '/previous-orders',
@@ -228,19 +235,16 @@ final router = GoRouter(
       },
     ),
     GoRoute(
-      path: '/wishlist-detail',
+      path: '/wishlist-detail/:id',
       parentNavigatorKey: _rootNavigatorKey,
       builder: (context, state) {
-        final extra = state.extra as Map<String, dynamic>;
-        final title = extra['title'] as String;
+        final wishlistId = state.pathParameters['id'] ?? '';
         return Scaffold(
-          appBar: SubPageAppBar(title: title, fontSize: 19),
-          body: WishlistDetailScreen(
-            title: title,
-            addedByName: extra['addedByName'] as String,
-            avatarUrl: extra['avatarUrl'] as String,
-            products: extra['products'] as List<WishlistProduct>,
+          appBar: SubPageAppBar(
+            title: AppLocalizations.of(context).translate('collaborativeWishlists'),
+            fontSize: 19,
           ),
+          body: WishlistDetailScreen(wishlistId: wishlistId),
           bottomNavigationBar: const AppBottomNavBar(),
         );
       },
@@ -265,11 +269,13 @@ final router = GoRouter(
       path: '/refund-status/:id',
       parentNavigatorKey: _rootNavigatorKey,
       builder: (context, state) {
-        final orderId = state.pathParameters['id'] ?? '84739201';
+        // The id here is the refund id returned by the submit call, not the
+        // order id — see RefundStatusScreen's doc comment.
+        final refundId = state.pathParameters['id'] ?? '';
         return Scaffold(
           body: ProviderScope(
             overrides: [ordersProvider],
-            child: RefundStatusScreen(orderId: orderId),
+            child: RefundStatusScreen(refundId: refundId),
           ),
           bottomNavigationBar: const AppBottomNavBar(overrideIndex: 3),
         );

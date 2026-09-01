@@ -14,6 +14,11 @@ class SecureStorage {
   static const String role = "ROLE";
   static const String code = "CODE";
   static const String darkMode = "DARKMODE";
+  static const String accessToken = "ACCESS_TOKEN";
+  static const String refreshToken = "REFRESH_TOKEN";
+  static const String currentUser = "CURRENT_USER";
+  static const String languageSelected = "LANGUAGE_SELECTED";
+  static const String savedLocale = "SAVED_LOCALE";
 
   static const FlutterSecureStorage _storage = FlutterSecureStorage(
     aOptions: AndroidOptions(encryptedSharedPreferences: true),
@@ -37,6 +42,11 @@ class SecureStorage {
       role,
       code,
       darkMode,
+      accessToken,
+      refreshToken,
+      currentUser,
+      languageSelected,
+      savedLocale,
     ];
 
     for (String key in keys) {
@@ -156,6 +166,54 @@ class SecureStorage {
 
   static bool getUserLogin() {
     return _cache[login] == 'true';
+  }
+
+  static Future<void> putLanguageSelected(bool value) async {
+    await _write(languageSelected, value.toString());
+  }
+
+  static bool getLanguageSelected() {
+    return _cache[languageSelected] == 'true';
+  }
+
+  static Future<void> putSavedLocale(String value) async {
+    await _write(savedLocale, value);
+  }
+
+  static String? getSavedLocale() {
+    return _cache[savedLocale];
+  }
+
+  static Future<void> putAccessToken(String value) async {
+    await _write(accessToken, value);
+  }
+
+  static String? getAccessToken() {
+    return _cache[accessToken];
+  }
+
+  static Future<void> putRefreshToken(String value) async {
+    await _write(refreshToken, value);
+  }
+
+  static String? getRefreshToken() {
+    return _cache[refreshToken];
+  }
+
+  static Future<void> putCurrentUser(String jsonValue) async {
+    await _write(currentUser, jsonValue);
+  }
+
+  static String? getCurrentUser() {
+    return _cache[currentUser];
+  }
+
+  static bool get isAuthenticated => getAccessToken() != null;
+
+  static Future<void> clearSession() async {
+    await _write(accessToken, null);
+    await _write(refreshToken, null);
+    await _write(currentUser, null);
   }
 
   static Future<void> deleteHive() async {

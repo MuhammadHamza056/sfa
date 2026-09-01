@@ -1,7 +1,6 @@
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -11,10 +10,33 @@ import 'package:sfa/core/localization/app_localizations.dart';
 import 'package:sfa/utils/app_style.dart';
 import 'package:sfa/utils/assets_constants.dart';
 import 'package:sfa/utils/color_constants.dart';
-import 'package:sfa/utils/phone_number_formatter.dart';
-import 'package:sfa/features/checkout/providers/checkout_provider.dart';
+import 'package:sfa/utils/currency_formatter.dart';
+import 'package:sfa/features/address/models/address.dart';
+import 'package:sfa/features/address/providers/address_provider.dart';
+import 'package:sfa/features/cart/providers/cart_provider.dart';
+import 'package:sfa/features/checkout/providers/checkout_providers.dart';
 import 'package:sfa/core/theme/app_palette.dart';
 import 'package:sfa/core/widgets/primary_app_bar.dart';
+
+/// Checkout-level payment methods the guide's M39 confirm example and M45
+/// initiate example both reference (`MYFATOORAH`, `APPLE_PAY`) — `MADA`
+/// added as the third common Saudi rail. The guide doesn't enumerate the
+/// full set, so this list is the best-supported inference rather than a
+/// documented enum.
+const _kPaymentMethods = ['MYFATOORAH', 'MADA', 'APPLE_PAY'];
+
+String _paymentLabel(String method, bool isAr) {
+  switch (method) {
+    case 'MYFATOORAH':
+      return isAr ? 'ماي فاتورة' : 'MyFatoorah';
+    case 'MADA':
+      return isAr ? 'مدى' : 'Mada';
+    case 'APPLE_PAY':
+      return 'Apple Pay';
+    default:
+      return method;
+  }
+}
 
 class CheckoutScreen extends ConsumerStatefulWidget {
   const CheckoutScreen({super.key});
@@ -24,20 +46,37 @@ class CheckoutScreen extends ConsumerStatefulWidget {
 }
 
 class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
-  final _formKey = GlobalKey<FormState>();
-  final _nameController = TextEditingController();
-  final _phoneController = TextEditingController();
-  final _cityController = TextEditingController();
-  final _addressController = TextEditingController();
-  bool _saveAddress = false;
+  String? _selectedAddressId;
+  String _selectedPayment = _kPaymentMethods.first;
+  bool _confirming = false;
 
-  @override
-  void dispose() {
-    _nameController.dispose();
-    _phoneController.dispose();
-    _cityController.dispose();
-    _addressController.dispose();
-    super.dispose();
+  void _showMessage(String message) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
+  }
+
+  Future<void> _onConfirmOrder(AppLocalizations loc) async {
+    final addressId = _selectedAddressId;
+    if (addressId == null) {
+      _showMessage(loc.isArabic ? 'الرجاء اختيار عنوان التوصيل' : 'Please choose a delivery address');
+      return;
+    }
+
+    setState(() => _confirming = true);
+    final result = await ref.read(checkoutRepositoryProvider).confirmCheckout(
+          addressId: addressId,
+          paymentMethod: _selectedPayment,
+        );
+    if (!mounted) return;
+    setState(() => _confirming = false);
+
+    result.when(
+      success: (order) {
+        ref.read(cartProvider.notifier).refresh();
+        context.push('/payment-success', extra: order);
+      },
+      failure: (error) => _showMessage(error.message),
+    );
   }
 
   @override
@@ -45,14 +84,24 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
     final loc = AppLocalizations.of(context);
     final isAr = loc.isArabic;
     final textDir = isAr ? TextDirection.rtl : TextDirection.ltr;
+    final addressesAsync = ref.watch(addressProvider);
 
-    final regions = isAr
-        ? ['الرياض', 'جدة', 'الدمام', 'مكة المكرمة', 'المدينة المنورة']
-        : ['Riyadh', 'Jeddah', 'Dammam', 'Makkah', 'Madinah'];
+    // Default to the customer's default (or first) address once loaded.
+    addressesAsync.whenData((addresses) {
+      if (_selectedAddressId == null && addresses.isNotEmpty) {
+        final defaultAddress = addresses.firstWhere(
+          (a) => a.isDefault,
+          orElse: () => addresses.first,
+        );
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted && _selectedAddressId == null) {
+            setState(() => _selectedAddressId = defaultAddress.id);
+          }
+        });
+      }
+    });
 
-    final paymentOptions = ['PayTaps', 'TapPayments', 'Moyasar'];
-
-    final state = ref.watch(checkoutProvider);
+    final previewAsync = ref.watch(checkoutPreviewProvider(_selectedAddressId ?? ''));
 
     return Directionality(
       textDirection: textDir,
@@ -60,10 +109,6 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
         onTap: () => FocusScope.of(context).unfocus(),
         child: Scaffold(
           backgroundColor: context.palette.background,
-
-          // ──────────────────────────────────────────────────────────────
-          // AppBar — shared PrimaryAppBar
-          // ──────────────────────────────────────────────────────────────
           appBar: PrimaryAppBar(
             title: loc.translate('secureCheckout'),
             fontSize: 18,
@@ -72,300 +117,221 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
             cartIcon: AssetsConstants.shoppingBag,
             heartIcon: AssetsConstants.heart2,
           ),
-
-          // ──────────────────────────────────────────────────────────────
-          // Body
-          // ──────────────────────────────────────────────────────────────
           body: SingleChildScrollView(
             padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-            child: Form(
-              key: _formKey,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  // ─── Shipping Address Section Header ──────────────────
-                  Align(
-                    alignment: isAr
-                        ? Alignment.centerRight
-                        : Alignment.centerLeft,
-                    child: Text(
-                      loc.translate('shippingAddress'),
-                      style: AppStyle.sectionHeader,
-                    ),
-                  ),
-                  const SizedBox(height: 6),
-                  Divider(color: context.palette.divider, thickness: 0.8),
-                  const SizedBox(height: 12),
-                  Align(
-                    alignment: isAr
-                        ? Alignment.centerRight
-                        : Alignment.centerLeft,
-                    child: Text(
-                      loc.translate('fillFormToReceive'),
-                      style: AppStyle.inputHint.copyWith(
-                        color: context.palette.textPrimary.withValues(
-                          alpha: 0.4,
-                        ),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                // ─── Shipping Address Section Header ──────────────────
+                Align(
+                  alignment: isAr ? Alignment.centerRight : Alignment.centerLeft,
+                  child: Text(loc.translate('shippingAddress'), style: AppStyle.sectionHeader),
+                ),
+                const SizedBox(height: 6),
+                Divider(color: context.palette.divider, thickness: 0.8),
+                const SizedBox(height: 12),
 
-                  // ─── Full Name ────────────────────────────────────────
-                  _buildLabel(loc.translate('fullNameLabel')),
-                  const SizedBox(height: 6),
-                  _buildTextField(
-                    controller: _nameController,
-                    validator: (v) => (v == null || v.trim().isEmpty)
-                        ? loc.translate('fieldRequired')
-                        : null,
+                addressesAsync.when(
+                  loading: () => const Padding(
+                    padding: EdgeInsets.symmetric(vertical: 24),
+                    child: Center(child: CircularProgressIndicator()),
                   ),
-                  const SizedBox(height: 14),
-
-                  // ─── Phone Number ─────────────────────────────────────
-                  _buildLabel(loc.translate('phoneLabel')),
-                  const SizedBox(height: 6),
-                  _buildPhoneField(),
-                  const SizedBox(height: 14),
-
-                  // ─── Region ───────────────────────────────────────────
-                  _buildLabel(loc.translate('regionLabel')),
-                  const SizedBox(height: 6),
-                  _buildRegionChips(context, state, regions, isAr),
-                  const SizedBox(height: 14),
-
-                  // ─── City ─────────────────────────────────────────────
-                  _buildLabel(loc.translate('cityLabel')),
-                  const SizedBox(height: 6),
-                  _buildTextField(
-                    controller: _cityController,
-                    validator: (v) => (v == null || v.trim().isEmpty)
-                        ? loc.translate('fieldRequired')
-                        : null,
+                  error: (error, _) => Text(
+                    error.toString(),
+                    style: AppStyle.bodyText.copyWith(color: context.palette.textMuted),
                   ),
-                  const SizedBox(height: 14),
-
-                  // ─── Map ──────────────────────────────────────────────
-                  Align(
-                    alignment: isAr
-                        ? Alignment.centerRight
-                        : Alignment.centerLeft,
-                    child: Text(
-                      loc.translate('addressByMap'),
-                      style: AppStyle.fieldLabel,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  _CheckoutMap(),
-                  const SizedBox(height: 14),
-                  _buildLabel(loc.translate('detailedAddressLabel')),
-                  const SizedBox(height: 6),
-                  _buildTextField(
-                    controller: _addressController,
-                    validator: (v) => (v == null || v.trim().isEmpty)
-                        ? loc.translate('fieldRequired')
-                        : null,
-                  ),
-                  const SizedBox(height: 12),
-
-                  // ─── Save address checkbox ────────────────────────
-                  Directionality(
-                    textDirection: TextDirection.ltr,
-                    child: InkWell(
-                      onTap: () => setState(() => _saveAddress = !_saveAddress),
-                      borderRadius: BorderRadius.circular(8),
-                      child: Padding(
-                        padding: const EdgeInsets.symmetric(vertical: 6),
-                        child: Row(
-                          children: isAr
-                              ? [
-                                  SizedBox(
-                                    width: 22,
-                                    height: 22,
-                                    child: Checkbox(
-                                      value: _saveAddress,
-                                      onChanged: (v) => setState(
-                                        () => _saveAddress = v ?? false,
-                                      ),
-                                      activeColor: AppColors.primary,
-                                      shape: RoundedRectangleBorder(
-                                        borderRadius: BorderRadius.circular(4),
-                                      ),
-                                      side: BorderSide(
-                                        color: context.palette.divider,
-                                        width: 1.5,
-                                      ),
-                                      materialTapTargetSize:
-                                          MaterialTapTargetSize.shrinkWrap,
-                                      visualDensity: VisualDensity.compact,
-                                    ),
-                                  ),
-                                  const SizedBox(width: 10),
-                                  Expanded(
-                                    child: Align(
-                                      alignment: Alignment.centerRight,
-                                      child: Text(
-                                        loc.translate('saveAddressForFuture'),
-                                        style: AppStyle.labelText,
-                                        textDirection: TextDirection.rtl,
-                                      ),
-                                    ),
-                                  ),
-                                ]
-                              : [
-                                  SizedBox(
-                                    width: 22,
-                                    height: 22,
-                                    child: Checkbox(
-                                      value: _saveAddress,
-                                      onChanged: (v) => setState(
-                                        () => _saveAddress = v ?? false,
-                                      ),
-                                      activeColor: AppColors.primary,
-                                      shape: RoundedRectangleBorder(
-                                        borderRadius: BorderRadius.circular(4),
-                                      ),
-                                      side: BorderSide(
-                                        color: context.palette.divider,
-                                        width: 1.5,
-                                      ),
-                                      materialTapTargetSize:
-                                          MaterialTapTargetSize.shrinkWrap,
-                                      visualDensity: VisualDensity.compact,
-                                    ),
-                                  ),
-                                  const SizedBox(width: 10),
-                                  Text(
-                                    loc.translate('saveAddressForFuture'),
-                                    style: AppStyle.labelText,
-                                  ),
-                                ],
-                        ),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 20),
-
-                  // ─── Payment Method Section Header ────────────────────
-                  Text(
-                    loc.translate('paymentMethod'),
-                    style: AppStyle.sectionHeader,
-                  ),
-                  const SizedBox(height: 16),
-                  Divider(color: context.palette.divider, thickness: 0.8),
-                  const SizedBox(height: 16),
-
-                  // ─── Pricing Summary ──────────────────────────────────
-                  _buildPricingRow(
-                    label: loc.translate('subtotal'),
-                    amount: isAr ? '2,500 ر.س' : '2,500 SAR',
-                    isPrimary: false,
-                    isAr: isAr,
-                  ),
-                  const SizedBox(height: 8),
-                  _buildPricingRow(
-                    label: loc.translate('totalAmount'),
-                    amount: isAr ? '2,500 ر.س' : '2,500 SAR',
-                    isPrimary: true,
-                    isAr: isAr,
-                  ),
-                  const SizedBox(height: 16),
-
-                  Text(
-                    loc.translate('choosePayment'),
-                    style: AppStyle.inputHint.copyWith(
-                      color: context.palette.textPrimary.withValues(alpha: 0.4),
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-
-                  // ─── Payment Options ──────────────────────────────────
-                  ...paymentOptions.map(
-                    (option) => Padding(
-                      padding: const EdgeInsets.only(bottom: 10),
-                      child: _buildPaymentOption(
-                        context,
-                        state,
-                        option,
-                        isAr,
-                        loc,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 24),
-
-                  // ─── Confirm Order Button ─────────────────────────────
-                  ElevatedButton(
-                    onPressed: _onConfirmOrder,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.primary,
-                      minimumSize: const Size(double.infinity, 54),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(30),
-                      ),
-                      elevation: 0,
-                    ),
-                    child: Row(
+                  data: (addresses) {
+                    if (addresses.isEmpty) {
+                      return Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          Text(
+                            loc.translate('noAddressesYet'),
+                            style: AppStyle.bodyText.copyWith(color: context.palette.textMuted),
+                          ),
+                          const SizedBox(height: 12),
+                          OutlinedButton(
+                            onPressed: () => context.push('/addresses/add'),
+                            child: Text(loc.translate('addAddress')),
+                          ),
+                        ],
+                      );
+                    }
+                    return Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: Text(
-                            loc.translate('confirmOrder'),
-                            textAlign: TextAlign.start,
-                            style: AppStyle.buttonTextPrimary,
+                        for (final address in addresses) ...[
+                          _AddressOption(
+                            address: address,
+                            selected: _selectedAddressId == address.id,
+                            onTap: () => setState(() => _selectedAddressId = address.id),
+                          ),
+                          const SizedBox(height: 8),
+                        ],
+                        Align(
+                          alignment: isAr ? Alignment.centerRight : Alignment.centerLeft,
+                          child: TextButton(
+                            onPressed: () => context.push('/addresses/add'),
+                            child: Text(loc.translate('addAddress')),
                           ),
                         ),
-                        SvgPicture.asset(
-                          AssetsConstants.shoppingBag,
-                          width: 18,
-                          height: 18,
-                          colorFilter: const ColorFilter.mode(
-                            Colors.white,
-                            BlendMode.srcIn,
-                          ),
-                        ),
-                        const SizedBox(width: 8),
                       ],
-                    ),
-                  ),
-                  const SizedBox(height: 12),
+                    );
+                  },
+                ),
+                const SizedBox(height: 14),
 
-                  // ─── Cancel Button ────────────────────────────────────
-                  OutlinedButton(
-                    onPressed: () => context.pop(),
-                    style: OutlinedButton.styleFrom(
-                      minimumSize: const Size(double.infinity, 54),
-                      side: BorderSide(color: context.palette.divider),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(30),
-                      ),
-                    ),
-                    child: Row(
+                if (_selectedAddressId != null) ...[
+                  Align(
+                    alignment: isAr ? Alignment.centerRight : Alignment.centerLeft,
+                    child: Text(loc.translate('addressByMap'), style: AppStyle.fieldLabel),
+                  ),
+                  const SizedBox(height: 8),
+                  _CheckoutMap(
+                    location: addressesAsync.valueOrNull
+                        ?.where((a) => a.id == _selectedAddressId)
+                        .firstOrNullWithLocation(),
+                  ),
+                  const SizedBox(height: 14),
+                ],
+
+                // ─── Payment Method Section Header ────────────────────
+                Text(loc.translate('paymentMethod'), style: AppStyle.sectionHeader),
+                const SizedBox(height: 16),
+                Divider(color: context.palette.divider, thickness: 0.8),
+                const SizedBox(height: 16),
+
+                // ─── Pricing Summary ──────────────────────────────────
+                previewAsync.when(
+                  loading: () => const Padding(
+                    padding: EdgeInsets.symmetric(vertical: 12),
+                    child: Center(child: CircularProgressIndicator()),
+                  ),
+                  error: (error, _) => Text(
+                    error.toString(),
+                    style: AppStyle.bodyText.copyWith(color: context.palette.textMuted),
+                  ),
+                  data: (preview) {
+                    if (preview == null) {
+                      return Text(
+                        isAr ? 'اختر عنوانًا لعرض الإجمالي' : 'Choose an address to see the total',
+                        style: AppStyle.bodyText.copyWith(color: context.palette.textMuted),
+                      );
+                    }
+                    return Column(
                       children: [
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: Text(
-                            loc.translate('cancel'),
-                            textAlign: TextAlign.start,
-                            style: AppStyle.buttonTextSecondary,
-                          ),
+                        _buildPricingRow(
+                          label: loc.translate('subtotal'),
+                          amount: CurrencyFormatter.fromHalalas(preview.subtotalFils, isAr: isAr),
+                          isPrimary: false,
                         ),
-                        // Mirror the arrow to point LEFT (←) in Arabic
-                        isAr
-                            ? Transform(
-                                alignment: Alignment.center,
-                                transform: Matrix4.rotationY(math.pi),
-                                child: SvgPicture.asset(
-                                  AssetsConstants.moveLeft,
-                                  width: 18,
-                                  height: 18,
-                                  colorFilter: ColorFilter.mode(
-                                    context.palette.textPrimary,
-                                    BlendMode.srcIn,
-                                  ),
-                                ),
-                              )
-                            : SvgPicture.asset(
+                        const SizedBox(height: 8),
+                        if (preview.deliveryFeeFils > 0) ...[
+                          _buildPricingRow(
+                            label: isAr ? 'رسوم التوصيل' : 'Delivery Fee',
+                            amount: CurrencyFormatter.fromHalalas(preview.deliveryFeeFils, isAr: isAr),
+                            isPrimary: false,
+                          ),
+                          const SizedBox(height: 8),
+                        ],
+                        if (preview.taxFils > 0) ...[
+                          _buildPricingRow(
+                            label: isAr ? 'الضريبة' : 'Tax',
+                            amount: CurrencyFormatter.fromHalalas(preview.taxFils, isAr: isAr),
+                            isPrimary: false,
+                          ),
+                          const SizedBox(height: 8),
+                        ],
+                        _buildPricingRow(
+                          label: loc.translate('totalAmount'),
+                          amount: CurrencyFormatter.fromHalalas(preview.totalFils, isAr: isAr),
+                          isPrimary: true,
+                        ),
+                      ],
+                    );
+                  },
+                ),
+                const SizedBox(height: 16),
+
+                Text(
+                  loc.translate('choosePayment'),
+                  style: AppStyle.inputHint.copyWith(
+                    color: context.palette.textPrimary.withValues(alpha: 0.4),
+                  ),
+                ),
+                const SizedBox(height: 12),
+
+                // ─── Payment Options ──────────────────────────────────
+                ..._kPaymentMethods.map(
+                  (option) => Padding(
+                    padding: const EdgeInsets.only(bottom: 10),
+                    child: _buildPaymentOption(context, option, isAr),
+                  ),
+                ),
+                const SizedBox(height: 24),
+
+                // ─── Confirm Order Button ─────────────────────────────
+                ElevatedButton(
+                  onPressed: _confirming ? null : () => _onConfirmOrder(loc),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.primary,
+                    minimumSize: const Size(double.infinity, 54),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
+                    elevation: 0,
+                  ),
+                  child: _confirming
+                      ? const Center(
+                          child: SizedBox(
+                            height: 22,
+                            width: 22,
+                            child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                          ),
+                        )
+                      : Row(
+                          children: [
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Text(
+                                loc.translate('confirmOrder'),
+                                textAlign: TextAlign.start,
+                                style: AppStyle.buttonTextPrimary,
+                              ),
+                            ),
+                            SvgPicture.asset(
+                              AssetsConstants.shoppingBag,
+                              width: 18,
+                              height: 18,
+                              colorFilter: const ColorFilter.mode(Colors.white, BlendMode.srcIn),
+                            ),
+                            const SizedBox(width: 8),
+                          ],
+                        ),
+                ),
+                const SizedBox(height: 12),
+
+                // ─── Cancel Button ────────────────────────────────────
+                OutlinedButton(
+                  onPressed: () => context.pop(),
+                  style: OutlinedButton.styleFrom(
+                    minimumSize: const Size(double.infinity, 54),
+                    side: BorderSide(color: context.palette.divider),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
+                  ),
+                  child: Row(
+                    children: [
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Text(
+                          loc.translate('cancel'),
+                          textAlign: TextAlign.start,
+                          style: AppStyle.buttonTextSecondary,
+                        ),
+                      ),
+                      isAr
+                          ? Transform(
+                              alignment: Alignment.center,
+                              transform: Matrix4.rotationY(math.pi),
+                              child: SvgPicture.asset(
                                 AssetsConstants.moveLeft,
                                 width: 18,
                                 height: 18,
@@ -374,119 +340,21 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                                   BlendMode.srcIn,
                                 ),
                               ),
-                        const SizedBox(width: 12),
-                      ],
-                    ),
+                            )
+                          : SvgPicture.asset(
+                              AssetsConstants.moveLeft,
+                              width: 18,
+                              height: 18,
+                              colorFilter: ColorFilter.mode(
+                                context.palette.textPrimary,
+                                BlendMode.srcIn,
+                              ),
+                            ),
+                      const SizedBox(width: 12),
+                    ],
                   ),
-                  const SizedBox(height: 24),
-                ],
-              ),
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
-  // ── Helper Widgets ─────────────────────────────────────────────────────────
-
-  /// Section label — text flows in the natural direction of the locale
-  Widget _buildLabel(String label) {
-    return Text(label, style: AppStyle.fieldLabel);
-  }
-
-  /// Standard text input — direction inherited from parent Directionality
-  Widget _buildTextField({
-    required TextEditingController controller,
-    String? Function(String?)? validator,
-  }) {
-    // Wrap in LTR so cursor and typed text always anchor to the left,
-    // consistent with the phone field — even inside the Arabic RTL scaffold.
-    return Directionality(
-      textDirection: TextDirection.ltr,
-      child: TextFormField(
-        controller: controller,
-        validator: validator,
-        style: AppStyle.inputText,
-        textDirection: TextDirection.ltr,
-        textAlign: TextAlign.start,
-        decoration: InputDecoration(
-          contentPadding: const EdgeInsets.symmetric(
-            horizontal: 16,
-            vertical: 14,
-          ),
-          filled: true,
-          fillColor: context.palette.backgroundSubtle,
-          enabledBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(12),
-            borderSide: BorderSide(color: context.palette.divider),
-          ),
-          focusedBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(12),
-            borderSide: BorderSide(color: AppColors.primary, width: 1.5),
-          ),
-          errorBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(12),
-            borderSide: const BorderSide(color: Colors.red),
-          ),
-          focusedErrorBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(12),
-            borderSide: const BorderSide(color: Colors.red, width: 1.5),
-          ),
-        ),
-      ),
-    );
-  }
-
-  /// Phone field — prefix country code always stays LTR visually
-  Widget _buildPhoneField() {
-    // border layout, and cursor all anchor to the left — even inside RTL.
-    return Directionality(
-      textDirection: TextDirection.ltr,
-      child: TextFormField(
-        controller: _phoneController,
-        keyboardType: TextInputType.phone,
-        style: AppStyle.inputText,
-        textDirection: TextDirection.ltr,
-        // Digits only, max 9 digits for Saudi Arabia (+966)
-        inputFormatters: [
-          FilteringTextInputFormatter.digitsOnly,
-          PhoneInputFormatter(maxLength: 9),
-        ],
-        validator: (v) => PhoneInputValidator.validatePhoneNumber(v, '+966'),
-        decoration: InputDecoration(
-          contentPadding: const EdgeInsets.symmetric(
-            horizontal: 16,
-            vertical: 14,
-          ),
-          filled: true,
-          fillColor: context.palette.backgroundSubtle,
-          enabledBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(12),
-            borderSide: BorderSide(color: context.palette.divider),
-          ),
-          focusedBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(12),
-            borderSide: BorderSide(color: AppColors.primary, width: 1.5),
-          ),
-          errorBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(12),
-            borderSide: const BorderSide(color: Colors.red),
-          ),
-          focusedErrorBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(12),
-            borderSide: const BorderSide(color: Colors.red, width: 1.5),
-          ),
-          prefixIcon: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const Text('🇸🇦', style: TextStyle(fontSize: 20)),
-                const SizedBox(width: 4),
-                Text('+966', style: AppStyle.inputText),
-                const SizedBox(width: 4),
-                Container(width: 1, height: 24, color: context.palette.divider),
+                ),
+                const SizedBox(height: 24),
               ],
             ),
           ),
@@ -495,63 +363,14 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
     );
   }
 
-  /// Scrollable region chips — scroll direction respects RTL
-  Widget _buildRegionChips(
-    BuildContext context,
-    CheckoutState state,
-    List<String> regions,
-    bool isAr,
-  ) {
-    return SingleChildScrollView(
-      scrollDirection: Axis.horizontal,
-      reverse: isAr,
-      child: Row(
-        textDirection: isAr ? TextDirection.rtl : TextDirection.ltr,
-        children: List.generate(regions.length, (i) {
-          final isSelected = state.selectedRegionIndex == i;
-          return Padding(
-            padding: EdgeInsetsDirectional.only(end: 8),
-            child: GestureDetector(
-              onTap: () =>
-                  ref.read(checkoutProvider.notifier).changeRegionIndex(i),
-              child: AnimatedContainer(
-                duration: const Duration(milliseconds: 200),
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 14,
-                  vertical: 8,
-                ),
-                decoration: BoxDecoration(
-                  // Selected: subtle grey background, no border
-                  // Unselected: fully transparent, no border
-                  color: isSelected
-                      ? context.palette.surfaceMuted
-                      : Colors.transparent,
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: Text(
-                  regions[i],
-                  style: AppStyle.regionChip.copyWith(
-                    fontWeight: isSelected ? FontWeight.w700 : FontWeight.w400,
-                  ),
-                ),
-              ),
-            ),
-          );
-        }),
-      ),
-    );
-  }
-
   Widget _buildPricingRow({
     required String label,
     required String amount,
     required bool isPrimary,
-    required bool isAr,
   }) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        // Label first → appears on the RIGHT in RTL (no swap needed)
         Text(
           label,
           style: AppStyle.pricingLabel.copyWith(
@@ -569,35 +388,21 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
     );
   }
 
-  Widget _buildPaymentOption(
-    BuildContext context,
-    CheckoutState state,
-    String option,
-    bool isAr,
-    AppLocalizations loc,
-  ) {
-    final isSelected = state.selectedPayment == option;
-    // Map options to localization keys: 'PayTaps' -> 'paymentPayTaps', etc.
-    final locKey = 'payment$option';
-    final translatedLabel = loc.translate(locKey);
-
+  Widget _buildPaymentOption(BuildContext context, String option, bool isAr) {
+    final isSelected = _selectedPayment == option;
     return GestureDetector(
-      onTap: () => ref.read(checkoutProvider.notifier).changePayment(option),
+      onTap: () => setState(() => _selectedPayment = option),
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
         decoration: BoxDecoration(
           color: context.palette.background,
-          // Same border color for both states — no color change on selection
           border: Border.all(color: context.palette.divider, width: 1),
           borderRadius: BorderRadius.circular(30),
         ),
         child: Row(
           children: [
-            Text(
-              translatedLabel.isEmpty ? option : translatedLabel,
-              style: AppStyle.paymentOption,
-            ),
+            Text(_paymentLabel(option, isAr), style: AppStyle.paymentOption),
             const Spacer(),
             AnimatedContainer(
               duration: const Duration(milliseconds: 200),
@@ -605,21 +410,11 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
               height: 26,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: isSelected
-                    ? Colors.transparent
-                    : context.palette.surfaceMuted,
-                border: isSelected
-                    ? Border.all(color: AppColors.primary, width: 1.5)
-                    : null,
+                color: isSelected ? Colors.transparent : context.palette.surfaceMuted,
+                border: isSelected ? Border.all(color: AppColors.primary, width: 1.5) : null,
               ),
               child: isSelected
-                  ? Center(
-                      child: Icon(
-                        Icons.check,
-                        color: AppColors.primary,
-                        size: 15,
-                      ),
-                    )
+                  ? Center(child: Icon(Icons.check, color: AppColors.primary, size: 15))
                   : null,
             ),
           ],
@@ -627,61 +422,103 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
       ),
     );
   }
-
-  void _onConfirmOrder() {
-    if (_formKey.currentState?.validate() ?? false) {
-      context.push('/payment-success');
-    }
-  }
 }
 
-/// A static map widget showing a pinned Kuwait City location.
-/// Uses flutter_map + OpenStreetMap tiles — no API key required.
-class _CheckoutMap extends StatefulWidget {
-  const _CheckoutMap();
+class _AddressOption extends StatelessWidget {
+  final Address address;
+  final bool selected;
+  final VoidCallback onTap;
 
-  @override
-  State<_CheckoutMap> createState() => _CheckoutMapState();
-}
-
-class _CheckoutMapState extends State<_CheckoutMap> {
-  // Kuwait City — Salmiya area (random but recognisable Kuwait location)
-  static const LatLng _location = LatLng(29.3375, 48.0750);
-  final MapController _mapController = MapController();
+  const _AddressOption({required this.address, required this.selected, required this.onTap});
 
   @override
   Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: selected ? AppColors.primary.withValues(alpha: 0.08) : context.palette.surfaceMuted,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: selected ? AppColors.primary : Colors.transparent, width: 1.5),
+        ),
+        child: Row(
+          children: [
+            Icon(
+              selected ? Icons.radio_button_checked : Icons.radio_button_off,
+              color: selected ? AppColors.primary : context.palette.textMuted,
+              size: 20,
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    address.name,
+                    style: AppStyle.fieldLabel.copyWith(fontWeight: FontWeight.bold),
+                  ),
+                  Text(
+                    '${address.line1}, ${address.line2}',
+                    style: AppStyle.bodyText.copyWith(
+                      fontSize: 12,
+                      color: context.palette.textMuted,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+extension _FirstAddress on Iterable<Address> {
+  Address? firstOrNullWithLocation() => isEmpty ? null : first;
+}
+
+/// A static map — centers on the selected address when it carries
+/// coordinates, otherwise falls back to a generic Riyadh view. No forward
+/// geocoding/search endpoint exists in the guide, so this stays read-only.
+class _CheckoutMap extends StatelessWidget {
+  final Address? location;
+
+  const _CheckoutMap({this.location});
+
+  static const LatLng _fallback = LatLng(24.7136, 46.6753); // Riyadh
+
+  @override
+  Widget build(BuildContext context) {
+    final point = location?.latitude != null && location?.longitude != null
+        ? LatLng(location!.latitude!, location!.longitude!)
+        : _fallback;
+
     return ClipRRect(
       borderRadius: BorderRadius.circular(12),
       child: SizedBox(
         height: 120,
         child: FlutterMap(
-          mapController: _mapController,
           options: MapOptions(
-            initialCenter: _location,
+            initialCenter: point,
             initialZoom: 14,
             interactionOptions: const InteractionOptions(
               flags: InteractiveFlag.pinchZoom | InteractiveFlag.drag,
             ),
           ),
           children: [
-            // OpenStreetMap tile layer — free, no API key needed
             TileLayer(
               urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
               userAgentPackageName: 'com.sfa.app',
             ),
-            // Marker at the Kuwait location
             MarkerLayer(
               markers: [
                 Marker(
-                  point: _location,
+                  point: point,
                   width: 40,
                   height: 40,
-                  child: Icon(
-                    Icons.location_pin,
-                    color: AppColors.primary,
-                    size: 40,
-                  ),
+                  child: Icon(Icons.location_pin, color: AppColors.primary, size: 40),
                 ),
               ],
             ),

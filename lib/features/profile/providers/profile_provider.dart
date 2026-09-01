@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/theme/theme_notifier.dart';
+import 'profile_data_provider.dart';
 
 class ProfileState {
   final bool darkMode;
@@ -26,6 +27,10 @@ class ProfileNotifier extends AutoDisposeNotifier<ProfileState> {
   void toggleDarkMode(bool darkMode) {
     themeNotifier.setDarkMode(darkMode);
     state = state.copyWith(darkMode: darkMode);
+    // M76 — best-effort sync; the app already works fully offline of this.
+    ref
+        .read(profileRepositoryProvider)
+        .updatePreferences(theme: darkMode ? 'dark' : 'light');
   }
 
   void toggleTooltip() {

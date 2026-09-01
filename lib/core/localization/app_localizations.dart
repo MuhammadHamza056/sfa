@@ -2,6 +2,8 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
+import '../hive_services.dart';
+
 class AppLocalizations {
   final Locale locale;
   Map<String, String> _localizedStrings = {};
@@ -63,11 +65,22 @@ class LocaleNotifier extends ValueNotifier<Locale> {
   LocaleNotifier(super.value);
 
   void toggleLanguage() {
-    value = value.languageCode == 'ar' ? const Locale('en') : const Locale('ar');
+    setLocale(value.languageCode == 'ar' ? const Locale('en') : const Locale('ar'));
   }
 
+  /// Reads the persisted locale. Safe to call before [SecureStorage.init]
+  /// has completed — it simply falls back to the default locale.
+  void loadFromStorage() {
+    final saved = SecureStorage.getSavedLocale();
+    if (saved != null) {
+      value = Locale(saved);
+    }
+  }
+
+  /// Applies [newLocale] and persists it for the next launch.
   void setLocale(Locale newLocale) {
     value = newLocale;
+    SecureStorage.putSavedLocale(newLocale.languageCode);
   }
 }
 

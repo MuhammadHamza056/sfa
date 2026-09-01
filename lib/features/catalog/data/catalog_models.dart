@@ -1,0 +1,326 @@
+import '../../../core/models/localized_text.dart';
+import '../../../core/models/product.dart';
+import '../../../utils/currency_formatter.dart';
+
+class CatalogBrandRef {
+  final String id;
+  final String name;
+  final String? logo;
+
+  const CatalogBrandRef({required this.id, required this.name, this.logo});
+
+  factory CatalogBrandRef.fromJson(Map<String, dynamic> json) {
+    return CatalogBrandRef(
+      id: json['id']?.toString() ?? '',
+      name: json['name']?.toString() ?? '',
+      logo: json['logo'] as String?,
+    );
+  }
+}
+
+class CatalogProductOption {
+  final String id;
+  final LocalizedText name;
+  final List<String> values;
+
+  const CatalogProductOption({
+    required this.id,
+    required this.name,
+    required this.values,
+  });
+
+  /// The guide's color option encodes each value as a hex string
+  /// (`"#141D2B"`); everything else (size, ...) is a plain label chip.
+  bool get isColorOption =>
+      values.isNotEmpty && values.every((v) => v.startsWith('#'));
+
+  factory CatalogProductOption.fromJson(Map<String, dynamic> json) {
+    return CatalogProductOption(
+      id: json['id']?.toString() ?? '',
+      name: LocalizedText.fromJson(json['name'] as Map<String, dynamic>? ?? const {}),
+      values: (json['values'] as List? ?? const [])
+          .map((v) => v.toString())
+          .toList(),
+    );
+  }
+}
+
+class CatalogProductAddon {
+  final String id;
+  final LocalizedText name;
+  final int priceFils;
+
+  const CatalogProductAddon({
+    required this.id,
+    required this.name,
+    required this.priceFils,
+  });
+
+  factory CatalogProductAddon.fromJson(Map<String, dynamic> json) {
+    return CatalogProductAddon(
+      id: json['id']?.toString() ?? '',
+      name: LocalizedText.fromJson(json['name'] as Map<String, dynamic>? ?? const {}),
+      priceFils: (json['priceFils'] as num?)?.toInt() ?? 0,
+    );
+  }
+}
+
+/// The full product record from `GET /products/:id` (M17). List endpoints
+/// (M16, M18-M21, M24) return the same shape minus `options`/`addons`/
+/// `description`, which default safely to empty here.
+class CatalogProduct {
+  final String id;
+  final LocalizedText name;
+  final LocalizedText? description;
+  final int priceFils;
+  final int? oldPriceFils;
+  final String currency;
+  final String? sku;
+  final List<String> images;
+  final CatalogBrandRef? brand;
+  final List<CatalogProductOption> options;
+  final List<CatalogProductAddon> addons;
+  final int stock;
+  final bool isAvailable;
+  final double avgRating;
+  final int reviewCount;
+
+  const CatalogProduct({
+    required this.id,
+    required this.name,
+    this.description,
+    required this.priceFils,
+    this.oldPriceFils,
+    this.currency = 'SAR',
+    this.sku,
+    required this.images,
+    this.brand,
+    this.options = const [],
+    this.addons = const [],
+    this.stock = 0,
+    this.isAvailable = true,
+    this.avgRating = 0,
+    this.reviewCount = 0,
+  });
+
+  factory CatalogProduct.fromJson(Map<String, dynamic> json) {
+    return CatalogProduct(
+      id: json['id']?.toString() ?? '',
+      name: LocalizedText.fromJson(json['name'] as Map<String, dynamic>? ?? const {}),
+      description: json['description'] is Map<String, dynamic>
+          ? LocalizedText.fromJson(json['description'] as Map<String, dynamic>)
+          : null,
+      priceFils: (json['priceFils'] as num?)?.toInt() ?? 0,
+      oldPriceFils: (json['oldPriceFils'] as num?)?.toInt(),
+      currency: json['currency'] as String? ?? 'SAR',
+      sku: json['sku'] as String?,
+      images: (json['images'] as List? ?? const [])
+          .map((v) => v.toString())
+          .toList(),
+      brand: json['brand'] is Map<String, dynamic>
+          ? CatalogBrandRef.fromJson(json['brand'] as Map<String, dynamic>)
+          : (json['brandName'] != null
+              ? CatalogBrandRef(id: '', name: json['brandName'].toString())
+              : null),
+      options: (json['options'] as List? ?? const [])
+          .map((v) => CatalogProductOption.fromJson(v as Map<String, dynamic>))
+          .toList(),
+      addons: (json['addons'] as List? ?? const [])
+          .map((v) => CatalogProductAddon.fromJson(v as Map<String, dynamic>))
+          .toList(),
+      stock: (json['stock'] as num?)?.toInt() ?? 0,
+      isAvailable: json['isAvailable'] as bool? ?? true,
+      avgRating: (json['avgRating'] as num?)?.toDouble() ?? 0,
+      reviewCount: (json['reviewCount'] as num?)?.toInt() ?? 0,
+    );
+  }
+
+  Product toProduct(bool isAr) {
+    return Product(
+      id: id,
+      imageUrl: images.isNotEmpty ? images.first : '',
+      title: name.resolve(isAr),
+      price: CurrencyFormatter.fromHalalas(priceFils, isAr: isAr),
+      rating: avgRating.toStringAsFixed(1),
+      brandName: brand?.name,
+      reviewsLabel: reviewCount > 0
+          ? (isAr ? '$reviewCount تقييمًا' : '$reviewCount reviews')
+          : null,
+    );
+  }
+}
+
+class CatalogCategory {
+  final String id;
+  final LocalizedText name;
+  final String? iconUrl;
+
+  const CatalogCategory({required this.id, required this.name, this.iconUrl});
+
+  factory CatalogCategory.fromJson(Map<String, dynamic> json) {
+    return CatalogCategory(
+      id: json['id']?.toString() ?? '',
+      name: LocalizedText.fromJson(json['name'] as Map<String, dynamic>? ?? const {}),
+      iconUrl: json['iconUrl'] as String?,
+    );
+  }
+}
+
+class CatalogBrand {
+  final String id;
+  final String name;
+  final String? slug;
+  final String? logo;
+  final bool isVerified;
+  final double rating;
+  final LocalizedText? story;
+
+  const CatalogBrand({
+    required this.id,
+    required this.name,
+    this.slug,
+    this.logo,
+    this.isVerified = false,
+    this.rating = 0,
+    this.story,
+  });
+
+  factory CatalogBrand.fromJson(Map<String, dynamic> json) {
+    return CatalogBrand(
+      id: json['id']?.toString() ?? '',
+      name: json['name']?.toString() ?? '',
+      slug: json['slug'] as String?,
+      logo: json['logo'] as String?,
+      isVerified: json['isVerified'] as bool? ?? false,
+      rating: (json['rating'] as num?)?.toDouble() ?? 0,
+      story: json['story'] is Map<String, dynamic>
+          ? LocalizedText.fromJson(json['story'] as Map<String, dynamic>)
+          : null,
+    );
+  }
+}
+
+class CatalogBanner {
+  final String id;
+  final LocalizedText title;
+  final String imageUrl;
+  final String? linkType;
+  final String? linkId;
+
+  const CatalogBanner({
+    required this.id,
+    required this.title,
+    required this.imageUrl,
+    this.linkType,
+    this.linkId,
+  });
+
+  factory CatalogBanner.fromJson(Map<String, dynamic> json) {
+    return CatalogBanner(
+      id: json['id']?.toString() ?? '',
+      title: LocalizedText.fromJson(json['title'] as Map<String, dynamic>? ?? const {}),
+      imageUrl: json['imageUrl']?.toString() ?? '',
+      linkType: json['linkType'] as String?,
+      linkId: json['linkId'] as String?,
+    );
+  }
+}
+
+class HomeReel {
+  final String id;
+  final String videoUrl;
+  final String thumbnailUrl;
+  final int likesCount;
+
+  const HomeReel({
+    required this.id,
+    required this.videoUrl,
+    required this.thumbnailUrl,
+    required this.likesCount,
+  });
+
+  factory HomeReel.fromJson(Map<String, dynamic> json) {
+    return HomeReel(
+      id: json['id']?.toString() ?? '',
+      videoUrl: json['videoUrl']?.toString() ?? '',
+      thumbnailUrl: json['thumbnailUrl']?.toString() ?? '',
+      likesCount: (json['likesCount'] as num?)?.toInt() ?? 0,
+    );
+  }
+}
+
+/// M12 — the whole `GET /home/feed` payload.
+class HomeFeedData {
+  final List<CatalogBanner> banners;
+  final List<CatalogCategory> categories;
+  final List<CatalogBrand> brands;
+  final List<CatalogProduct> featuredProducts;
+  final List<HomeReel> reels;
+
+  const HomeFeedData({
+    required this.banners,
+    required this.categories,
+    required this.brands,
+    required this.featuredProducts,
+    required this.reels,
+  });
+
+  factory HomeFeedData.fromJson(Map<String, dynamic> json) {
+    List<T> list<T>(String key, T Function(Map<String, dynamic>) fromJson) {
+      return (json[key] as List? ?? const [])
+          .map((v) => fromJson(v as Map<String, dynamic>))
+          .toList();
+    }
+
+    return HomeFeedData(
+      banners: list('banners', CatalogBanner.fromJson),
+      categories: list('categories', CatalogCategory.fromJson),
+      brands: list('brands', CatalogBrand.fromJson),
+      featuredProducts: list('featuredProducts', CatalogProduct.fromJson),
+      reels: list('reels', HomeReel.fromJson),
+    );
+  }
+}
+
+class ProductSearchPage {
+  final List<CatalogProduct> items;
+  final int total;
+  final int page;
+  final int totalPages;
+
+  const ProductSearchPage({
+    required this.items,
+    required this.total,
+    required this.page,
+    required this.totalPages,
+  });
+
+  factory ProductSearchPage.fromJson(Map<String, dynamic> json) {
+    return ProductSearchPage(
+      items: (json['items'] as List? ?? const [])
+          .map((v) => CatalogProduct.fromJson(v as Map<String, dynamic>))
+          .toList(),
+      total: (json['total'] as num?)?.toInt() ?? 0,
+      page: (json['page'] as num?)?.toInt() ?? 1,
+      totalPages: (json['totalPages'] as num?)?.toInt() ?? 1,
+    );
+  }
+}
+
+class SearchResults {
+  final ProductSearchPage products;
+  final List<CatalogBrand> brands;
+
+  const SearchResults({required this.products, required this.brands});
+
+  factory SearchResults.fromJson(Map<String, dynamic> json) {
+    return SearchResults(
+      products: ProductSearchPage.fromJson(
+        json['products'] as Map<String, dynamic>? ?? const {},
+      ),
+      brands: (((json['brands'] as Map<String, dynamic>?)?['items']) as List? ?? const [])
+          .map((v) => CatalogBrand.fromJson(v as Map<String, dynamic>))
+          .toList(),
+    );
+  }
+}

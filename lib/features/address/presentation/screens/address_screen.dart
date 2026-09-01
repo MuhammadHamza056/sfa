@@ -18,87 +18,97 @@ class AddressScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final loc = AppLocalizations.of(context);
     final isAr = loc.isArabic;
-    final addresses = ref.watch(addressProvider);
+    final addressesAsync = ref.watch(addressProvider);
 
     return Scaffold(
       backgroundColor: context.palette.background,
       body: Directionality(
         textDirection: isAr ? TextDirection.rtl : TextDirection.ltr,
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              if (addresses.isEmpty)
-                Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 48),
-                  child: Center(
-                    child: Text(
-                      loc.translate('noAddressesYet'),
-                      style: AppStyle.labelText.copyWith(
-                        color: context.palette.textMuted,
+        child: RefreshIndicator(
+          onRefresh: () => ref.read(addressProvider.notifier).refresh(),
+          child: SingleChildScrollView(
+            physics: const AlwaysScrollableScrollPhysics(),
+            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                addressesAsync.when(
+                  loading: () => const Padding(
+                    padding: EdgeInsets.symmetric(vertical: 48),
+                    child: Center(child: CircularProgressIndicator()),
+                  ),
+                  error: (error, _) => Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 48),
+                    child: Center(
+                      child: Text(
+                        error.toString(),
+                        style: AppStyle.labelText.copyWith(color: context.palette.textMuted),
                       ),
                     ),
                   ),
-                )
-              else
-                ListView.separated(
-                  shrinkWrap: true,
-                  physics: const NeverScrollableScrollPhysics(),
-                  itemCount: addresses.length,
-                  separatorBuilder: (context, index) =>
-                      const SizedBox(height: 16),
-                  itemBuilder: (context, index) {
-                    return _buildAddressCard(
-                      context,
-                      ref,
-                      addresses[index],
-                      isAr,
-                    );
-                  },
-                ),
-              const SizedBox(height: 24),
-              // Button: إضافة عنوان جديد / Add New Address (inline under list)
-              Container(
-                height: 54,
-                width: double.infinity,
-                decoration: BoxDecoration(
-                  color: AppColors.primary,
-                  borderRadius: BorderRadius.circular(27),
-                  boxShadow: [
-                    BoxShadow(
-                      color: AppColors.primary.withValues(alpha: 0.2),
-                      blurRadius: 10,
-                      offset: const Offset(0, 4),
-                    ),
-                  ],
-                ),
-                child: Material(
-                  color: Colors.transparent,
-                  child: InkWell(
-                    onTap: () => context.push('/addresses/add'),
-                    borderRadius: BorderRadius.circular(27),
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 24),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Text(
-                            loc.translate('addAddress'),
-                            style: GoogleFonts.cairo(
-                              color: Colors.white,
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
+                  data: (addresses) => addresses.isEmpty
+                      ? Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 48),
+                          child: Center(
+                            child: Text(
+                              loc.translate('noAddressesYet'),
+                              style: AppStyle.labelText.copyWith(color: context.palette.textMuted),
                             ),
                           ),
-                          const Icon(Icons.add, color: Colors.white, size: 20),
-                        ],
+                        )
+                      : ListView.separated(
+                          shrinkWrap: true,
+                          physics: const NeverScrollableScrollPhysics(),
+                          itemCount: addresses.length,
+                          separatorBuilder: (context, index) => const SizedBox(height: 16),
+                          itemBuilder: (context, index) {
+                            return _buildAddressCard(context, ref, addresses[index]);
+                          },
+                        ),
+                ),
+                const SizedBox(height: 24),
+                // Button: إضافة عنوان جديد / Add New Address (inline under list)
+                Container(
+                  height: 54,
+                  width: double.infinity,
+                  decoration: BoxDecoration(
+                    color: AppColors.primary,
+                    borderRadius: BorderRadius.circular(27),
+                    boxShadow: [
+                      BoxShadow(
+                        color: AppColors.primary.withValues(alpha: 0.2),
+                        blurRadius: 10,
+                        offset: const Offset(0, 4),
+                      ),
+                    ],
+                  ),
+                  child: Material(
+                    color: Colors.transparent,
+                    child: InkWell(
+                      onTap: () => context.push('/addresses/add'),
+                      borderRadius: BorderRadius.circular(27),
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 24),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text(
+                              loc.translate('addAddress'),
+                              style: GoogleFonts.cairo(
+                                color: Colors.white,
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            const Icon(Icons.add, color: Colors.white, size: 20),
+                          ],
+                        ),
                       ),
                     ),
                   ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),
@@ -109,7 +119,6 @@ class AddressScreen extends ConsumerWidget {
     BuildContext context,
     WidgetRef ref,
     Address address,
-    bool isAr,
   ) {
     return Container(
       padding: const EdgeInsets.all(16),
@@ -146,24 +155,41 @@ class AddressScreen extends ConsumerWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  address.title(isAr),
-                  style: GoogleFonts.cairo(
-                    color: context.palette.textPrimary,
-                    fontSize: 15,
-                    fontWeight: FontWeight.bold,
-                  ),
+                Row(
+                  children: [
+                    Flexible(
+                      child: Text(
+                        address.name,
+                        style: GoogleFonts.cairo(
+                          color: context.palette.textPrimary,
+                          fontSize: 15,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                    if (address.isDefault) ...[
+                      const SizedBox(width: 6),
+                      Icon(Icons.star, size: 14, color: AppColors.primary),
+                    ] else ...[
+                      const SizedBox(width: 6),
+                      GestureDetector(
+                        onTap: () =>
+                            ref.read(addressProvider.notifier).setDefaultAddress(address.id),
+                        child: Icon(Icons.star_border, size: 14, color: context.palette.textMuted),
+                      ),
+                    ],
+                  ],
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  address.line1(isAr),
+                  address.line1,
                   style: AppStyle.subtitleDesc.copyWith(
                     color: context.palette.textMuted,
                     fontSize: 13,
                   ),
                 ),
                 Text(
-                  address.line2(isAr),
+                  address.line2,
                   style: AppStyle.subtitleDesc.copyWith(
                     color: context.palette.textMuted,
                     fontSize: 13,
@@ -182,7 +208,7 @@ class AddressScreen extends ConsumerWidget {
                     ),
                     const SizedBox(width: 6),
                     Text(
-                      address.phone,
+                      address.phoneNumber,
                       style: GoogleFonts.cairo(
                         color: context.palette.textMuted,
                         fontSize: 13,
@@ -212,9 +238,7 @@ class AddressScreen extends ConsumerWidget {
               ),
               const SizedBox(width: 12),
               GestureDetector(
-                onTap: () => ref
-                    .read(addressProvider.notifier)
-                    .removeAddress(address.id),
+                onTap: () => ref.read(addressProvider.notifier).removeAddress(address.id),
                 child: SvgPicture.asset(
                   AssetsConstants.trash2,
                   width: 20,

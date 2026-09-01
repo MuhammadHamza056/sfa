@@ -3,6 +3,10 @@ import 'package:sfa/core/models/product_detail_args.dart';
 /// Canonical product shape shared by every product grid/list in the app
 /// (home featured products, brand detail, related products, ...).
 class Product {
+  /// The API product id (`M17` etc.). Null for screens still using static
+  /// placeholder data.
+  final String? id;
+
   final String imageUrl;
   final String title;
   final String price;
@@ -17,6 +21,7 @@ class Product {
   final String? reviewsLabel;
 
   const Product({
+    this.id,
     required this.imageUrl,
     required this.title,
     required this.price,
@@ -29,6 +34,7 @@ class Product {
   /// [brandName] for screens that know the brand from page context rather
   /// than from the product itself.
   ProductDetailArgs toDetailArgs({String? brandNameKey}) => ProductDetailArgs(
+        id: id,
         name: title,
         imageUrl: imageUrl,
         price: price,

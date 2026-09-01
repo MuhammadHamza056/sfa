@@ -2,6 +2,7 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
+import 'package:sfa/core/hive_services.dart';
 import 'package:sfa/core/localization/app_localizations.dart';
 import 'package:sfa/utils/assets_constants.dart';
 import 'package:sfa/utils/color_constants.dart';
@@ -80,6 +81,7 @@ class LanguageSelectionScreen extends StatelessWidget {
                         child: OutlinedButton(
                           onPressed: () {
                             localeNotifier.setLocale(const Locale('en'));
+                            SecureStorage.putLanguageSelected(true);
                             context.go('/onboarding');
                           },
                           style: OutlinedButton.styleFrom(
@@ -118,6 +120,7 @@ class LanguageSelectionScreen extends StatelessWidget {
                         child: OutlinedButton(
                           onPressed: () {
                             localeNotifier.setLocale(const Locale('ar'));
+                            SecureStorage.putLanguageSelected(true);
                             context.go('/onboarding');
                           },
                           style: OutlinedButton.styleFrom(

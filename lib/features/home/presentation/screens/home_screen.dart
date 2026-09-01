@@ -13,6 +13,8 @@ import 'package:sfa/features/home/presentation/widgets/featured_products_section
 import 'package:sfa/utils/app_style.dart';
 import 'package:sfa/core/theme/app_palette.dart';
 import 'package:sfa/core/widgets/floating_top_bar.dart';
+import 'package:sfa/features/brands/models/brand_nav_args.dart';
+import 'package:sfa/features/catalog/providers/catalog_providers.dart';
 
 /// Height of the fixed top bar's own content (SFA title + icon row),
 /// excluding the device's top safe-area inset. Used to reserve matching
@@ -406,44 +408,46 @@ class HomeScreen extends ConsumerWidget {
                             ),
                           ),
                           const SizedBox(height: 20),
-                          Directionality(
-                            textDirection: isAr
-                                ? TextDirection.rtl
-                                : TextDirection.ltr,
-                            child: Row(
-                              children: [
-                                Expanded(
-                                  child: _buildBrandCard(
-                                    context,
-                                    imageUrl:
-                                        'https://images.unsplash.com/photo-1607990283143-e81e7a2c93ab?w=400&q=80',
-                                    name: isAr ? 'عنبر' : 'Amber',
-                                  ),
-                                ),
-                                const SizedBox(width: 4),
-                                Expanded(
-                                  child: _buildBrandCard(
-                                    context,
-                                    imageUrl:
-                                        'https://images.unsplash.com/photo-1609357605129-26f69add5d6e?w=400&q=80',
-                                    name: isAr ? 'جوبا' : 'Juba',
-                                  ),
-                                ),
-                                const SizedBox(width: 4),
-                                Expanded(
-                                  child: _buildBrandCard(
-                                    context,
-                                    imageUrl:
-                                        'https://images.unsplash.com/photo-1529139574466-a303027c1d8b?w=400&q=80',
-                                    name: isAr ? 'سمر_شوب' : 'Summer Shop',
-                                  ),
-                                ),
-                              ],
-                            ),
+                          Consumer(
+                            builder: (context, ref, _) {
+                              final brandsAsync = ref.watch(brandsListProvider);
+                              return brandsAsync.maybeWhen(
+                                data: (brands) {
+                                  if (brands.isEmpty) return const SizedBox.shrink();
+                                  final top = brands.take(3).toList();
+                                  return Directionality(
+                                    textDirection:
+                                        isAr ? TextDirection.rtl : TextDirection.ltr,
+                                    child: Row(
+                                      children: [
+                                        for (var i = 0; i < top.length; i++) ...[
+                                          if (i > 0) const SizedBox(width: 4),
+                                          Expanded(
+                                            child: _buildBrandCard(
+                                              context,
+                                              imageUrl: top[i].logo ?? '',
+                                              name: top[i].name,
+                                              onTap: () => context.push(
+                                                '/brand-detail',
+                                                extra: BrandNavArgs(
+                                                  id: top[i].id,
+                                                  name: top[i].name,
+                                                ),
+                                              ),
+                                            ),
+                                          ),
+                                        ],
+                                      ],
+                                    ),
+                                  );
+                                },
+                                orElse: () => const SizedBox.shrink(),
+                              );
+                            },
                           ),
                           SizedBox(height: 4),
                           GestureDetector(
-                            onTap: () => context.push('/brand-detail'),
+                            onTap: () => context.go('/brands'),
                             child: Image.asset(
                               AssetsConstants.containerPng,
                               height: 500,
@@ -538,9 +542,10 @@ class HomeScreen extends ConsumerWidget {
     BuildContext context, {
     required String imageUrl,
     required String name,
+    required VoidCallback onTap,
   }) {
     return GestureDetector(
-      onTap: () => context.push('/brand-detail'),
+      onTap: onTap,
       child: AspectRatio(
         aspectRatio: 0.72,
         child: Stack(

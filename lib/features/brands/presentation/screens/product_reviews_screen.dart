@@ -10,529 +10,467 @@ import 'package:sfa/utils/assets_constants.dart';
 import 'package:sfa/utils/color_constants.dart';
 import 'package:sfa/features/favorites/models/favorite_product.dart';
 import 'package:sfa/features/favorites/providers/favorites_provider.dart';
+import 'package:sfa/features/reviews/data/review_models.dart';
+import 'package:sfa/features/reviews/providers/reviews_providers.dart';
 import 'package:sfa/core/theme/app_palette.dart';
 
-class ReviewItem {
-  final String nameAr;
-  final String nameEn;
-  final String dateAr;
-  final String dateEn;
-  final double rating;
-  final String reviewAr;
-  final String reviewEn;
-  final int helpfulCount;
-  final bool isVerified;
-
-  const ReviewItem({
-    required this.nameAr,
-    required this.nameEn,
-    required this.dateAr,
-    required this.dateEn,
-    required this.rating,
-    required this.reviewAr,
-    required this.reviewEn,
-    required this.helpfulCount,
-    required this.isVerified,
-  });
-}
-
-class ProductReviewsScreen extends StatefulWidget {
+class ProductReviewsScreen extends ConsumerWidget {
   final ProductDetailArgs? args;
 
   const ProductReviewsScreen({super.key, this.args});
 
   @override
-  State<ProductReviewsScreen> createState() => _ProductReviewsScreenState();
-}
-
-class _ProductReviewsScreenState extends State<ProductReviewsScreen> {
-  final List<ReviewItem> _reviews = const [
-    ReviewItem(
-      nameAr: "سارة المطيري",
-      nameEn: "Sara Al-Mutairi",
-      dateAr: "منذ يومين",
-      dateEn: "2 days ago",
-      rating: 5.0,
-      reviewAr:
-          "الخامة ممتازة جداً وتفاصيل التطريز غاية في الدقة. الفستان فخم جداً في المناسبات وتغليف المنتج كان راقياً جداً كما اعتدت من أناس.",
-      reviewEn:
-          "The material is excellent and the embroidery details are very precise. The dress is very luxurious for occasions and the product packaging was very elegant, as I am used to from Ounass.",
-      helpfulCount: 12,
-      isVerified: true,
-    ),
-    ReviewItem(
-      nameAr: "أمل القحطاني",
-      nameEn: "Amal Al-Qahtani",
-      dateAr: "منذ أسبوع",
-      dateEn: "1 week ago",
-      rating: 4.0,
-      reviewAr:
-          "أنيق جداً واللون مطابق تماماً للصور. المقاس كان مناسباً جداً ولكن تمنيت لو كان طول الأكمام أقصر قليلاً. بشكل عام تجربة رائعة.",
-      reviewEn:
-          "Very elegant and the color matches the pictures exactly. The size was very suitable but I wished the sleeve length was slightly shorter. Overall, a great experience.",
-      helpfulCount: 8,
-      isVerified: true,
-    ),
-  ];
-
-  @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final loc = AppLocalizations.of(context);
     final isAr = loc.isArabic;
 
     final productName =
-        widget.args?.name ??
-        (isAr ? 'وردة الصحراء المطرزة' : 'Embroidered Desert Rose');
-    final productImage =
-        widget.args?.imageUrl ??
+        args?.name ?? (isAr ? 'وردة الصحراء المطرزة' : 'Embroidered Desert Rose');
+    final productImage = args?.imageUrl ??
         'https://images.unsplash.com/photo-1509631179647-0177331693ae?w=800&q=80';
-    final productPrice =
-        widget.args?.price ?? (isAr ? '1,250 ر.س.' : '1,250 SAR');
-    final productRating =
-        widget.args?.rating ?? (isAr ? '4.9 · 85 تقييماً' : '4.9 · 85 reviews');
-    final brandNameKey = widget.args?.brandNameKey ?? 'brandJuba';
+    final productPrice = args?.price ?? (isAr ? '1,250 ر.س.' : '1,250 SAR');
+    final productRating = args?.rating ?? (isAr ? '4.9 · 85 تقييماً' : '4.9 · 85 reviews');
+    final brandNameKey = args?.brandNameKey ?? 'brandJuba';
     final resolvedBrandName = loc.translate(brandNameKey);
+    final productId = args?.id;
 
-        final totalRatingsCount = 85;
-        final ratingsDistribution = [
-          {'stars': 5, 'count': 47},
-          {'stars': 4, 'count': 18},
-          {'stars': 3, 'count': 10},
-          {'stars': 2, 'count': 6},
-          {'stars': 1, 'count': 4},
-        ];
+    return Directionality(
+      textDirection: isAr ? TextDirection.rtl : TextDirection.ltr,
+      child: Scaffold(
+        backgroundColor: context.palette.background,
+        appBar: null,
+        body: SingleChildScrollView(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              const SizedBox(height: 16),
 
-        return Directionality(
-          textDirection: isAr ? TextDirection.rtl : TextDirection.ltr,
-          child: Scaffold(
-            backgroundColor: context.palette.background,
-            appBar: null,
-            body: SingleChildScrollView(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  const SizedBox(height: 16),
-
-                  // Product Summary Card
-                  Padding(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 24,
-                      vertical: 12,
-                    ),
-                    child: Builder(
-                      builder: (context) {
-                        final textSection = Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              resolvedBrandName,
-                              style: AppStyle.bodyText.copyWith(
-                                fontSize: 24,
-                                color: context.palette.textPrimary,
-                                height: 1.1,
-                              ),
-                            ),
-                            const SizedBox(height: 6),
-                            Text(
-                              productName,
-                              style: AppStyle.bodyText.copyWith(
-                                fontSize: 20,
-                                fontWeight: FontWeight.bold,
-                                color: context.palette.textPrimary,
-                              ),
-                            ),
-                            const SizedBox(height: 6),
-                            Text(
-                              productPrice,
-                              style: AppStyle.bodyText.copyWith(
-                                fontSize: 18,
-                                color: context.palette.textPrimary.withValues(
-                                  alpha: 0.8,
-                                ),
-                              ),
-                            ),
-                            const SizedBox(height: 10),
-                            Row(
-                              children: [
-                                const Icon(
-                                  Icons.star,
-                                  size: 16,
-                                  color: Colors.amber,
-                                ),
-                                const SizedBox(width: 4),
-                                Text(
-                                  isAr
-                                      ? '4.9 · 85 تقييماً'
-                                      : '4.9 · 85 reviews',
-                                  style: AppStyle.bodyText.copyWith(
-                                    fontSize: 13.5,
-                                    color: context.palette.textMuted,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ],
-                        );
-
-                        final imageSection = Stack(
-                          clipBehavior: Clip.none,
-                          children: [
-                            ClipRRect(
-                              borderRadius: BorderRadius.circular(4),
-                              child: CachedNetworkImage(
-                                imageUrl: productImage,
-                                width: 140,
-                                height: 140,
-                                fit: BoxFit.cover,
-                                errorWidget: (context, url, error) =>
-                                    Image.network(
-                                      productImage,
-                                      width: 140,
-                                      height: 140,
-                                      fit: BoxFit.cover,
-                                    ),
-                              ),
-                            ),
-                            Positioned(
-                              top: 8,
-                              right: 8,
-                              child: Consumer(
-                                builder: (context, ref, _) {
-                                  final favProduct = FavoriteProduct(
-                                    title: productName,
-                                    imageUrl: productImage,
-                                    price: productPrice,
-                                    rating: productRating,
-                                  );
-                                  final isFav = ref
-                                      .watch(favoritesProvider)
-                                      .favorites
-                                      .contains(favProduct);
-                                  return Container(
-                                    width: 36,
-                                    height: 36,
-                                    decoration: BoxDecoration(
-                                      color: const Color(
-                                        0xFFF9E8D9,
-                                      ).withValues(alpha: 0.85),
-                                      shape: BoxShape.circle,
-                                    ),
-                                    child: IconButton(
-                                      constraints: const BoxConstraints(),
-                                      padding: EdgeInsets.zero,
-                                      icon: SvgPicture.asset(
-                                        isFav
-                                            ? AssetsConstants.heartFilled
-                                            : AssetsConstants.heart2,
-                                        width: 18,
-                                        height: 18,
-                                        colorFilter: ColorFilter.mode(
-                                          isFav
-                                              ? AppColors.primary
-                                              : context.palette.textPrimary,
-                                          BlendMode.srcIn,
-                                        ),
-                                      ),
-                                      onPressed: () {
-                                        ref
-                                            .read(favoritesProvider.notifier)
-                                            .toggle(favProduct);
-                                      },
-                                    ),
-                                  );
-                                },
-                              ),
-                            ),
-                          ],
-                        );
-
-                        return Row(
-                          textDirection: isAr
-                              ? TextDirection.rtl
-                              : TextDirection.ltr,
-                          crossAxisAlignment: CrossAxisAlignment.center,
-                          children: [
-                            imageSection,
-                            const SizedBox(width: 12),
-                            Expanded(child: textSection),
-                          ],
-                        );
-                      },
-                    ),
-                  ),
-
-                  const SizedBox(height: 24),
-
-                  // Progress bars distribution
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
-                    child: Column(
-                      children: ratingsDistribution.map((dist) {
-                        final stars = dist['stars'] as int;
-                        final count = dist['count'] as int;
-                        final percentage = count / totalRatingsCount;
-
-                        return Padding(
-                          padding: const EdgeInsets.symmetric(vertical: 4),
-                          child: Row(
-                            children: [
-                              SizedBox(
-                                width: 24,
-                                child: Text(
-                                  '$count',
-                                  textAlign: TextAlign.start,
-                                  style: AppStyle.bodyText.copyWith(
-                                    fontSize: 13,
-                                    color: const Color(0xFF8B2C47),
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                              ),
-                              const SizedBox(width: 8),
-                              Expanded(
-                                child: ClipRRect(
-                                  borderRadius: BorderRadius.circular(4),
-                                  child: LinearProgressIndicator(
-                                    value: percentage,
-                                    minHeight: 6,
-                                    backgroundColor:
-                                        context.palette.surfaceMuted,
-                                    valueColor: AlwaysStoppedAnimation<Color>(
-                                      context.palette.textPrimary,
-                                    ),
-                                  ),
-                                ),
-                              ),
-                              const SizedBox(width: 8),
-                              SizedBox(
-                                width: 32,
-                                child: Row(
-                                  mainAxisAlignment: MainAxisAlignment.end,
-                                  children: [
-                                    Text(
-                                      '$stars',
-                                      style: AppStyle.bodyText.copyWith(
-                                        fontSize: 13,
-                                        color: context.palette.textMuted,
-                                      ),
-                                    ),
-                                    const SizedBox(width: 2),
-                                    const Icon(
-                                      Icons.star,
-                                      size: 12,
-                                      color: Colors.amber,
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ],
-                          ),
-                        );
-                      }).toList(),
-                    ),
-                  ),
-
-                  const SizedBox(height: 24),
-
-                  // Write Review Button
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
-                    child: SizedBox(
-                      width: double.infinity,
-                      child: ElevatedButton(
-                        onPressed: () {
-                          context.push('/write-review', extra: widget.args);
-                        },
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFFCA9A4E),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(30),
-                          ),
-                          padding: const EdgeInsets.symmetric(
-                            vertical: 14,
-                            horizontal: 24,
-                          ),
-                          elevation: 0,
-                        ),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Text(
-                              loc.translate('writeYourReview'),
-                              style: AppStyle.bodyText.copyWith(
-                                color: Colors.white,
-                                fontWeight: FontWeight.bold,
-                                fontSize: 15.5,
-                              ),
-                            ),
-                            RotatedBox(
-                              quarterTurns: isAr ? 2 : 0,
-                              child: SvgPicture.asset(
-                                AssetsConstants.moveLeft,
-                                colorFilter: const ColorFilter.mode(
-                                  Colors.white,
-                                  BlendMode.srcIn,
-                                ),
-                                width: 18,
-                                height: 18,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ),
-
-                  const SizedBox(height: 24),
-
-                  // Reviews Header
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
-                    child: Column(
+              // Product Summary Card
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                child: Builder(
+                  builder: (context) {
+                    final textSection = Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          loc.translate('reviewsTitle'),
+                          resolvedBrandName,
                           style: AppStyle.bodyText.copyWith(
-                            fontSize: 18,
+                            fontSize: 24,
+                            color: context.palette.textPrimary,
+                            height: 1.1,
+                          ),
+                        ),
+                        const SizedBox(height: 6),
+                        Text(
+                          productName,
+                          style: AppStyle.bodyText.copyWith(
+                            fontSize: 20,
                             fontWeight: FontWeight.bold,
                             color: context.palette.textPrimary,
                           ),
                         ),
-                        const SizedBox(height: 8),
-                        Divider(
-                          height: 1,
-                          thickness: 1,
-                          color: context.palette.divider,
+                        const SizedBox(height: 6),
+                        Text(
+                          productPrice,
+                          style: AppStyle.bodyText.copyWith(
+                            fontSize: 18,
+                            color: context.palette.textPrimary.withValues(alpha: 0.8),
+                          ),
+                        ),
+                        const SizedBox(height: 10),
+                        Row(
+                          children: [
+                            const Icon(Icons.star, size: 16, color: Colors.amber),
+                            const SizedBox(width: 4),
+                            Text(
+                              productRating,
+                              style: AppStyle.bodyText.copyWith(
+                                fontSize: 13.5,
+                                color: context.palette.textMuted,
+                              ),
+                            ),
+                          ],
                         ),
                       ],
-                    ),
-                  ),
+                    );
 
-                  // Reviews List
-                  ListView.separated(
-                    shrinkWrap: true,
-                    physics: const NeverScrollableScrollPhysics(),
-                    padding: const EdgeInsets.all(16),
-                    itemCount: _reviews.length,
-                    separatorBuilder: (_, __) => const SizedBox(height: 16),
-                    itemBuilder: (context, index) {
-                      final review = _reviews[index];
-                      return Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              Row(
-                                children: [
-                                  Text(
-                                    isAr ? review.nameAr : review.nameEn,
-                                    style: AppStyle.bodyText.copyWith(
-                                      fontWeight: FontWeight.bold,
-                                      fontSize: 14,
-                                      color: context.palette.textPrimary,
+                    final imageSection = Stack(
+                      clipBehavior: Clip.none,
+                      children: [
+                        ClipRRect(
+                          borderRadius: BorderRadius.circular(4),
+                          child: CachedNetworkImage(
+                            imageUrl: productImage,
+                            width: 140,
+                            height: 140,
+                            fit: BoxFit.cover,
+                            errorWidget: (context, url, error) =>
+                                Image.network(productImage, width: 140, height: 140, fit: BoxFit.cover),
+                          ),
+                        ),
+                        Positioned(
+                          top: 8,
+                          right: 8,
+                          child: Consumer(
+                            builder: (context, ref, _) {
+                              final favProduct = FavoriteProduct(
+                                productId: productId ?? '',
+                                title: productName,
+                                imageUrl: productImage,
+                                price: productPrice,
+                                rating: productRating,
+                              );
+                              final isFav =
+                                  ref.watch(favoritesProvider).favorites.contains(favProduct);
+                              return Container(
+                                width: 36,
+                                height: 36,
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFFF9E8D9).withValues(alpha: 0.85),
+                                  shape: BoxShape.circle,
+                                ),
+                                child: IconButton(
+                                  constraints: const BoxConstraints(),
+                                  padding: EdgeInsets.zero,
+                                  icon: SvgPicture.asset(
+                                    isFav ? AssetsConstants.heartFilled : AssetsConstants.heart2,
+                                    width: 18,
+                                    height: 18,
+                                    colorFilter: ColorFilter.mode(
+                                      isFav ? AppColors.primary : context.palette.textPrimary,
+                                      BlendMode.srcIn,
                                     ),
                                   ),
-                                  const SizedBox(width: 8),
-                                  if (review.isVerified)
-                                    Container(
-                                      padding: const EdgeInsets.symmetric(
-                                        horizontal: 8,
-                                        vertical: 2,
-                                      ),
-                                      decoration: BoxDecoration(
-                                        color: const Color(0xFFE8F5E9),
-                                        borderRadius: BorderRadius.circular(4),
-                                      ),
+                                  onPressed: () => ref.read(favoritesProvider.notifier).toggle(favProduct),
+                                ),
+                              );
+                            },
+                          ),
+                        ),
+                      ],
+                    );
+
+                    return Row(
+                      textDirection: isAr ? TextDirection.rtl : TextDirection.ltr,
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        imageSection,
+                        const SizedBox(width: 12),
+                        Expanded(child: textSection),
+                      ],
+                    );
+                  },
+                ),
+              ),
+
+              const SizedBox(height: 24),
+
+              if (productId == null)
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  child: Text(
+                    isAr ? 'المنتج غير متاح' : 'Product not found',
+                    style: AppStyle.bodyText.copyWith(color: context.palette.textMuted),
+                  ),
+                )
+              else ...[
+                // Progress bars distribution (M65)
+                Consumer(
+                  builder: (context, ref, _) {
+                    final summaryAsync = ref.watch(reviewsSummaryProvider(productId));
+                    return summaryAsync.when(
+                      loading: () => const Padding(
+                        padding: EdgeInsets.symmetric(vertical: 16),
+                        child: Center(child: CircularProgressIndicator()),
+                      ),
+                      error: (error, _) => Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 16),
+                        child: Text(
+                          error.toString(),
+                          style: AppStyle.bodyText.copyWith(color: context.palette.textMuted),
+                        ),
+                      ),
+                      data: (summary) {
+                        if (summary.total == 0) return const SizedBox.shrink();
+                        return Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 16),
+                          child: Column(
+                            children: [5, 4, 3, 2, 1].map((stars) {
+                              final count = summary.distribution[stars] ?? 0;
+                              final percentage = summary.total > 0 ? count / summary.total : 0.0;
+                              return Padding(
+                                padding: const EdgeInsets.symmetric(vertical: 4),
+                                child: Row(
+                                  children: [
+                                    SizedBox(
+                                      width: 24,
                                       child: Text(
-                                        loc.translate('verifiedPurchase'),
+                                        '$count',
+                                        textAlign: TextAlign.start,
                                         style: AppStyle.bodyText.copyWith(
-                                          fontSize: 10,
-                                          color: Colors.green[700],
+                                          fontSize: 13,
+                                          color: const Color(0xFF8B2C47),
                                           fontWeight: FontWeight.bold,
                                         ),
                                       ),
                                     ),
-                                ],
-                              ),
-                              Text(
-                                isAr ? review.dateAr : review.dateEn,
-                                style: AppStyle.bodyText.copyWith(
-                                  fontSize: 12,
-                                  color: context.palette.textMuted,
+                                    const SizedBox(width: 8),
+                                    Expanded(
+                                      child: ClipRRect(
+                                        borderRadius: BorderRadius.circular(4),
+                                        child: LinearProgressIndicator(
+                                          value: percentage,
+                                          minHeight: 6,
+                                          backgroundColor: context.palette.surfaceMuted,
+                                          valueColor:
+                                              AlwaysStoppedAnimation<Color>(context.palette.textPrimary),
+                                        ),
+                                      ),
+                                    ),
+                                    const SizedBox(width: 8),
+                                    SizedBox(
+                                      width: 32,
+                                      child: Row(
+                                        mainAxisAlignment: MainAxisAlignment.end,
+                                        children: [
+                                          Text(
+                                            '$stars',
+                                            style: AppStyle.bodyText.copyWith(
+                                              fontSize: 13,
+                                              color: context.palette.textMuted,
+                                            ),
+                                          ),
+                                          const SizedBox(width: 2),
+                                          const Icon(Icons.star, size: 12, color: Colors.amber),
+                                        ],
+                                      ),
+                                    ),
+                                  ],
                                 ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 6),
-                          Row(
-                            children: List.generate(5, (starIdx) {
-                              return Icon(
-                                Icons.star,
-                                size: 14,
-                                color: starIdx < review.rating
-                                    ? Colors.amber
-                                    : context.palette.divider,
                               );
-                            }),
+                            }).toList(),
                           ),
-                          const SizedBox(height: 10),
+                        );
+                      },
+                    );
+                  },
+                ),
+
+                const SizedBox(height: 24),
+
+                // Write Review Button
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  child: SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton(
+                      onPressed: () => context.push('/write-review', extra: args),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFFCA9A4E),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
+                        padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 24),
+                        elevation: 0,
+                      ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
                           Text(
-                            isAr ? review.reviewAr : review.reviewEn,
+                            loc.translate('writeYourReview'),
                             style: AppStyle.bodyText.copyWith(
-                              fontSize: 13,
-                              color: context.palette.textMuted,
-                              height: 1.5,
+                              color: Colors.white,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 15.5,
                             ),
                           ),
-                          const SizedBox(height: 12),
-                          // Helpful button
-                          GestureDetector(
-                            onTap: () {},
-                            child: Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 12,
-                                vertical: 6,
-                              ),
-                              decoration: BoxDecoration(
-                                borderRadius: BorderRadius.circular(20),
-                                border: Border.all(
-                                  color: context.palette.surfaceMuted,
-                                ),
-                              ),
-                              child: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Text(
-                                    '${review.helpfulCount} ${loc.translate('helpful')}',
-                                    style: AppStyle.bodyText.copyWith(
-                                      fontSize: 11,
-                                      color: context.palette.textMuted,
-                                    ),
-                                  ),
-                                  const SizedBox(width: 6),
-                                  SvgPicture.asset(
-                                    AssetsConstants.thumbsUp2,
-                                    width: 12,
-                                    height: 12,
-                                    colorFilter: ColorFilter.mode(
-                                      context.palette.textMuted,
-                                      BlendMode.srcIn,
-                                    ),
-                                  ),
-                                ],
-                              ),
+                          RotatedBox(
+                            quarterTurns: isAr ? 2 : 0,
+                            child: SvgPicture.asset(
+                              AssetsConstants.moveLeft,
+                              colorFilter: const ColorFilter.mode(Colors.white, BlendMode.srcIn),
+                              width: 18,
+                              height: 18,
                             ),
                           ),
                         ],
-                      );
-                    },
+                      ),
+                    ),
                   ),
-                ],
+                ),
+
+                const SizedBox(height: 24),
+
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        loc.translate('reviewsTitle'),
+                        style: AppStyle.bodyText.copyWith(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                          color: context.palette.textPrimary,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Divider(height: 1, thickness: 1, color: context.palette.divider),
+                    ],
+                  ),
+                ),
+
+                Consumer(
+                  builder: (context, ref, _) {
+                    final reviewsAsync = ref.watch(productReviewsProvider(productId));
+                    return reviewsAsync.when(
+                      loading: () => const Padding(
+                        padding: EdgeInsets.symmetric(vertical: 32),
+                        child: Center(child: CircularProgressIndicator()),
+                      ),
+                      error: (error, _) => Padding(
+                        padding: const EdgeInsets.all(16),
+                        child: Text(
+                          error.toString(),
+                          style: AppStyle.bodyText.copyWith(color: context.palette.textMuted),
+                        ),
+                      ),
+                      data: (page) {
+                        if (page.items.isEmpty) {
+                          return Padding(
+                            padding: const EdgeInsets.all(16),
+                            child: Text(
+                              isAr ? 'لا توجد تقييمات بعد' : 'No reviews yet',
+                              style: AppStyle.bodyText.copyWith(color: context.palette.textMuted),
+                            ),
+                          );
+                        }
+                        return ListView.separated(
+                          shrinkWrap: true,
+                          physics: const NeverScrollableScrollPhysics(),
+                          padding: const EdgeInsets.all(16),
+                          itemCount: page.items.length,
+                          separatorBuilder: (_, __) => const SizedBox(height: 16),
+                          itemBuilder: (context, index) => _ReviewTile(review: page.items[index]),
+                        );
+                      },
+                    );
+                  },
+                ),
+              ],
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _ReviewTile extends ConsumerStatefulWidget {
+  final Review review;
+
+  const _ReviewTile({required this.review});
+
+  @override
+  ConsumerState<_ReviewTile> createState() => _ReviewTileState();
+}
+
+class _ReviewTileState extends ConsumerState<_ReviewTile> {
+  int? _helpfulCount;
+  bool _marked = false;
+  bool _busy = false;
+
+  /// M67 is a toggle (helpful/un-helpful), matching the guide's
+  /// `{helpful, helpfulCount}` response.
+  Future<void> _markHelpful() async {
+    if (_busy) return;
+    setState(() => _busy = true);
+    final result = await ref.read(reviewsRepositoryProvider).markHelpful(widget.review.id);
+    if (!mounted) return;
+    setState(() {
+      _busy = false;
+      result.when(
+        success: (data) {
+          _marked = data.helpful;
+          _helpfulCount = data.helpfulCount;
+        },
+        failure: (_) {},
+      );
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final loc = AppLocalizations.of(context);
+    final review = widget.review;
+    final displayCount = _helpfulCount ?? review.helpfulCount;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(
+              review.userName,
+              style: AppStyle.bodyText.copyWith(
+                fontWeight: FontWeight.bold,
+                fontSize: 14,
+                color: context.palette.textPrimary,
               ),
             ),
+            if (review.createdAt != null)
+              Text(
+                '${review.createdAt!.year}/${review.createdAt!.month}/${review.createdAt!.day}',
+                style: AppStyle.bodyText.copyWith(fontSize: 12, color: context.palette.textMuted),
+              ),
+          ],
+        ),
+        const SizedBox(height: 6),
+        Row(
+          children: List.generate(5, (starIdx) {
+            return Icon(
+              Icons.star,
+              size: 14,
+              color: starIdx < review.rating ? Colors.amber : context.palette.divider,
+            );
+          }),
+        ),
+        const SizedBox(height: 10),
+        Text(
+          review.comment,
+          style: AppStyle.bodyText.copyWith(fontSize: 13, color: context.palette.textMuted, height: 1.5),
+        ),
+        const SizedBox(height: 12),
+        GestureDetector(
+          onTap: _markHelpful,
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(color: context.palette.surfaceMuted),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  '$displayCount ${loc.translate('helpful')}',
+                  style: AppStyle.bodyText.copyWith(fontSize: 11, color: context.palette.textMuted),
+                ),
+                const SizedBox(width: 6),
+                SvgPicture.asset(
+                  AssetsConstants.thumbsUp2,
+                  width: 12,
+                  height: 12,
+                  colorFilter: ColorFilter.mode(
+                    _marked ? AppColors.primary : context.palette.textMuted,
+                    BlendMode.srcIn,
+                  ),
+                ),
+              ],
+            ),
           ),
-        );
+        ),
+      ],
+    );
   }
 }

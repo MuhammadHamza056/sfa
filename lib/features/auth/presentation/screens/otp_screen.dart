@@ -1,23 +1,26 @@
 import 'dart:async';
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:fluttertoast/fluttertoast.dart';
 import 'package:go_router/go_router.dart';
 import 'package:pinput/pinput.dart';
 import 'package:sfa/core/localization/app_localizations.dart';
+import 'package:sfa/features/auth/providers/auth_provider.dart';
 import 'package:sfa/utils/assets_constants.dart';
 import 'package:sfa/utils/color_constants.dart';
 import 'package:sfa/utils/app_style.dart';
 import 'package:sfa/core/theme/app_palette.dart';
 
-class OtpScreen extends StatefulWidget {
+class OtpScreen extends ConsumerStatefulWidget {
   const OtpScreen({super.key});
 
   @override
-  State<OtpScreen> createState() => _OtpScreenState();
+  ConsumerState<OtpScreen> createState() => _OtpScreenState();
 }
 
-class _OtpScreenState extends State<OtpScreen> {
+class _OtpScreenState extends ConsumerState<OtpScreen> {
   static const int _resendCooldownSeconds = 60;
 
   final TextEditingController _pinController = TextEditingController();
@@ -44,8 +47,14 @@ class _OtpScreenState extends State<OtpScreen> {
   }
 
   void _onResendOtp() {
-    // Trigger OTP resend
+    ref.read(authProvider.notifier).resendOtp();
     setState(_startResendTimer);
+  }
+
+  void _onVerify() {
+    final otp = _pinController.text;
+    if (otp.length < 4) return;
+    ref.read(authProvider.notifier).verifyOtp(otp);
   }
 
   @override
@@ -58,6 +67,30 @@ class _OtpScreenState extends State<OtpScreen> {
   @override
   Widget build(BuildContext context) {
     final loc = AppLocalizations.of(context);
+    final state = ref.watch(authProvider);
+    final isLoading = state.status == AuthStatus.loading;
+
+    // Non-production backends echo the OTP straight back in the response
+    // (see AuthState.debugOtp) — prefill it so testing doesn't need a real
+    // SMS. Never present against a real production backend.
+    if (state.debugOtp != null && _pinController.text != state.debugOtp) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) _pinController.text = state.debugOtp!;
+      });
+    }
+
+    ref.listen<AuthState>(authProvider, (previous, next) {
+      if (next.status == AuthStatus.authenticated) {
+        context.go('/success');
+      } else if (next.status == AuthStatus.failure &&
+          next.errorMessage != null) {
+        Fluttertoast.showToast(
+          msg: next.errorMessage!,
+          backgroundColor: AppColors.redcolor,
+          textColor: Colors.white,
+        );
+      }
+    });
 
     // Default pin theme matching the screen design
     final defaultPinTheme = PinTheme(
@@ -72,99 +105,60 @@ class _OtpScreenState extends State<OtpScreen> {
     );
 
     final Widget verifyBtn = ElevatedButton(
-      onPressed: () {
-        // Go to success page upon successful verification
-        context.go('/success');
-      },
+      onPressed: isLoading ? null : _onVerify,
       style: ElevatedButton.styleFrom(
         backgroundColor: AppColors.primary,
         padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 20),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
         elevation: 0,
       ),
-      child: Row(
-        children: [
-          const SizedBox(width: 18),
-          Expanded(
-            child: Text(
-              loc.translate('verify'),
-              textAlign: loc.isArabic ? TextAlign.right : TextAlign.left,
-              style: AppStyle.buttonTextPrimary,
-            ),
-          ),
-          if (loc.isArabic)
-            Transform(
-              alignment: Alignment.center,
-              transform: Matrix4.rotationY(
-                math.pi,
-              ), // Mirror horizontally so it points left (←)
-              child: SvgPicture.asset(
-                AssetsConstants.moveLeft,
-                width: 18,
-                colorFilter: const ColorFilter.mode(
-                  Colors.white,
-                  BlendMode.srcIn,
+      child: isLoading
+          ? const Center(
+              child: SizedBox(
+                height: 22,
+                width: 22,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  color: Colors.white,
                 ),
               ),
             )
-          else
-            SvgPicture.asset(
-              AssetsConstants.moveLeft,
-              width: 18,
-              colorFilter: const ColorFilter.mode(
-                Colors.white,
-                BlendMode.srcIn,
-              ),
-            ),
-        ],
-      ),
-    );
-
-    final Widget loginBtn = OutlinedButton(
-      onPressed: () {
-        context.go('/login');
-      },
-      style: OutlinedButton.styleFrom(
-        padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 20),
-        side: BorderSide(color: context.palette.outlineStrong, width: 1.2),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
-      ),
-      child: Row(
-        children: [
-          const SizedBox(width: 18),
-          Expanded(
-            child: Text(
-              loc.translate('login'),
-              textAlign: loc.isArabic ? TextAlign.right : TextAlign.left,
-              style: AppStyle.buttonTextSecondary,
-            ),
-          ),
-          if (loc.isArabic)
-            Transform(
-              alignment: Alignment.center,
-              transform: Matrix4.rotationY(
-                math.pi,
-              ), // Mirror horizontally so it points left (←)
-              child: SvgPicture.asset(
-                AssetsConstants.moveLeft,
-                width: 18,
-                colorFilter: ColorFilter.mode(
-                  context.palette.textPrimary,
-                  BlendMode.srcIn,
+          : Row(
+              children: [
+                const SizedBox(width: 18),
+                Expanded(
+                  child: Text(
+                    loc.translate('verify'),
+                    textAlign: loc.isArabic ? TextAlign.right : TextAlign.left,
+                    style: AppStyle.buttonTextPrimary,
+                  ),
                 ),
-              ),
-            )
-          else
-            SvgPicture.asset(
-              AssetsConstants.moveLeft,
-              width: 18,
-              colorFilter: ColorFilter.mode(
-                context.palette.textPrimary,
-                BlendMode.srcIn,
-              ),
+                if (loc.isArabic)
+                  Transform(
+                    alignment: Alignment.center,
+                    transform: Matrix4.rotationY(
+                      math.pi,
+                    ), // Mirror horizontally so it points left (←)
+                    child: SvgPicture.asset(
+                      AssetsConstants.moveLeft,
+                      width: 18,
+                      colorFilter: const ColorFilter.mode(
+                        Colors.white,
+                        BlendMode.srcIn,
+                      ),
+                    ),
+                  )
+                else
+                  SvgPicture.asset(
+                    AssetsConstants.moveLeft,
+                    width: 18,
+                    colorFilter: const ColorFilter.mode(
+                      Colors.white,
+                      BlendMode.srcIn,
+                    ),
+                  ),
+              ],
             ),
-        ],
-      ),
     );
 
     return Scaffold(
@@ -210,7 +204,7 @@ class _OtpScreenState extends State<OtpScreen> {
                   child: Directionality(
                     textDirection: TextDirection.ltr,
                     child: Pinput(
-                      length: 4,
+                      length: 6,
                       controller: _pinController,
                       defaultPinTheme: defaultPinTheme,
                       focusedPinTheme: defaultPinTheme.copyWith(
@@ -222,6 +216,7 @@ class _OtpScreenState extends State<OtpScreen> {
                         ),
                       ),
                       submittedPinTheme: defaultPinTheme,
+                      onCompleted: (_) => _onVerify(),
                     ),
                   ),
                 ),
@@ -238,11 +233,8 @@ class _OtpScreenState extends State<OtpScreen> {
                       _secondsRemaining == 0
                           ? loc.translate('resendOtp')
                           : loc
-                              .translate('resendOtpTimer')
-                              .replaceAll(
-                                '{seconds}',
-                                '$_secondsRemaining',
-                              ),
+                                .translate('resendOtpTimer')
+                                .replaceAll('{seconds}', '$_secondsRemaining'),
                       style: AppStyle.switchTextLink.copyWith(
                         color: _secondsRemaining == 0
                             ? AppColors.primary
@@ -251,12 +243,6 @@ class _OtpScreenState extends State<OtpScreen> {
                     ),
                   ),
                 ),
-                // const SizedBox(height: 20),
-                //
-                // Divider(thickness: 1, color: context.palette.divider),
-                // const SizedBox(height: 24),
-                //
-                // loginBtn,
               ],
             ),
           ),

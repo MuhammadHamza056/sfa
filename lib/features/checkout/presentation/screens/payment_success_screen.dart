@@ -6,9 +6,12 @@ import 'package:sfa/utils/app_style.dart';
 import 'package:sfa/utils/assets_constants.dart';
 import 'package:sfa/utils/color_constants.dart';
 import 'package:sfa/core/theme/app_palette.dart';
+import '../../data/checkout_models.dart';
 
 class PaymentSuccessScreen extends StatelessWidget {
-  const PaymentSuccessScreen({super.key});
+  final CheckoutConfirmResult? order;
+
+  const PaymentSuccessScreen({super.key, this.order});
 
   @override
   Widget build(BuildContext context) {
@@ -57,11 +60,23 @@ class PaymentSuccessScreen extends StatelessWidget {
                     fontWeight: FontWeight.w500,
                   ),
                 ),
+                if (order != null) ...[
+                  const SizedBox(height: 12),
+                  Text(
+                    '#${order!.orderNumber}',
+                    textAlign: TextAlign.center,
+                    style: AppStyle.valueText.copyWith(
+                      fontSize: 15,
+                      color: AppColors.primary,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ],
                 const SizedBox(height: 48),
 
                 // ── Track Orders Button ───────────────────────────────
                 ElevatedButton(
-                  onPressed: () => context.go('/order-tracking'),
+                  onPressed: () => context.go('/order-tracking/${order?.orderId ?? ''}'),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppColors.primary,
                     minimumSize: const Size(double.infinity, 54),

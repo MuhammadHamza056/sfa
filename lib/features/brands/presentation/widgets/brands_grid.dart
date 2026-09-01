@@ -1,12 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:sfa/features/brands/models/brand_nav_args.dart';
 import 'brand_card.dart';
 
 class BrandItem {
+  final String id;
   final String imageUrl;
   final String name;
 
-  const BrandItem({required this.imageUrl, required this.name});
+  const BrandItem({required this.id, required this.imageUrl, required this.name});
 }
 
 class BrandsGrid extends StatelessWidget {
@@ -34,7 +36,10 @@ class BrandsGrid extends StatelessWidget {
           imageUrl: brand.imageUrl,
           brandName: brand.name,
           onTap: () {
-            context.push('/brand-detail', extra: brand.name);
+            context.push(
+              '/brand-detail',
+              extra: BrandNavArgs(id: brand.id, name: brand.name),
+            );
           },
         );
       },

@@ -1,107 +1,24 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:sfa/core/localization/app_localizations.dart';
 import 'package:sfa/features/brands/presentation/widgets/brands_grid.dart';
 import 'package:sfa/features/brands/presentation/widgets/brands_header.dart';
 import 'package:sfa/features/brands/presentation/widgets/brands_promo_banner.dart';
-
-// ── Dummy data ────────────────────────────────────────────────────────────────
-
-const _kBrandsRow1 = [
-  BrandItem(
-    imageUrl:
-        'https://images.unsplash.com/photo-1529139574466-a303027c1d8b?w=400&q=80',
-    name: 'brandAnbar',
-  ),
-  BrandItem(
-    imageUrl:
-        'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&q=80',
-    name: 'brandJuba',
-  ),
-  BrandItem(
-    imageUrl:
-        'https://images.unsplash.com/photo-1490481651871-ab68de25d43d?w=400&q=80',
-    name: 'brandSummerShop',
-  ),
-  BrandItem(
-    imageUrl:
-        'https://images.unsplash.com/photo-1539109136881-3be0616acf4b?w=400&q=80',
-    name: 'brandNaseej',
-  ),
-  BrandItem(
-    imageUrl:
-        'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=400&q=80',
-    name: 'brandLamsatStyle',
-  ),
-  BrandItem(
-    imageUrl:
-        'https://images.unsplash.com/photo-1517841905240-472988babdf9?w=400&q=80',
-    name: 'brandThawbi',
-  ),
-];
-
-const _kBrandsRow2 = [
-  BrandItem(
-    imageUrl:
-        'https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?w=400&q=80',
-    name: 'brandSummerShop',
-  ),
-  BrandItem(
-    imageUrl:
-        'https://images.unsplash.com/photo-1529139574466-a303027c1d8b?w=400&q=80',
-    name: 'brandAnbar',
-  ),
-  BrandItem(
-    imageUrl:
-        'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=400&q=80',
-    name: 'brandLamsatStyle',
-  ),
-  BrandItem(
-    imageUrl:
-        'https://images.unsplash.com/photo-1517841905240-472988babdf9?w=400&q=80',
-    name: 'brandThawbi',
-  ),
-  BrandItem(
-    imageUrl:
-        'https://images.unsplash.com/photo-1539109136881-3be0616acf4b?w=400&q=80',
-    name: 'brandNaseej',
-  ),
-  BrandItem(
-    imageUrl:
-        'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&q=80',
-    name: 'brandJuba',
-  ),
-];
+import 'package:sfa/features/catalog/providers/catalog_providers.dart';
+import 'package:sfa/core/theme/app_palette.dart';
+import 'package:sfa/utils/app_style.dart';
 
 const _kPromoBannerUrl =
     'https://images.unsplash.com/photo-1490481651871-ab68de25d43d?w=800&q=80';
 
-// ── Screen ────────────────────────────────────────────────────────────────────
-
-class BrandsScreen extends StatelessWidget {
+class BrandsScreen extends ConsumerWidget {
   const BrandsScreen({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final loc = AppLocalizations.of(context);
     final isAr = loc.isArabic;
-
-    final row1 = _kBrandsRow1
-        .map(
-          (brand) => BrandItem(
-            imageUrl: brand.imageUrl,
-            name: loc.translate(brand.name),
-          ),
-        )
-        .toList();
-
-    final row2 = _kBrandsRow2
-        .map(
-          (brand) => BrandItem(
-            imageUrl: brand.imageUrl,
-            name: loc.translate(brand.name),
-          ),
-        )
-        .toList();
+    final brandsAsync = ref.watch(brandsListProvider);
 
     return Directionality(
       textDirection: isAr ? TextDirection.rtl : TextDirection.ltr,
@@ -111,7 +28,6 @@ class BrandsScreen extends StatelessWidget {
         child: Scaffold(
           backgroundColor: Colors.transparent,
           body: Stack(
-            // fit: StackFit.expand,
             children: [
               // Scaffold background image from assets
               SizedBox(
@@ -130,28 +46,50 @@ class BrandsScreen extends StatelessWidget {
 
                   // ── Scrollable Content ──
                   Expanded(
-                    child: SingleChildScrollView(
-                      child: Column(
-                        children: [
-                          const SizedBox(height: 15),
-
-                          // ── First grid ──
-                          BrandsGrid(brands: row1),
-
-                          // ── Promo banner ──
-                          BrandsPromoBanner(
-                            imageUrl: _kPromoBannerUrl,
-                            title: loc.translate('summerSale'),
-                            subtitle: loc.translate('upTo80'),
-                            brandName: loc.translate('saudiBrands'),
-                          ),
-
-                          // ── Second grid ──
-                          BrandsGrid(brands: row2),
-
-                          const SizedBox(height: 24),
-                        ],
+                    child: brandsAsync.when(
+                      loading: () => const Center(child: CircularProgressIndicator()),
+                      error: (error, _) => Center(
+                        child: Text(
+                          error.toString(),
+                          style: AppStyle.bodyText.copyWith(color: context.palette.textMuted),
+                        ),
                       ),
+                      data: (brands) {
+                        if (brands.isEmpty) {
+                          return Center(
+                            child: Text(
+                              isAr ? 'لا توجد علامات تجارية' : 'No brands yet',
+                              style: AppStyle.bodyText.copyWith(color: context.palette.textMuted),
+                            ),
+                          );
+                        }
+                        final mid = (brands.length / 2).ceil();
+                        final row1 = brands
+                            .take(mid)
+                            .map((b) => BrandItem(id: b.id, imageUrl: b.logo ?? '', name: b.name))
+                            .toList();
+                        final row2 = brands
+                            .skip(mid)
+                            .map((b) => BrandItem(id: b.id, imageUrl: b.logo ?? '', name: b.name))
+                            .toList();
+
+                        return SingleChildScrollView(
+                          child: Column(
+                            children: [
+                              const SizedBox(height: 15),
+                              BrandsGrid(brands: row1),
+                              BrandsPromoBanner(
+                                imageUrl: _kPromoBannerUrl,
+                                title: loc.translate('summerSale'),
+                                subtitle: loc.translate('upTo80'),
+                                brandName: loc.translate('saudiBrands'),
+                              ),
+                              if (row2.isNotEmpty) BrandsGrid(brands: row2),
+                              const SizedBox(height: 24),
+                            ],
+                          ),
+                        );
+                      },
                     ),
                   ),
                 ],

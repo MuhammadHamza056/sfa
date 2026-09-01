@@ -8,13 +8,14 @@ import 'package:sfa/core/localization/app_localizations.dart';
 import 'package:sfa/utils/app_style.dart';
 import 'package:sfa/utils/assets_constants.dart';
 import 'package:sfa/utils/color_constants.dart';
-import 'package:sfa/core/models/product.dart';
 import 'package:sfa/core/models/product_detail_args.dart';
 import 'package:sfa/core/widgets/primary_app_bar.dart';
 import 'package:sfa/core/widgets/product_card.dart';
 import 'package:sfa/features/brands/presentation/widgets/delivery_terms_bottom_sheet.dart';
 import 'package:sfa/features/brands/providers/product_detail_provider.dart';
 import 'package:sfa/features/cart/providers/cart_provider.dart';
+import 'package:sfa/features/catalog/data/catalog_models.dart';
+import 'package:sfa/features/catalog/providers/catalog_providers.dart';
 import 'package:sfa/features/favorites/models/favorite_product.dart';
 import 'package:sfa/features/favorites/providers/favorites_provider.dart';
 import 'package:sfa/core/theme/app_palette.dart';
@@ -47,93 +48,126 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
     super.dispose();
   }
 
-  static const List<Color> _colors = [
-    Color(0xFF141D2B), // Dark blue
-    Color(0xFFC9DBCA), // Light green
-    Color(0xFF7A1415), // Dark red
-  ];
-
-  static const List<String> _sizes = ['S', 'M', 'L', 'XL', 'XXL'];
+  static CatalogProductOption? _findOption(
+    List<CatalogProductOption> options,
+    bool Function(CatalogProductOption) test,
+  ) {
+    for (final option in options) {
+      if (test(option)) return option;
+    }
+    return null;
+  }
 
   @override
   Widget build(BuildContext context) {
     final loc = AppLocalizations.of(context);
+    final id = widget.args?.id;
+    final appbarTitle = loc.isArabic ? 'تفاصيل المنتج' : 'Product Details';
+
+    if (id == null) {
+      return Scaffold(
+        backgroundColor: context.palette.background,
+        appBar: PrimaryAppBar(
+          title: appbarTitle,
+          fontSize: 18,
+          showBackButton: true,
+        ),
+        body: Center(
+          child: Text(
+            loc.isArabic ? 'المنتج غير متاح' : 'Product not found',
+            style: AppStyle.bodyText.copyWith(color: context.palette.textMuted),
+          ),
+        ),
+      );
+    }
+
+    final productAsync = ref.watch(catalogProductDetailProvider(id));
+
+    return productAsync.when(
+      loading: () => Scaffold(
+        backgroundColor: context.palette.background,
+        appBar: PrimaryAppBar(title: appbarTitle, fontSize: 18, showBackButton: true),
+        body: const Center(child: CircularProgressIndicator()),
+      ),
+      error: (error, _) => Scaffold(
+        backgroundColor: context.palette.background,
+        appBar: PrimaryAppBar(title: appbarTitle, fontSize: 18, showBackButton: true),
+        body: Center(
+          child: Text(
+            error.toString(),
+            style: AppStyle.bodyText.copyWith(color: context.palette.textMuted),
+          ),
+        ),
+      ),
+      data: (product) => _ProductDetailBody(
+        product: product,
+        appbarTitle: appbarTitle,
+        scrollController: _scrollController,
+        deliveryTermsRecognizer: _deliveryTermsRecognizer,
+        findOption: _findOption,
+      ),
+    );
+  }
+}
+
+class _ProductDetailBody extends ConsumerWidget {
+  final CatalogProduct product;
+  final String appbarTitle;
+  final ScrollController scrollController;
+  final TapGestureRecognizer deliveryTermsRecognizer;
+  final CatalogProductOption? Function(
+    List<CatalogProductOption>,
+    bool Function(CatalogProductOption),
+  ) findOption;
+
+  const _ProductDetailBody({
+    required this.product,
+    required this.appbarTitle,
+    required this.scrollController,
+    required this.deliveryTermsRecognizer,
+    required this.findOption,
+  });
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final loc = AppLocalizations.of(context);
     final isAr = loc.isArabic;
 
-    // Translations for UI labels
-    final appbarTitle = isAr ? 'تفاصيل المنتج' : 'Product Details';
-    final hurryText = isAr
-        ? 'سارع متبقي 5 قطع فقط'
-        : 'Hurry, only 5 pieces left!';
     final colorLabel = isAr ? 'اللون' : 'Color';
     final sizeLabel = isAr ? 'المقاس' : 'Size';
     final descTitle = isAr ? 'وصف المنتج' : 'Product Description';
-    final descText = isAr
-        ? 'عباية فاخرة مصنوعة من الحرير الطبيعي، تتميز بتصميم كلاسيكي عصري وتطريز دقيق على الأطراف. خفيفة الوزن ومثالية للمناسبات الرسمية والزيارات اليومية الراقية. تأتي مع طرحة مطابقة وتصميم يضمن الراحة والتميز.'
-        : 'A luxury abaya made of natural silk, featuring a modern classic design and fine embroidery on the edges. Lightweight and ideal for formal occasions and high-end daily visits. Comes with a matching veil and design that guarantees comfort and distinction.';
     final careTitle = isAr ? 'تعليمات العناية' : 'Care Instructions';
     final careText = isAr
-        ? 'غسيل جاف فقط لضمان جودة الحرير'
-        : 'Dry clean only to maintain silk quality';
+        ? 'غسيل جاف فقط لضمان الجودة'
+        : 'Dry clean only to maintain quality';
     final buyNowText = isAr ? 'اشترِ الآن' : 'Buy Now';
 
-    final relatedProducts = [
-      Product(
-        imageUrl:
-            'https://images.unsplash.com/photo-1509631179647-0177331693ae?w=500&q=80',
-        brandName: loc.translate('brandJuba'),
-        title: loc.translate('brandProductDesertRose'),
-        price: loc.translate('brandProductPrice1250'),
-        rating: loc.translate('brandProductRatingText'),
-      ),
-      Product(
-        imageUrl:
-            'https://images.unsplash.com/photo-1529139574466-a303027c1d8b?w=500&q=80',
-        brandName: loc.translate('brandAnbar'),
-        title: loc.translate('brandProductBlackSilk'),
-        price: loc.translate('brandProductPrice1250'),
-        rating: loc.translate('brandProductRatingText'),
-      ),
-      Product(
-        imageUrl:
-            'https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?w=500&q=80',
-        brandName: loc.translate('brandJuba'),
-        title: loc.translate('brandProductCrepeAbaya'),
-        price: loc.translate('brandProductPrice780'),
-        rating: loc.translate('brandProductRatingText'),
-      ),
-      Product(
-        imageUrl:
-            'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=500&q=80',
-        brandName: loc.translate('brandAnbar'),
-        title: loc.translate('brandProductLinenSet'),
-        price: loc.translate('brandProductPrice450'),
-        rating: loc.translate('brandProductRatingText'),
-      ),
-    ];
+    final displayProduct = product.toProduct(isAr);
+    final productImage = displayProduct.imageUrl;
 
-    final productName =
-        widget.args?.name ??
-        (isAr ? 'وردة الصحراء المطرزة' : 'Embroidered Desert Rose');
-    final productImage =
-        widget.args?.imageUrl ??
-        'https://images.unsplash.com/photo-1509631179647-0177331693ae?w=800&q=80';
-    final productPrice =
-        widget.args?.price ?? (isAr ? '1,250 ر.س.' : '1,250 SAR');
-    final productRating =
-        widget.args?.rating ?? (isAr ? '4.9 · 85 تقييماً' : '4.9 · 85 reviews');
-    final brandNameKey = widget.args?.brandNameKey ?? 'brandJuba';
-    final resolvedBrandName = loc.translate(brandNameKey);
-    final currentProduct = Product(
+    final colorOption = findOption(product.options, (o) => o.isColorOption);
+    final sizeOption = findOption(product.options, (o) => !o.isColorOption);
+
+    final detailState = ref.watch(productDetailProvider(product.id));
+    final detailNotifier = ref.read(productDetailProvider(product.id).notifier);
+
+    final selectedColorIndex = colorOption != null && colorOption.values.isNotEmpty
+        ? detailState.selectedColorIndex.clamp(0, colorOption.values.length - 1)
+        : 0;
+    final selectedSizeIndex = sizeOption != null && sizeOption.values.isNotEmpty
+        ? detailState.selectedSizeIndex.clamp(0, sizeOption.values.length - 1)
+        : 0;
+
+    final favoriteEntry = FavoriteProduct(
+      productId: product.id,
+      title: displayProduct.title,
       imageUrl: productImage,
-      title: productName,
-      price: productPrice,
-      rating: productRating,
-      brandName: resolvedBrandName,
+      price: displayProduct.price,
+      rating: displayProduct.rating,
+      brandName: displayProduct.brandName,
     );
 
-    final detailKey = productDetailKey(productName, productImage);
-    final detailState = ref.watch(productDetailProvider(detailKey));
+    final relatedAsync = ref.watch(relatedProductsProvider(product.id));
 
     return Scaffold(
       backgroundColor: context.palette.background,
@@ -142,32 +176,14 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
         fontSize: 18,
         letterSpacing: 0,
         showBackButton: true,
-        heartIcon: ref
-                .watch(favoritesProvider)
-                .favorites
-                .contains(
-                  FavoriteProduct(
-                    title: productName,
-                    imageUrl: productImage,
-                    price: productPrice,
-                    rating: productRating,
-                  ),
-                )
+        heartIcon: ref.watch(favoritesProvider).favorites.contains(favoriteEntry)
             ? AssetsConstants.heartFilled
             : AssetsConstants.heart2,
-        onHeartTap: () => ref
-            .read(favoritesProvider.notifier)
-            .toggle(
-              FavoriteProduct(
-                title: productName,
-                imageUrl: productImage,
-                price: productPrice,
-                rating: productRating,
-              ),
-            ),
+        onHeartTap: () =>
+            ref.read(favoritesProvider.notifier).toggle(favoriteEntry),
       ),
       body: SingleChildScrollView(
-        controller: _scrollController,
+        controller: scrollController,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
@@ -179,32 +195,29 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
                   height: 520,
                   width: double.infinity,
                   fit: BoxFit.cover,
-                  placeholder: (_, __) =>
-                      Container(color: context.palette.surfaceMuted),
-                  errorWidget: (_, __, ___) =>
-                      Container(color: context.palette.surfaceMuted),
+                  placeholder: (_, __) => Container(color: context.palette.surfaceMuted),
+                  errorWidget: (_, __, ___) => Container(color: context.palette.surfaceMuted),
                 ),
-                Positioned(
-                  bottom: 16,
-                  left: 0,
-                  right: 0,
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: List.generate(3, (i) {
-                      return Container(
-                        width: i == 0 ? 20 : 6,
-                        height: 6,
-                        margin: const EdgeInsets.symmetric(horizontal: 3),
-                        decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(3),
-                          color: i == 0
-                              ? Colors.white
-                              : Colors.white.withOpacity(0.5),
-                        ),
-                      );
-                    }),
+                if (product.images.length > 1)
+                  Positioned(
+                    bottom: 16,
+                    left: 0,
+                    right: 0,
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: List.generate(product.images.length, (i) {
+                        return Container(
+                          width: i == 0 ? 20 : 6,
+                          height: 6,
+                          margin: const EdgeInsets.symmetric(horizontal: 3),
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(3),
+                            color: i == 0 ? Colors.white : Colors.white.withValues(alpha: 0.5),
+                          ),
+                        );
+                      }),
+                    ),
                   ),
-                ),
               ],
             ),
 
@@ -216,10 +229,9 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  // Right: Product Title (Arabic right, English left)
                   Expanded(
                     child: Text(
-                      productName,
+                      displayProduct.title,
                       textAlign: isAr ? TextAlign.right : TextAlign.left,
                       style: AppStyle.headerHeading.copyWith(
                         fontSize: 18,
@@ -229,13 +241,12 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
                     ),
                   ),
                   const SizedBox(width: 16),
-                  // Left: Price
                   Text(
-                    productPrice,
+                    displayProduct.price,
                     style: AppStyle.bodyText.copyWith(
                       fontSize: 17,
                       fontWeight: FontWeight.bold,
-                      color: const Color(0xFFC19E68), // Gold/Beige color
+                      color: const Color(0xFFC19E68),
                     ),
                   ),
                 ],
@@ -244,41 +255,37 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
 
             const SizedBox(height: 12),
 
-            // 3. Hurry alert pill
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: Container(
-                decoration: BoxDecoration(
-                  color: context.palette.background,
-                  borderRadius: BorderRadius.circular(20),
-                  border: Border.all(color: const Color(0xFFE57373), width: 1),
-                ),
-                padding: const EdgeInsets.symmetric(
-                  vertical: 8,
-                  horizontal: 16,
-                ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    const Icon(
-                      Icons.access_time_filled,
-                      size: 15,
-                      color: Color(0xFFE57373),
-                    ),
-                    const SizedBox(width: 6),
-                    Text(
-                      hurryText,
-                      style: AppStyle.bodyText.copyWith(
-                        fontSize: 12.5,
-                        color: const Color(0xFFE57373),
-                        fontWeight: FontWeight.bold,
+            // 3. Hurry alert pill — only when stock is genuinely low
+            if (product.stock > 0 && product.stock <= 10)
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: Container(
+                  decoration: BoxDecoration(
+                    color: context.palette.background,
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(color: const Color(0xFFE57373), width: 1),
+                  ),
+                  padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(Icons.access_time_filled, size: 15, color: Color(0xFFE57373)),
+                      const SizedBox(width: 6),
+                      Text(
+                        isAr
+                            ? 'سارع متبقي ${product.stock} قطع فقط'
+                            : 'Hurry, only ${product.stock} pieces left!',
+                        style: AppStyle.bodyText.copyWith(
+                          fontSize: 12.5,
+                          color: const Color(0xFFE57373),
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
               ),
-            ),
 
             const SizedBox(height: 16),
 
@@ -288,7 +295,6 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  // Brand (Icon & Name)
                   Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
@@ -296,25 +302,19 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
                         decoration: BoxDecoration(
                           color: context.palette.surfaceAlt,
                           borderRadius: BorderRadius.circular(6),
-                          border: Border.all(
-                            color: const Color(0xFFD49E4B),
-                            width: 1,
-                          ),
+                          border: Border.all(color: const Color(0xFFD49E4B), width: 1),
                         ),
                         padding: const EdgeInsets.all(8),
                         child: SvgPicture.asset(
                           AssetsConstants.store3,
                           width: 16,
                           height: 16,
-                          colorFilter: const ColorFilter.mode(
-                            Color(0xFFD49E4B),
-                            BlendMode.srcIn,
-                          ),
+                          colorFilter: const ColorFilter.mode(Color(0xFFD49E4B), BlendMode.srcIn),
                         ),
                       ),
                       const SizedBox(width: 8),
                       Text(
-                        resolvedBrandName,
+                        product.brand?.name ?? '',
                         style: AppStyle.bodyText.copyWith(
                           fontWeight: FontWeight.bold,
                           fontSize: 13,
@@ -323,18 +323,10 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
                       ),
                     ],
                   ),
-
-                  // Rating (Star & text)
                   GestureDetector(
                     onTap: () => context.push(
                       '/product-reviews',
-                      extra: ProductDetailArgs(
-                        name: productName,
-                        imageUrl: productImage,
-                        price: productPrice,
-                        rating: productRating,
-                        brandNameKey: brandNameKey,
-                      ),
+                      extra: displayProduct.toDetailArgs(),
                     ),
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
@@ -342,7 +334,9 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
                         const Icon(Icons.star, size: 14, color: Colors.amber),
                         const SizedBox(width: 4),
                         Text(
-                          productRating,
+                          displayProduct.reviewsLabel != null
+                              ? '${displayProduct.rating} · ${displayProduct.reviewsLabel}'
+                              : displayProduct.rating,
                           style: AppStyle.bodyText.copyWith(
                             fontSize: 11.5,
                             color: context.palette.textMuted,
@@ -356,70 +350,53 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
             ),
 
             const SizedBox(height: 16),
-            Divider(
-              indent: 16,
-              endIndent: 16,
-              height: 1,
-              thickness: 0.5,
-              color: context.palette.divider,
-            ),
+            Divider(indent: 16, endIndent: 16, height: 1, thickness: 0.5, color: context.palette.divider),
 
             // 5. Color Selection
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    colorLabel,
-                    style: AppStyle.bodyText.copyWith(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 14,
-                      color: context.palette.textPrimary,
+            if (colorOption != null) ...[
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      colorOption.name.resolve(isAr).isEmpty ? colorLabel : colorOption.name.resolve(isAr),
+                      style: AppStyle.bodyText.copyWith(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 14,
+                        color: context.palette.textPrimary,
+                      ),
                     ),
-                  ),
-                  const SizedBox(height: 10),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.start,
-                    children: List.generate(_colors.length, (i) {
-                      final isSelected = detailState.selectedColorIndex == i;
-                      return GestureDetector(
-                        onTap: () => ref
-                            .read(productDetailProvider(detailKey).notifier)
-                            .selectColor(i),
-                        child: Container(
-                          margin: const EdgeInsets.symmetric(horizontal: 6),
-                          width: 32,
-                          height: 32,
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            color: _colors[i],
-                            border: isSelected
-                                ? Border.all(
-                                    color: const Color(0xFFC19E68),
-                                    width: 2,
-                                  )
-                                : Border.all(
-                                    color: Colors.transparent,
-                                    width: 0,
-                                  ),
+                    const SizedBox(height: 10),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.start,
+                      children: List.generate(colorOption.values.length, (i) {
+                        final isSelected = selectedColorIndex == i;
+                        final swatchColor =
+                            _parseHexColor(colorOption.values[i]) ?? context.palette.surfaceMuted;
+                        return GestureDetector(
+                          onTap: () => detailNotifier.selectColor(i),
+                          child: Container(
+                            margin: const EdgeInsets.symmetric(horizontal: 6),
+                            width: 32,
+                            height: 32,
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              color: swatchColor,
+                              border: isSelected
+                                  ? Border.all(color: const Color(0xFFC19E68), width: 2)
+                                  : Border.all(color: Colors.transparent, width: 0),
+                            ),
                           ),
-                        ),
-                      );
-                    }),
-                  ),
-                ],
+                        );
+                      }),
+                    ),
+                  ],
+                ),
               ),
-            ),
-
-            const SizedBox(height: 8),
-            Divider(
-              indent: 16,
-              endIndent: 16,
-              height: 1,
-              thickness: 0.5,
-              color: context.palette.divider,
-            ),
+              const SizedBox(height: 8),
+              Divider(indent: 16, endIndent: 16, height: 1, thickness: 0.5, color: context.palette.divider),
+            ],
 
             // Shipping details widget
             Padding(
@@ -431,20 +408,14 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
                     height: 40,
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
-                      border: Border.all(
-                        color: const Color(0xFFD49E4B),
-                        width: 1,
-                      ),
+                      border: Border.all(color: const Color(0xFFD49E4B), width: 1),
                     ),
                     child: Center(
                       child: SvgPicture.asset(
                         AssetsConstants.truck,
                         width: 20,
                         height: 20,
-                        colorFilter: const ColorFilter.mode(
-                          Color(0xFFD49E4B),
-                          BlendMode.srcIn,
-                        ),
+                        colorFilter: const ColorFilter.mode(Color(0xFFD49E4B), BlendMode.srcIn),
                       ),
                     ),
                   ),
@@ -463,81 +434,14 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
                           ),
                         ),
                         const SizedBox(height: 4),
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.start,
-                          children: [
-                            Text(
-                              '${loc.translate('shippingDaysTo')} ',
-                              textAlign: TextAlign.start,
-                              style: AppStyle.bodyText.copyWith(
-                                fontSize: 13,
-                                fontWeight: FontWeight.w300,
-                                color: context.palette.textPrimary.withOpacity(
-                                  0.60,
-                                ),
-                              ),
-                            ),
-                            Text(
-                              ' ${loc.translate('chooseCityLabel')}',
-                              textAlign: TextAlign.start,
-                              style: AppStyle.bodyText.copyWith(
-                                fontSize: 13,
-                                fontWeight: FontWeight.w300,
-                                color: context.palette.textPrimary.withOpacity(
-                                  0.60,
-                                ),
-                              ),
-                            ),
-                            const SizedBox(width: 4),
-                            Theme(
-                              data: Theme.of(
-                                context,
-                              ).copyWith(cardColor: context.palette.surface),
-                              child: PopupMenuButton<String>(
-                                offset: const Offset(0, 24),
-                                color: context.palette.surface,
-                                elevation: 2,
-                                onSelected: (String newValue) {
-                                  ref
-                                      .read(
-                                        productDetailProvider(
-                                          detailKey,
-                                        ).notifier,
-                                      )
-                                      .selectCity(newValue);
-                                },
-                                itemBuilder: (BuildContext context) {
-                                  return <String>[
-                                    'cityRiyadh',
-                                    'cityJeddah',
-                                    'cityDammam',
-                                    'cityMecca',
-                                    'cityMedina',
-                                  ].map((String value) {
-                                    return PopupMenuItem<String>(
-                                      value: value,
-                                      height: 38,
-                                      child: Text(
-                                        loc.translate(value),
-                                        style: AppStyle.bodyText.copyWith(
-                                          fontSize: 13,
-                                          color: context.palette.textPrimary,
-                                        ),
-                                      ),
-                                    );
-                                  }).toList();
-                                },
-                                child: Text(
-                                  loc.translate(detailState.selectedCity),
-                                  style: AppStyle.bodyText.copyWith(
-                                    fontSize: 13,
-                                    fontWeight: FontWeight.bold,
-                                    color: const Color(0xFFD49E4B),
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ],
+                        Text(
+                          '${loc.translate('shippingDaysTo')} ${loc.translate(detailState.selectedCity)}',
+                          textAlign: TextAlign.start,
+                          style: AppStyle.bodyText.copyWith(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w300,
+                            color: context.palette.textPrimary.withValues(alpha: 0.60),
+                          ),
                         ),
                       ],
                     ),
@@ -547,114 +451,89 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
             ),
 
             const SizedBox(height: 8),
-            Divider(
-              indent: 16,
-              endIndent: 16,
-              height: 1,
-              thickness: 0.5,
-              color: context.palette.divider,
-            ),
+            Divider(indent: 16, endIndent: 16, height: 1, thickness: 0.5, color: context.palette.divider),
 
             // 6. Size Selection
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    sizeLabel,
-                    style: AppStyle.bodyText.copyWith(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 14,
-                      color: context.palette.textPrimary,
+            if (sizeOption != null) ...[
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      sizeOption.name.resolve(isAr).isEmpty ? sizeLabel : sizeOption.name.resolve(isAr),
+                      style: AppStyle.bodyText.copyWith(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 14,
+                        color: context.palette.textPrimary,
+                      ),
                     ),
-                  ),
-                  const SizedBox(height: 10),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.start,
-                    children: List.generate(_sizes.length, (i) {
-                      final isSelected = detailState.selectedSizeIndex == i;
-                      return GestureDetector(
-                        onTap: () => ref
-                            .read(productDetailProvider(detailKey).notifier)
-                            .selectSize(i),
-                        child: Container(
-                          margin: const EdgeInsets.symmetric(horizontal: 4),
-                          width: 44,
-                          height: 32,
-                          decoration: BoxDecoration(
-                            color: isSelected
-                                ? AppColors.primary
-                                : context.palette.surfaceMuted,
-                            borderRadius: BorderRadius.circular(10),
-                          ),
-                          child: Center(
-                            child: Text(
-                              _sizes[i],
-                              style: AppStyle.bodyText.copyWith(
-                                fontSize: 12,
-                                fontWeight: isSelected
-                                    ? FontWeight.bold
-                                    : FontWeight.normal,
-                                color: isSelected
-                                    ? Colors.white
-                                    : context.palette.textPrimary,
+                    const SizedBox(height: 10),
+                    Wrap(
+                      children: List.generate(sizeOption.values.length, (i) {
+                        final isSelected = selectedSizeIndex == i;
+                        return GestureDetector(
+                          onTap: () => detailNotifier.selectSize(i),
+                          child: Container(
+                            margin: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
+                            width: 44,
+                            height: 32,
+                            decoration: BoxDecoration(
+                              color: isSelected ? AppColors.primary : context.palette.surfaceMuted,
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                            child: Center(
+                              child: Text(
+                                sizeOption.values[i],
+                                style: AppStyle.bodyText.copyWith(
+                                  fontSize: 12,
+                                  fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                                  color: isSelected ? Colors.white : context.palette.textPrimary,
+                                ),
                               ),
                             ),
                           ),
-                        ),
-                      );
-                    }),
-                  ),
-                ],
+                        );
+                      }),
+                    ),
+                  ],
+                ),
               ),
-            ),
-
-            const SizedBox(height: 8),
-            Divider(
-              indent: 16,
-              endIndent: 16,
-              height: 1,
-              thickness: 0.5,
-              color: context.palette.divider,
-            ),
+              const SizedBox(height: 8),
+              Divider(indent: 16, endIndent: 16, height: 1, thickness: 0.5, color: context.palette.divider),
+            ],
 
             // 7. Product Description
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    descTitle,
-                    style: AppStyle.bodyText.copyWith(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 14,
-                      color: context.palette.textPrimary,
+            if (product.description != null) ...[
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      descTitle,
+                      style: AppStyle.bodyText.copyWith(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 14,
+                        color: context.palette.textPrimary,
+                      ),
                     ),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    descText,
-                    textAlign: TextAlign.start,
-                    style: AppStyle.bodyText.copyWith(
-                      fontSize: 13,
-                      color: context.palette.textPrimary.withOpacity(0.70),
-                      height: 1.5,
+                    const SizedBox(height: 8),
+                    Text(
+                      product.description!.resolve(isAr),
+                      textAlign: TextAlign.start,
+                      style: AppStyle.bodyText.copyWith(
+                        fontSize: 13,
+                        color: context.palette.textPrimary.withValues(alpha: 0.70),
+                        height: 1.5,
+                      ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
-            ),
-
-            const SizedBox(height: 8),
-            Divider(
-              indent: 16,
-              endIndent: 16,
-              height: 1,
-              thickness: 0.5,
-              color: context.palette.divider,
-            ),
+              const SizedBox(height: 8),
+              Divider(indent: 16, endIndent: 16, height: 1, thickness: 0.5, color: context.palette.divider),
+            ],
 
             // 8. Care Instructions
             Padding(
@@ -679,7 +558,7 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
                         width: 14,
                         height: 14,
                         colorFilter: ColorFilter.mode(
-                          context.palette.textPrimary.withOpacity(0.70),
+                          context.palette.textPrimary.withValues(alpha: 0.70),
                           BlendMode.srcIn,
                         ),
                       ),
@@ -688,7 +567,7 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
                         careText,
                         style: AppStyle.bodyText.copyWith(
                           fontSize: 12,
-                          color: context.palette.textPrimary.withOpacity(0.70),
+                          color: context.palette.textPrimary.withValues(alpha: 0.70),
                         ),
                       ),
                     ],
@@ -698,13 +577,7 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
             ),
 
             const SizedBox(height: 8),
-            Divider(
-              indent: 16,
-              endIndent: 16,
-              height: 1,
-              thickness: 0.5,
-              color: context.palette.divider,
-            ),
+            Divider(indent: 16, endIndent: 16, height: 1, thickness: 0.5, color: context.palette.divider),
 
             // Free Delivery & Return widget
             Padding(
@@ -730,7 +603,7 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
                         width: 14,
                         height: 14,
                         colorFilter: ColorFilter.mode(
-                          context.palette.textPrimary.withOpacity(0.70),
+                          context.palette.textPrimary.withValues(alpha: 0.70),
                           BlendMode.srcIn,
                         ),
                       ),
@@ -743,14 +616,11 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
                                 text: loc.translate('viewDeliveryTermsPrefix'),
                                 style: AppStyle.bodyText.copyWith(
                                   fontSize: 12,
-                                  color: context.palette.textPrimary
-                                      .withOpacity(0.70),
+                                  color: context.palette.textPrimary.withValues(alpha: 0.70),
                                 ),
                               ),
                               TextSpan(
-                                text: loc.translate(
-                                  'viewDeliveryTermsHighlight',
-                                ),
+                                text: loc.translate('viewDeliveryTermsHighlight'),
                                 style: AppStyle.bodyText.copyWith(
                                   fontSize: 12,
                                   fontWeight: FontWeight.bold,
@@ -758,14 +628,13 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
                                   decoration: TextDecoration.underline,
                                   decorationColor: AppColors.primary,
                                 ),
-                                recognizer: _deliveryTermsRecognizer,
+                                recognizer: deliveryTermsRecognizer,
                               ),
                               TextSpan(
                                 text: loc.translate('viewDeliveryTermsSuffix'),
                                 style: AppStyle.bodyText.copyWith(
                                   fontSize: 12,
-                                  color: context.palette.textPrimary
-                                      .withOpacity(0.70),
+                                  color: context.palette.textPrimary.withValues(alpha: 0.70),
                                 ),
                               ),
                             ],
@@ -785,24 +654,27 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
               child: ElevatedButton(
-                onPressed: () {
-                  ref
-                      .read(cartProvider.notifier)
-                      .addItem(
-                        product: currentProduct,
-                        color: _colors[detailState.selectedColorIndex],
-                        size: _sizes[detailState.selectedSizeIndex],
-                      );
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text(loc.translate('itemAddedToCart'))),
-                  );
-                },
+                onPressed: !product.isAvailable
+                    ? null
+                    : () async {
+                        await ref.read(cartProvider.notifier).addItem(
+                              productId: product.id,
+                              selectedColor: colorOption != null && colorOption.values.isNotEmpty
+                                  ? colorOption.values[selectedColorIndex]
+                                  : null,
+                              selectedSize: sizeOption != null && sizeOption.values.isNotEmpty
+                                  ? sizeOption.values[selectedSizeIndex]
+                                  : null,
+                            );
+                        if (!context.mounted) return;
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(content: Text(loc.translate('itemAddedToCart'))),
+                        );
+                      },
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppColors.primary,
                   padding: const EdgeInsets.symmetric(vertical: 14),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(30),
-                  ),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
                   elevation: 0,
                 ),
                 child: Padding(
@@ -822,10 +694,7 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
                         AssetsConstants.shoppingBag2,
                         width: 18,
                         height: 18,
-                        colorFilter: const ColorFilter.mode(
-                          Colors.white,
-                          BlendMode.srcIn,
-                        ),
+                        colorFilter: const ColorFilter.mode(Colors.white, BlendMode.srcIn),
                       ),
                     ],
                   ),
@@ -835,56 +704,60 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
 
             const SizedBox(height: 16),
 
-            // Related Products Title
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: Align(
-                alignment: AlignmentDirectional.centerStart,
-                child: Text(
-                  loc.translate('relatedProducts'),
-                  style: AppStyle.bodyText.copyWith(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 16,
-                    color: context.palette.textPrimary,
-                  ),
-                ),
-              ),
-            ),
-
-            const SizedBox(height: 16),
-
-            // Related Products Grid (2 columns)
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 12),
-              child: GridView.builder(
-                shrinkWrap: true,
-                physics: const NeverScrollableScrollPhysics(),
-                itemCount: relatedProducts.length,
-                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                  crossAxisCount: 2,
-                  crossAxisSpacing: 12,
-                  mainAxisSpacing: 16,
-                  childAspectRatio: 0.65,
-                ),
-                itemBuilder: (context, index) {
-                  final item = relatedProducts[index];
-                  return ProductCard(
-                    product: item,
-                    isAr: isAr,
-                    onTap: () {
-                      context.push(
-                        '/product-detail',
-                        extra: item.toDetailArgs(),
-                      );
-                      _scrollController.animateTo(
-                        0,
-                        duration: const Duration(milliseconds: 300),
-                        curve: Curves.easeOut,
-                      );
-                    },
-                  );
-                },
-              ),
+            // Related Products
+            relatedAsync.maybeWhen(
+              data: (related) => related.isEmpty
+                  ? const SizedBox.shrink()
+                  : Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 16),
+                          child: Align(
+                            alignment: AlignmentDirectional.centerStart,
+                            child: Text(
+                              loc.translate('relatedProducts'),
+                              style: AppStyle.bodyText.copyWith(
+                                fontWeight: FontWeight.bold,
+                                fontSize: 16,
+                                color: context.palette.textPrimary,
+                              ),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 12),
+                          child: GridView.builder(
+                            shrinkWrap: true,
+                            physics: const NeverScrollableScrollPhysics(),
+                            itemCount: related.length,
+                            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                              crossAxisCount: 2,
+                              crossAxisSpacing: 12,
+                              mainAxisSpacing: 16,
+                              childAspectRatio: 0.65,
+                            ),
+                            itemBuilder: (context, index) {
+                              final item = related[index].toProduct(isAr);
+                              return ProductCard(
+                                product: item,
+                                isAr: isAr,
+                                onTap: () {
+                                  context.push('/product-detail', extra: item.toDetailArgs());
+                                  scrollController.animateTo(
+                                    0,
+                                    duration: const Duration(milliseconds: 300),
+                                    curve: Curves.easeOut,
+                                  );
+                                },
+                              );
+                            },
+                          ),
+                        ),
+                      ],
+                    ),
+              orElse: () => const SizedBox.shrink(),
             ),
 
             const SizedBox(height: 32),
@@ -892,5 +765,12 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
         ),
       ),
     );
+  }
+
+  static Color? _parseHexColor(String hex) {
+    var value = hex.replaceFirst('#', '');
+    if (value.length == 6) value = 'FF$value';
+    final parsed = int.tryParse(value, radix: 16);
+    return parsed == null ? null : Color(parsed);
   }
 }

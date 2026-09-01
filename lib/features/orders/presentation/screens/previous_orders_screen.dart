@@ -5,7 +5,10 @@ import 'package:go_router/go_router.dart';
 import 'package:sfa/core/localization/app_localizations.dart';
 import 'package:sfa/utils/assets_constants.dart';
 import 'package:sfa/utils/color_constants.dart';
+import 'package:sfa/utils/currency_formatter.dart';
 import 'package:sfa/utils/app_style.dart';
+import 'package:sfa/features/orders/data/order_models.dart';
+import 'package:sfa/features/orders/providers/orders_data_provider.dart';
 import 'package:sfa/features/orders/providers/previous_orders_provider.dart';
 import 'package:sfa/core/theme/app_palette.dart';
 import 'package:sfa/core/widgets/primary_app_bar.dart';
@@ -47,6 +50,7 @@ class _PreviousOrdersScreenState extends ConsumerState<PreviousOrdersScreen>
     });
     final state = ref.watch(previousOrdersProvider);
     final selectedTab = state.selectedTab;
+    final ordersAsync = ref.watch(ordersDataProvider);
 
     return Directionality(
       textDirection: textDir,
@@ -104,9 +108,8 @@ class _PreviousOrdersScreenState extends ConsumerState<PreviousOrdersScreen>
                     ),
                   ),
 
-                  const SizedBox(
-                    width: 16,
-                  ), // Spacing between separate container tabs
+                  const SizedBox(width: 16),
+
                   // Previous Orders Tab Container
                   Expanded(
                     child: GestureDetector(
@@ -146,38 +149,26 @@ class _PreviousOrdersScreenState extends ConsumerState<PreviousOrdersScreen>
 
             // Tabs Content
             Expanded(
-              child: TabBarView(
-                controller: _tabController,
-                physics: const NeverScrollableScrollPhysics(),
-                children: [
-                  // Current Orders page content matching the design mockup image
-                  _buildOrdersList(
-                    loc,
-                    isAr,
-                    state.expandedCardKeys,
-                    _currentOrders,
-                    _BadgeStyle(
-                      backgroundColor: const Color(0xFFE6F7F4),
-                      textColor: AppColors.greenAccent,
-                      labelKey: 'orderPlacedSuccess',
-                    ),
+              child: ordersAsync.when(
+                loading: () => const Center(child: CircularProgressIndicator()),
+                error: (error, _) => Center(
+                  child: Text(
+                    error.toString(),
+                    style: AppStyle.bodyText.copyWith(color: context.palette.textMuted),
                   ),
-
-                  // Previous orders list
-                  _buildOrdersList(
-                    loc,
-                    isAr,
-                    state.expandedCardKeys,
-                    _previousOrders,
-                    _BadgeStyle(
-                      backgroundColor: AppColors.primary.withValues(
-                        alpha: 0.08,
-                      ),
-                      textColor: AppColors.primary,
-                      labelKey: 'deliveredSuccess',
-                    ),
-                  ),
-                ],
+                ),
+                data: (orders) {
+                  final current = orders.where((o) => o.isActive).toList();
+                  final previous = orders.where((o) => !o.isActive).toList();
+                  return TabBarView(
+                    controller: _tabController,
+                    physics: const NeverScrollableScrollPhysics(),
+                    children: [
+                      _buildOrdersList(loc, isAr, state.expandedCardKeys, current),
+                      _buildOrdersList(loc, isAr, state.expandedCardKeys, previous),
+                    ],
+                  );
+                },
               ),
             ),
           ],
@@ -186,60 +177,24 @@ class _PreviousOrdersScreenState extends ConsumerState<PreviousOrdersScreen>
     );
   }
 
-  static const List<_OrderCardData> _currentOrders = [
-    _OrderCardData(
-      cardKey: 'current_1',
-      orderNumber: '#123456889',
-      amountAr: '2,500 ر.س.',
-      amountEn: '2,500 SAR',
-      orderId: '123456889',
-      isDelivered: false,
-      deliveredTime: '--:--',
-    ),
-    _OrderCardData(
-      cardKey: 'current_2',
-      orderNumber: '#234558',
-      amountAr: '1,300 ر.س.',
-      amountEn: '1,300 SAR',
-      orderId: '234558',
-      isDelivered: false,
-      deliveredTime: '--:--',
-    ),
-  ];
-
-  static const List<_OrderCardData> _previousOrders = [
-    _OrderCardData(
-      cardKey: 'prev_1',
-      orderNumber: '#123456889',
-      amountAr: '2,500 ر.س.',
-      amountEn: '2,500 SAR',
-      orderId: '84739201',
-      isDelivered: true,
-      deliveredTime: '02/08/26 12:45',
-    ),
-    _OrderCardData(
-      cardKey: 'prev_2',
-      orderNumber: '#234558',
-      amountAr: '1,300 ر.س.',
-      amountEn: '1,300 SAR',
-      orderId: '84739201',
-      isDelivered: true,
-      deliveredTime: '02/08/26 12:45',
-    ),
-  ];
-
   Widget _buildOrdersList(
     AppLocalizations loc,
     bool isAr,
     Set<String> expandedCardKeys,
-    List<_OrderCardData> orders,
-    _BadgeStyle badgeStyle,
+    List<Order> orders,
   ) {
+    if (orders.isEmpty) {
+      return Center(
+        child: Text(
+          isAr ? 'لا توجد طلبات' : 'No orders yet',
+          style: AppStyle.labelText.copyWith(color: context.palette.textMuted),
+        ),
+      );
+    }
     return ListView(
       padding: const EdgeInsets.symmetric(horizontal: 24),
       children: [
-        for (final order in orders)
-          _buildOrderCard(loc, isAr, expandedCardKeys, order, badgeStyle),
+        for (final order in orders) _buildOrderCard(loc, isAr, expandedCardKeys, order),
       ],
     );
   }
@@ -248,10 +203,9 @@ class _PreviousOrdersScreenState extends ConsumerState<PreviousOrdersScreen>
     AppLocalizations loc,
     bool isAr,
     Set<String> expandedCardKeys,
-    _OrderCardData order,
-    _BadgeStyle badgeStyle,
+    Order order,
   ) {
-    final isExpanded = expandedCardKeys.contains(order.cardKey);
+    final isExpanded = expandedCardKeys.contains(order.id);
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
       decoration: BoxDecoration(
@@ -261,28 +215,20 @@ class _PreviousOrdersScreenState extends ConsumerState<PreviousOrdersScreen>
       child: Column(
         children: [
           ListTile(
-            contentPadding: const EdgeInsets.symmetric(
-              horizontal: 16,
-              vertical: 8,
-            ),
-            onTap: () => context.push('/order-tracking'),
+            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            onTap: () => context.push('/order-tracking/${order.id}'),
             leading: Container(
               width: 48,
               height: 48,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                border: Border.all(
-                  color: AppColors.primary.withValues(alpha: 0.3),
-                ),
+                border: Border.all(color: AppColors.primary.withValues(alpha: 0.3)),
               ),
               child: Center(
                 child: SvgPicture.asset(
                   AssetsConstants.shoppingBag2,
                   width: 20,
-                  colorFilter: ColorFilter.mode(
-                    AppColors.primary,
-                    BlendMode.srcIn,
-                  ),
+                  colorFilter: ColorFilter.mode(AppColors.primary, BlendMode.srcIn),
                 ),
               ),
             ),
@@ -291,13 +237,10 @@ class _PreviousOrdersScreenState extends ConsumerState<PreviousOrdersScreen>
               children: [
                 Text(
                   loc.translate('orderNumberPrefix'),
-                  style: TextStyle(
-                    fontSize: 14,
-                    color: context.palette.textMuted,
-                  ),
+                  style: TextStyle(fontSize: 14, color: context.palette.textMuted),
                 ),
                 Text(
-                  order.orderNumber,
+                  '#${order.orderNumber}',
                   style: TextStyle(
                     fontSize: 15,
                     fontWeight: FontWeight.bold,
@@ -314,13 +257,10 @@ class _PreviousOrdersScreenState extends ConsumerState<PreviousOrdersScreen>
                 children: [
                   Text(
                     loc.translate('totalAmountPrefix'),
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: context.palette.textMuted,
-                    ),
+                    style: TextStyle(fontSize: 14, color: context.palette.textMuted),
                   ),
                   Text(
-                    isAr ? order.amountAr : order.amountEn,
+                    CurrencyFormatter.fromHalalas(order.totalFils, isAr: isAr),
                     style: TextStyle(
                       fontSize: 15,
                       fontWeight: FontWeight.bold,
@@ -332,22 +272,15 @@ class _PreviousOrdersScreenState extends ConsumerState<PreviousOrdersScreen>
             ),
             trailing: IconButton(
               icon: Transform.rotate(
-                // Points DOWN (angle = 0.0) when closed (collapsed), points UP (angle = 3.14159) when open (expanded)
                 angle: isExpanded ? 3.14159 : 0.0,
                 child: SvgPicture.asset(
                   AssetsConstants.chevronLeft,
                   width: 14,
-                  colorFilter: ColorFilter.mode(
-                    context.palette.icon,
-                    BlendMode.srcIn,
-                  ),
+                  colorFilter: ColorFilter.mode(context.palette.icon, BlendMode.srcIn),
                 ),
               ),
-              onPressed: () {
-                ref
-                    .read(previousOrdersProvider.notifier)
-                    .toggleCardExpanded(order.cardKey);
-              },
+              onPressed: () =>
+                  ref.read(previousOrdersProvider.notifier).toggleCardExpanded(order.id),
             ),
           ),
           if (isExpanded) ...[
@@ -355,186 +288,83 @@ class _PreviousOrdersScreenState extends ConsumerState<PreviousOrdersScreen>
               padding: EdgeInsets.symmetric(horizontal: 16.0),
               child: Divider(height: 1),
             ),
-            _buildTrackingDetailsSection(
-              loc: loc,
-              isAr: isAr,
-              isDelivered: order.isDelivered,
-              deliveredTime: order.deliveredTime,
-              orderId: order.orderId,
-              statusBadge: Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 12,
-                  vertical: 6,
-                ),
-                decoration: BoxDecoration(
-                  color: badgeStyle.backgroundColor,
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Text(
-                  loc.translate(badgeStyle.labelKey),
-                  style: AppStyle.navLabel.copyWith(
-                    color: badgeStyle.textColor,
-                  ),
-                ),
-              ),
-            ),
+            _buildOrderDetails(loc: loc, isAr: isAr, order: order),
           ],
         ],
       ),
     );
   }
 
-  Widget _buildTrackingDetailsSection({
+  Widget _buildOrderDetails({
     required AppLocalizations loc,
     required bool isAr,
-    required bool isDelivered,
-    required String deliveredTime,
-    required Widget statusBadge,
-    required String orderId,
+    required Order order,
   }) {
     return Padding(
       padding: const EdgeInsets.all(16.0),
       child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          // Row with status info columns
-          Row(
-            children: [
-              // Left/Right: "تم الشحن"
-              Expanded(
-                child: Row(
-                  children: [
-                    Container(
-                      width: 24,
-                      height: 24,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        border: Border.all(color: AppColors.greenAccent),
-                      ),
-                      child: Center(
-                        child: Icon(
-                          Icons.check,
-                          size: 14,
-                          color: AppColors.greenAccent,
-                        ),
-                      ),
+          for (final item in order.items)
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 4),
+              child: Row(
+                children: [
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(6),
+                    child: Image.network(
+                      item.image,
+                      width: 40,
+                      height: 40,
+                      fit: BoxFit.cover,
+                      errorBuilder: (_, __, ___) =>
+                          Container(width: 40, height: 40, color: context.palette.surfaceMuted),
                     ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            loc.translate('shippedSuccess'),
-                            style: AppStyle.timelineSubtitle.copyWith(
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                          Text(
-                            '02/08/26 12:00',
-                            style: AppStyle.infoChipText.copyWith(
-                              color: context.palette.textMuted,
-                            ),
-                          ),
-                        ],
-                      ),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Text(
+                      item.name.resolve(isAr),
+                      style: AppStyle.bodyText.copyWith(fontSize: 13),
                     ),
-                  ],
-                ),
+                  ),
+                  Text('x${item.quantity}', style: AppStyle.bodyText.copyWith(fontSize: 13)),
+                ],
               ),
-
-              // Vertical line connector separating the two milestones
-              Container(width: 1, height: 32, color: context.palette.divider),
-              const SizedBox(width: 16),
-
-              // Left/Right: "تم التوصيل"
-              Expanded(
-                child: Row(
-                  children: [
-                    isDelivered
-                        ? Container(
-                            width: 24,
-                            height: 24,
-                            decoration: BoxDecoration(
-                              shape: BoxShape.circle,
-                              border: Border.all(color: AppColors.greenAccent),
-                            ),
-                            child: Center(
-                              child: Icon(
-                                Icons.check,
-                                size: 14,
-                                color: AppColors.greenAccent,
-                              ),
-                            ),
-                          )
-                        : Container(
-                            width: 24,
-                            height: 24,
-                            decoration: BoxDecoration(
-                              shape: BoxShape.circle,
-                              border: Border.all(
-                                color: AppColors.primary.withValues(alpha: 0.6),
-                              ),
-                            ),
-                          ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            loc.translate('deliveredSuccess'),
-                            style: AppStyle.timelineSubtitle.copyWith(
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                          Text(
-                            deliveredTime,
-                            style: AppStyle.infoChipText.copyWith(
-                              color: context.palette.textMuted,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-
-          const SizedBox(height: 16),
+            ),
+          const SizedBox(height: 12),
           const Divider(height: 1),
           const SizedBox(height: 12),
-
-          // Bottom Action: Refund request / status badge
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              statusBadge,
-
-              // Refund Request Text Button with directional Arrow
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                decoration: BoxDecoration(
+                  color: AppColors.primary.withValues(alpha: 0.08),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Text(
+                  order.status,
+                  style: AppStyle.navLabel.copyWith(color: AppColors.primary),
+                ),
+              ),
               InkWell(
-                onTap: () => context.push('/refund-request/$orderId'),
+                onTap: () => context.push('/refund-request/${order.id}'),
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     Text(
                       loc.translate('requestRefund'),
-                      style: AppStyle.cardSubtitle.copyWith(
-                        fontWeight: FontWeight.bold,
-                      ),
+                      style: AppStyle.cardSubtitle.copyWith(fontWeight: FontWeight.bold),
                     ),
                     const SizedBox(width: 6),
-                    // Arrow points right (0.0) in English (LTR) and left (3.14159) in Arabic (RTL)
                     Transform.rotate(
                       angle: isAr ? 3.14159 : 0.0,
                       child: SvgPicture.asset(
                         AssetsConstants.moveLeft,
                         width: 14,
-                        colorFilter: ColorFilter.mode(
-                          AppColors.primary,
-                          BlendMode.srcIn,
-                        ),
+                        colorFilter: ColorFilter.mode(AppColors.primary, BlendMode.srcIn),
                       ),
                     ),
                   ],
@@ -546,36 +376,4 @@ class _PreviousOrdersScreenState extends ConsumerState<PreviousOrdersScreen>
       ),
     );
   }
-}
-
-class _OrderCardData {
-  final String cardKey;
-  final String orderNumber;
-  final String amountAr;
-  final String amountEn;
-  final String orderId;
-  final bool isDelivered;
-  final String deliveredTime;
-
-  const _OrderCardData({
-    required this.cardKey,
-    required this.orderNumber,
-    required this.amountAr,
-    required this.amountEn,
-    required this.orderId,
-    required this.isDelivered,
-    required this.deliveredTime,
-  });
-}
-
-class _BadgeStyle {
-  final Color backgroundColor;
-  final Color textColor;
-  final String labelKey;
-
-  const _BadgeStyle({
-    required this.backgroundColor,
-    required this.textColor,
-    required this.labelKey,
-  });
 }

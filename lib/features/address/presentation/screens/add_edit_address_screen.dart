@@ -13,8 +13,9 @@ import '../../providers/address_provider.dart';
 /// [AddressScreen]. Pass an existing [Address] to pre-fill the form in edit
 /// mode; omit it to add a new address.
 ///
-/// On save, writes directly to [addressProvider] and pops — [AddressScreen]
-/// picks up the change automatically via `ref.watch`.
+/// On save, writes through [addressProvider] (M40 create / inferred update)
+/// and pops once the API confirms — [AddressScreen] picks up the change
+/// automatically via `ref.watch`.
 class AddEditAddressScreen extends ConsumerStatefulWidget {
   final Address? address;
 
@@ -28,69 +29,97 @@ class AddEditAddressScreen extends ConsumerStatefulWidget {
 }
 
 class _AddEditAddressScreenState extends ConsumerState<AddEditAddressScreen> {
-  late final TextEditingController _nameController;
+  late final TextEditingController _labelController;
+  late final TextEditingController _recipientController;
   late final TextEditingController _phoneController;
-  late final TextEditingController _addressLine1Controller;
-  late final TextEditingController _cityAreaController;
+  late final TextEditingController _cityController;
+  late final TextEditingController _districtController;
+  late final TextEditingController _detailedAddressController;
+  bool _saving = false;
 
   @override
   void initState() {
     super.initState();
     final address = widget.address;
-    _nameController = TextEditingController(text: address?.titleEn ?? '');
-    _phoneController = TextEditingController(text: address?.phone ?? '');
-    _addressLine1Controller = TextEditingController(
-      text: address?.line1En ?? '',
+    _labelController = TextEditingController(text: address?.name ?? '');
+    _recipientController = TextEditingController(text: address?.recipientName ?? '');
+    _phoneController = TextEditingController(text: address?.phoneNumber ?? '');
+    _cityController = TextEditingController(text: address?.city ?? '');
+    _districtController = TextEditingController(text: address?.district ?? '');
+    _detailedAddressController = TextEditingController(
+      text: address == null
+          ? ''
+          : (address.building.isEmpty
+              ? address.street
+              : '${address.street} ${address.building}'.trim()),
     );
-    _cityAreaController = TextEditingController(text: address?.line2En ?? '');
   }
 
   @override
   void dispose() {
-    _nameController.dispose();
+    _labelController.dispose();
+    _recipientController.dispose();
     _phoneController.dispose();
-    _addressLine1Controller.dispose();
-    _cityAreaController.dispose();
+    _cityController.dispose();
+    _districtController.dispose();
+    _detailedAddressController.dispose();
     super.dispose();
   }
 
-  void _onSave(AppLocalizations loc) {
-    final name = _nameController.text.trim();
+  Future<void> _onSave(AppLocalizations loc) async {
+    final label = _labelController.text.trim();
+    final recipient = _recipientController.text.trim();
     final phone = _phoneController.text.trim();
-    final line1 = _addressLine1Controller.text.trim();
-    final line2 = _cityAreaController.text.trim();
+    final city = _cityController.text.trim();
+    final district = _districtController.text.trim();
+    final detailed = _detailedAddressController.text.trim();
 
-    if (name.isEmpty || phone.isEmpty || line1.isEmpty || line2.isEmpty) {
+    if (label.isEmpty ||
+        recipient.isEmpty ||
+        phone.isEmpty ||
+        city.isEmpty ||
+        detailed.isEmpty) {
       Loader.showError(loc.translate('fieldRequired'));
       return;
     }
 
+    setState(() => _saving = true);
+
     final existing = widget.address;
     final address = Address(
-      id: existing?.id ?? DateTime.now().microsecondsSinceEpoch.toString(),
-      titleAr: name,
-      titleEn: name,
-      line1Ar: line1,
-      line1En: line1,
-      line2Ar: line2,
-      line2En: line2,
-      phone: phone,
+      id: existing?.id ?? '',
+      name: label,
+      recipientName: recipient,
+      phoneNumber: phone,
+      city: city,
+      district: district,
+      street: detailed,
+      building: '',
+      latitude: existing?.latitude,
+      longitude: existing?.longitude,
+      isDefault: existing?.isDefault ?? false,
     );
 
-    if (widget.isEditMode) {
-      ref.read(addressProvider.notifier).updateAddress(address);
-    } else {
-      ref.read(addressProvider.notifier).addAddress(address);
-    }
+    final ok = widget.isEditMode
+        ? await ref.read(addressProvider.notifier).updateAddress(address)
+        : await ref.read(addressProvider.notifier).addAddress(address);
 
-    Loader.showSuccess(loc.translate('addressSavedSuccess'));
-    context.pop();
+    if (!mounted) return;
+    setState(() => _saving = false);
+
+    if (ok) {
+      Loader.showSuccess(loc.translate('addressSavedSuccess'));
+      context.pop();
+    } else {
+      Loader.showError(loc.isArabic ? 'تعذر حفظ العنوان' : 'Could not save address');
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     final loc = AppLocalizations.of(context);
     final isAr = loc.isArabic;
+    final textAlign = isAr ? TextAlign.right : TextAlign.left;
 
     return Directionality(
       textDirection: isAr ? TextDirection.rtl : TextDirection.ltr,
@@ -102,10 +131,17 @@ class _AddEditAddressScreenState extends ConsumerState<AddEditAddressScreen> {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               _FormField(
+                label: isAr ? 'اسم العنوان' : 'Address Label',
+                hint: isAr ? 'مثل: المنزل، العمل' : 'e.g. Home, Work',
+                controller: _labelController,
+                textAlign: textAlign,
+              ),
+              const SizedBox(height: 20),
+              _FormField(
                 label: loc.translate('fullNameLabel'),
                 hint: loc.translate('fullNameHint'),
-                controller: _nameController,
-                textAlign: isAr ? TextAlign.right : TextAlign.left,
+                controller: _recipientController,
+                textAlign: textAlign,
               ),
               const SizedBox(height: 20),
               _FormField(
@@ -118,17 +154,24 @@ class _AddEditAddressScreenState extends ConsumerState<AddEditAddressScreen> {
               ),
               const SizedBox(height: 20),
               _FormField(
-                label: loc.translate('addressLine1Label'),
-                hint: loc.translate('addressLine1Hint'),
-                controller: _addressLine1Controller,
-                textAlign: isAr ? TextAlign.right : TextAlign.left,
+                label: loc.translate('cityLabel'),
+                hint: isAr ? 'مثل: الرياض' : 'e.g. Riyadh',
+                controller: _cityController,
+                textAlign: textAlign,
               ),
               const SizedBox(height: 20),
               _FormField(
-                label: loc.translate('cityAreaLabel'),
-                hint: loc.translate('cityAreaHint'),
-                controller: _cityAreaController,
-                textAlign: isAr ? TextAlign.right : TextAlign.left,
+                label: isAr ? 'الحي' : 'District',
+                hint: isAr ? 'مثل: حي العليا' : 'e.g. Al Olaya',
+                controller: _districtController,
+                textAlign: textAlign,
+              ),
+              const SizedBox(height: 20),
+              _FormField(
+                label: loc.translate('detailedAddressLabel'),
+                hint: loc.translate('addressLine1Hint'),
+                controller: _detailedAddressController,
+                textAlign: textAlign,
               ),
               const SizedBox(height: 32),
 
@@ -150,30 +193,37 @@ class _AddEditAddressScreenState extends ConsumerState<AddEditAddressScreen> {
                 child: Material(
                   color: Colors.transparent,
                   child: InkWell(
-                    onTap: () => _onSave(loc),
+                    onTap: _saving ? null : () => _onSave(loc),
                     borderRadius: BorderRadius.circular(27),
                     child: Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 24),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Text(
-                            widget.isEditMode
-                                ? loc.translate('saveChanges')
-                                : loc.translate('addAddress'),
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
+                      child: _saving
+                          ? const Center(
+                              child: SizedBox(
+                                height: 20,
+                                width: 20,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  color: Colors.white,
+                                ),
+                              ),
+                            )
+                          : Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Text(
+                                  widget.isEditMode
+                                      ? loc.translate('saveChanges')
+                                      : loc.translate('addAddress'),
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                                const Icon(Icons.check, color: Colors.white, size: 20),
+                              ],
                             ),
-                          ),
-                          const Icon(
-                            Icons.check,
-                            color: Colors.white,
-                            size: 20,
-                          ),
-                        ],
-                      ),
                     ),
                   ),
                 ),

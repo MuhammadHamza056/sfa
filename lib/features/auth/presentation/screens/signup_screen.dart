@@ -41,61 +41,75 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
   @override
   Widget build(BuildContext context) {
     final loc = AppLocalizations.of(context);
+    final state = ref.watch(authProvider);
+    final isLoading = state.status == AuthStatus.loading;
 
     final Widget signUpBtn = ElevatedButton(
-      onPressed: () {
-        // Handle signup logic
-        Fluttertoast.showToast(
-          msg: loc.isArabic
-              ? "تم إنشاء الحساب بنجاح!"
-              : "Account Created Successfully!",
-          backgroundColor: AppColors.greencolor,
-          textColor: Colors.white,
-        );
-        context.go('/otp');
-      },
+      onPressed: isLoading
+          ? null
+          : () {
+              ref
+                  .read(authProvider.notifier)
+                  .submitSignup(
+                    name: _fullNameController.text,
+                    email: _emailController.text,
+                    password: _passwordController.text,
+                    confirmPassword: _confirmPasswordController.text,
+                  );
+            },
       style: ElevatedButton.styleFrom(
         backgroundColor: AppColors.primary,
         padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 20),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
         elevation: 0,
       ),
-      child: Row(
-        children: [
-          const SizedBox(width: 18),
-          Expanded(
-            child: Text(
-              loc.translate('signup'),
-              textAlign: loc.isArabic ? TextAlign.right : TextAlign.left,
-              style: AppStyle.buttonTextPrimary,
-            ),
-          ),
-          if (loc.isArabic)
-            Transform(
-              alignment: Alignment.center,
-              transform: Matrix4.rotationY(
-                math.pi,
-              ), // Mirror horizontally so it points left (←)
-              child: SvgPicture.asset(
-                AssetsConstants.moveLeft,
-                width: 18,
-                colorFilter: const ColorFilter.mode(
-                  Colors.white,
-                  BlendMode.srcIn,
+      child: isLoading
+          ? const Center(
+              child: SizedBox(
+                height: 22,
+                width: 22,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  color: Colors.white,
                 ),
               ),
             )
-          else
-            SvgPicture.asset(
-              AssetsConstants.moveLeft,
-              width: 18,
-              colorFilter: const ColorFilter.mode(
-                Colors.white,
-                BlendMode.srcIn,
-              ),
+          : Row(
+              children: [
+                const SizedBox(width: 18),
+                Expanded(
+                  child: Text(
+                    loc.translate('signup'),
+                    textAlign: loc.isArabic ? TextAlign.right : TextAlign.left,
+                    style: AppStyle.buttonTextPrimary,
+                  ),
+                ),
+                if (loc.isArabic)
+                  Transform(
+                    alignment: Alignment.center,
+                    transform: Matrix4.rotationY(
+                      math.pi,
+                    ), // Mirror horizontally so it points left (←)
+                    child: SvgPicture.asset(
+                      AssetsConstants.moveLeft,
+                      width: 18,
+                      colorFilter: const ColorFilter.mode(
+                        Colors.white,
+                        BlendMode.srcIn,
+                      ),
+                    ),
+                  )
+                else
+                  SvgPicture.asset(
+                    AssetsConstants.moveLeft,
+                    width: 18,
+                    colorFilter: const ColorFilter.mode(
+                      Colors.white,
+                      BlendMode.srcIn,
+                    ),
+                  ),
+              ],
             ),
-        ],
-      ),
     );
 
     final Widget loginBtn = OutlinedButton(
@@ -145,7 +159,25 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
       ),
     );
 
-    final state = ref.watch(authProvider);
+    ref.listen<AuthState>(authProvider, (previous, next) {
+      if (next.status == AuthStatus.otpSent) {
+        Fluttertoast.showToast(
+          msg: loc.isArabic
+              ? "تم إنشاء الحساب بنجاح!"
+              : "Account Created Successfully!",
+          backgroundColor: AppColors.greencolor,
+          textColor: Colors.white,
+        );
+        context.go('/otp');
+      } else if (next.status == AuthStatus.failure &&
+          next.errorMessage != null) {
+        Fluttertoast.showToast(
+          msg: next.errorMessage!,
+          backgroundColor: AppColors.redcolor,
+          textColor: Colors.white,
+        );
+      }
+    });
 
     return Scaffold(
       backgroundColor: context.palette.backgroundSubtle,

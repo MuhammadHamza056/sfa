@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:sfa/core/hive_services.dart';
 import 'package:sfa/utils/color_constants.dart';
 import 'package:sfa/utils/assets_constants.dart';
 
@@ -16,7 +17,7 @@ class _SplashScreenState extends State<SplashScreen> {
     super.initState();
     Future.delayed(const Duration(seconds: 2), () {
       if (mounted) {
-        context.go('/language');
+        context.go(SecureStorage.getLanguageSelected() ? '/onboarding' : '/language');
       }
     });
   }

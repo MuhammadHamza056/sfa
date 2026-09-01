@@ -1,48 +1,75 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../core/hive_services.dart';
+import '../../../core/network/api_client.dart';
+import '../data/address_repository.dart';
 import '../models/address.dart';
 
-class AddressNotifier extends Notifier<List<Address>> {
+final addressRepositoryProvider = Provider<AddressRepository>((ref) {
+  return AddressRepository(ApiClient.instance);
+});
+
+/// M40-M42. Requires auth, so [build] skips the network call for a
+/// signed-out session.
+class AddressNotifier extends AsyncNotifier<List<Address>> {
+  AddressRepository get _repository => ref.read(addressRepositoryProvider);
+
   @override
-  List<Address> build() => [
-    const Address(
-      id: 'seed-1',
-      titleAr: 'أحمد عبد الله',
-      titleEn: 'Ahmed Abdullah',
-      line1Ar: 'شارع التحلية، مبنى 45، شقة 16',
-      line1En: 'Tahlia Street, Building 45, Apt 16',
-      line2Ar: 'الرياض، المملكة العربية السعودية',
-      line2En: 'Riyadh, Kingdom of Saudi Arabia',
-      phone: '+966 2667990',
-    ),
-    const Address(
-      id: 'seed-2',
-      titleAr: 'أحمد عبد الله (العمل)',
-      titleEn: 'Ahmed Abdullah (Work)',
-      line1Ar: 'طريق الملك فهد، برج الفيصلية، الطابق 15',
-      line1En: 'King Fahd Road, Al Faisaliah Tower, Floor 15',
-      line2Ar: 'الرياض، المملكة العربية السعودية',
-      line2En: 'Riyadh, Kingdom of Saudi Arabia',
-      phone: '+966 2667990',
-    ),
-  ];
-
-  void addAddress(Address address) {
-    state = [...state, address];
+  Future<List<Address>> build() async {
+    if (!SecureStorage.isAuthenticated) return const [];
+    final result = await _repository.getAddresses();
+    return result.dataOrNull ?? const [];
   }
 
-  void updateAddress(Address address) {
-    state = [
-      for (final existing in state)
-        if (existing.id == address.id) address else existing,
-    ];
+  Future<void> refresh() async {
+    state = const AsyncLoading<List<Address>>().copyWithPrevious(state);
+    state = await AsyncValue.guard(() async {
+      final result = await _repository.getAddresses();
+      return result.dataOrNull ?? const [];
+    });
   }
 
-  void removeAddress(String id) {
-    state = state.where((address) => address.id != id).toList();
+  /// M40
+  Future<bool> addAddress(Address address) async {
+    final result = await _repository.createAddress(address);
+    final created = result.dataOrNull;
+    if (created == null) return false;
+    state = AsyncData([...state.valueOrNull ?? const [], created]);
+    return true;
+  }
+
+  Future<bool> updateAddress(Address address) async {
+    final result = await _repository.updateAddress(address);
+    final updated = result.dataOrNull;
+    if (updated == null) return false;
+    state = AsyncData([
+      for (final existing in state.valueOrNull ?? const [])
+        if (existing.id == updated.id) updated else existing,
+    ]);
+    return true;
+  }
+
+  Future<bool> removeAddress(String id) async {
+    final result = await _repository.deleteAddress(id);
+    if (!result.isSuccess) return false;
+    state = AsyncData(
+      (state.valueOrNull ?? const []).where((a) => a.id != id).toList(),
+    );
+    return true;
+  }
+
+  /// M81
+  Future<bool> setDefaultAddress(String id) async {
+    final result = await _repository.setDefaultAddress(id);
+    if (!result.isSuccess) return false;
+    state = AsyncData([
+      for (final address in state.valueOrNull ?? const [])
+        address.copyWith(isDefault: address.id == id),
+    ]);
+    return true;
   }
 }
 
-final addressProvider = NotifierProvider<AddressNotifier, List<Address>>(
+final addressProvider = AsyncNotifierProvider<AddressNotifier, List<Address>>(
   AddressNotifier.new,
 );

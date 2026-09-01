@@ -7,12 +7,16 @@ import 'package:sfa/utils/app_style.dart';
 import 'package:sfa/utils/assets_constants.dart';
 import 'package:sfa/utils/color_constants.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:sfa/features/orders/providers/order_tracking_provider.dart';
+import 'package:sfa/features/orders/data/order_models.dart';
+import 'package:sfa/features/orders/providers/orders_data_provider.dart';
+import 'package:sfa/utils/currency_formatter.dart';
 import 'package:sfa/core/theme/app_palette.dart';
 import 'package:sfa/core/widgets/primary_app_bar.dart';
 
 class OrderTrackingScreen extends ConsumerStatefulWidget {
-  const OrderTrackingScreen({super.key});
+  final String orderId;
+
+  const OrderTrackingScreen({super.key, required this.orderId});
 
   @override
   ConsumerState<OrderTrackingScreen> createState() =>
@@ -20,13 +24,76 @@ class OrderTrackingScreen extends ConsumerStatefulWidget {
 }
 
 class _OrderTrackingScreenState extends ConsumerState<OrderTrackingScreen> {
+  bool _busy = false;
+
+  void _showMessage(String message) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
+  }
+
+  Future<void> _onCancel(AppLocalizations loc) async {
+    final reasonController = TextEditingController();
+    final reason = await showDialog<String>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(loc.translate('cancel')),
+        content: TextField(
+          controller: reasonController,
+          decoration: InputDecoration(hintText: loc.isArabic ? 'سبب الإلغاء' : 'Cancellation reason'),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => context.pop(),
+            child: Text(loc.isArabic ? 'إغلاق' : 'Close'),
+          ),
+          TextButton(
+            onPressed: () => context.pop(reasonController.text.trim()),
+            child: Text(loc.translate('cancel')),
+          ),
+        ],
+      ),
+    );
+    if (reason == null || reason.isEmpty || !mounted) return;
+
+    setState(() => _busy = true);
+    final result = await ref
+        .read(ordersRepositoryProvider)
+        .cancelOrder(widget.orderId, reason: reason);
+    if (!mounted) return;
+    setState(() => _busy = false);
+    result.when(
+      success: (_) {
+        ref.invalidate(orderDetailProvider(widget.orderId));
+        ref.invalidate(orderTrackingDataProvider(widget.orderId));
+        _showMessage(loc.isArabic ? 'تم إلغاء الطلب' : 'Order cancelled');
+      },
+      failure: (error) => _showMessage(error.message),
+    );
+  }
+
+  Future<void> _onConfirmDelivery(AppLocalizations loc) async {
+    setState(() => _busy = true);
+    final result = await ref.read(ordersRepositoryProvider).confirmDelivery(widget.orderId);
+    if (!mounted) return;
+    setState(() => _busy = false);
+    result.when(
+      success: (_) {
+        ref.invalidate(orderDetailProvider(widget.orderId));
+        ref.invalidate(orderTrackingDataProvider(widget.orderId));
+        _showMessage(loc.translate('confirmDelivery'));
+      },
+      failure: (error) => _showMessage(error.message),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final loc = AppLocalizations.of(context);
     final isAr = loc.isArabic;
     final textDir = isAr ? TextDirection.rtl : TextDirection.ltr;
 
-    ref.watch(orderTrackingProvider);
+    final detailAsync = ref.watch(orderDetailProvider(widget.orderId));
+    final trackingAsync = ref.watch(orderTrackingDataProvider(widget.orderId));
 
     return Directionality(
       textDirection: textDir,
@@ -59,25 +126,37 @@ class _OrderTrackingScreenState extends ConsumerState<OrderTrackingScreen> {
               // ─── Order Info Header ───
               Align(
                 alignment: isAr ? Alignment.centerRight : Alignment.centerLeft,
-                child: Text(
-                  loc.translate('orderInfo'),
-                  style: AppStyle.sectionHeader,
-                ),
+                child: Text(loc.translate('orderInfo'), style: AppStyle.sectionHeader),
               ),
               const SizedBox(height: 6),
               Divider(color: context.palette.divider, thickness: 0.8),
               const SizedBox(height: 24),
-              _buildInfoRow(loc.translate('orderNumberLabel'), '#84739201'),
-              const SizedBox(height: 12),
-              _buildInfoRow(
-                loc.translate('orderDateLabel'),
-                loc.translate('orderDateValue'),
-              ),
-              const SizedBox(height: 12),
-              _buildInfoRow(
-                loc.translate('totalAmountLabel'),
-                isAr ? '2,500 ر.س.' : '2,500 SAR',
-                valueColor: AppColors.primary,
+
+              detailAsync.when(
+                loading: () => const Center(child: CircularProgressIndicator()),
+                error: (error, _) => Text(
+                  error.toString(),
+                  style: AppStyle.bodyText.copyWith(color: context.palette.textMuted),
+                ),
+                data: (order) => Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    _buildInfoRow(loc.translate('orderNumberLabel'), '#${order.orderNumber}'),
+                    const SizedBox(height: 12),
+                    _buildInfoRow(
+                      loc.translate('orderDateLabel'),
+                      order.createdAt != null
+                          ? '${order.createdAt!.year}/${order.createdAt!.month}/${order.createdAt!.day}'
+                          : '—',
+                    ),
+                    const SizedBox(height: 12),
+                    _buildInfoRow(
+                      loc.translate('totalAmountLabel'),
+                      CurrencyFormatter.fromHalalas(order.totalFils, isAr: isAr),
+                      valueColor: AppColors.primary,
+                    ),
+                  ],
+                ),
               ),
               const SizedBox(height: 20),
 
@@ -88,34 +167,30 @@ class _OrderTrackingScreenState extends ConsumerState<OrderTrackingScreen> {
               // ─── Order Status Header ───
               Align(
                 alignment: isAr ? Alignment.centerRight : Alignment.centerLeft,
-                child: Text(
-                  loc.translate('orderStatus'),
-                  style: AppStyle.sectionHeader,
-                ),
+                child: Text(loc.translate('orderStatus'), style: AppStyle.sectionHeader),
               ),
               const SizedBox(height: 6),
               Divider(color: context.palette.divider, thickness: 0.8),
               const SizedBox(height: 24),
 
-              // ─── Vertical Timeline (Right-aligned tracker for Arabic, Left-aligned for English) ───
-              _buildTrackerTimeline(loc, isAr),
+              // ─── Vertical Timeline ───
+              trackingAsync.when(
+                loading: () => const Center(child: CircularProgressIndicator()),
+                error: (error, _) => Text(
+                  error.toString(),
+                  style: AppStyle.bodyText.copyWith(color: context.palette.textMuted),
+                ),
+                data: (tracking) => _buildTrackerTimeline(tracking, isAr),
+              ),
               const SizedBox(height: 32),
 
               // ─── Confirm Delivery Button ───
               ElevatedButton(
-                onPressed: () {
-                  if (context.canPop()) {
-                    context.pop();
-                  } else {
-                    context.go('/dashboard');
-                  }
-                },
+                onPressed: _busy ? null : () => _onConfirmDelivery(loc),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppColors.primary,
                   minimumSize: const Size(double.infinity, 54),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(30),
-                  ),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
                   elevation: 0,
                 ),
                 child: Row(
@@ -132,10 +207,7 @@ class _OrderTrackingScreenState extends ConsumerState<OrderTrackingScreen> {
                       AssetsConstants.shoppingBag,
                       width: 18,
                       height: 18,
-                      colorFilter: const ColorFilter.mode(
-                        Colors.white,
-                        BlendMode.srcIn,
-                      ),
+                      colorFilter: const ColorFilter.mode(Colors.white, BlendMode.srcIn),
                     ),
                     const SizedBox(width: 12),
                   ],
@@ -148,27 +220,24 @@ class _OrderTrackingScreenState extends ConsumerState<OrderTrackingScreen> {
               const SizedBox(height: 32),
 
               // ─── Delivery Info Header ───
-              Center(
-                child: Text(
-                  loc.translate('deliveryInfo'),
-                  style: AppStyle.sectionHeader,
-                ),
+              trackingAsync.maybeWhen(
+                data: (tracking) => tracking.driver == null
+                    ? const SizedBox.shrink()
+                    : Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          Center(
+                            child: Text(loc.translate('deliveryInfo'), style: AppStyle.sectionHeader),
+                          ),
+                          const SizedBox(height: 6),
+                          Divider(color: context.palette.divider, thickness: 0.8),
+                          const SizedBox(height: 24),
+                          _buildDeliveryCard(tracking.driver!),
+                          const SizedBox(height: 24),
+                        ],
+                      ),
+                orElse: () => const SizedBox.shrink(),
               ),
-              const SizedBox(height: 6),
-              Divider(color: context.palette.divider, thickness: 0.8),
-              const SizedBox(height: 24),
-
-              // ─── Expected Delivery ───
-              _buildInfoRow(
-                loc.translate('expectedDeliveryLabel'),
-                loc.translate('orderDateValue'),
-                forceValueLtr: false,
-              ),
-              const SizedBox(height: 24),
-
-              // ─── SMSA Express Delivery Card ───
-              _buildDeliveryCard(loc, isAr),
-              const SizedBox(height: 24),
 
               // ─── Final Cancel Button ───
               _buildCancelButton(loc, isAr),
@@ -186,7 +255,6 @@ class _OrderTrackingScreenState extends ConsumerState<OrderTrackingScreen> {
     String label,
     String value, {
     Color? valueColor,
-    bool forceValueLtr = true,
   }) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -197,35 +265,22 @@ class _OrderTrackingScreenState extends ConsumerState<OrderTrackingScreen> {
             color: context.palette.textPrimary.withValues(alpha: 0.6),
           ),
         ),
-        forceValueLtr
-            ? Directionality(
-                textDirection: TextDirection.ltr,
-                child: Text(
-                  value,
-                  style: AppStyle.valueText.copyWith(
-                    color: valueColor ?? context.palette.textPrimary,
-                  ),
-                ),
-              )
-            : Text(
-                value,
-                style: AppStyle.valueText.copyWith(
-                  color: valueColor ?? context.palette.textPrimary,
-                ),
-              ),
+        Directionality(
+          textDirection: TextDirection.ltr,
+          child: Text(
+            value,
+            style: AppStyle.valueText.copyWith(
+              color: valueColor ?? context.palette.textPrimary,
+            ),
+          ),
+        ),
       ],
     );
   }
 
   Widget _buildCancelButton(AppLocalizations loc, bool isAr) {
     return OutlinedButton(
-      onPressed: () {
-        if (context.canPop()) {
-          context.pop();
-        } else {
-          context.go('/dashboard');
-        }
-      },
+      onPressed: _busy ? null : () => _onCancel(loc),
       style: OutlinedButton.styleFrom(
         minimumSize: const Size(double.infinity, 54),
         side: BorderSide(color: context.palette.divider),
@@ -250,20 +305,14 @@ class _OrderTrackingScreenState extends ConsumerState<OrderTrackingScreen> {
                     AssetsConstants.moveLeft,
                     width: 18,
                     height: 18,
-                    colorFilter: ColorFilter.mode(
-                      context.palette.textPrimary,
-                      BlendMode.srcIn,
-                    ),
+                    colorFilter: ColorFilter.mode(context.palette.textPrimary, BlendMode.srcIn),
                   ),
                 )
               : SvgPicture.asset(
                   AssetsConstants.moveLeft,
                   width: 18,
                   height: 18,
-                  colorFilter: ColorFilter.mode(
-                    context.palette.textPrimary,
-                    BlendMode.srcIn,
-                  ),
+                  colorFilter: ColorFilter.mode(context.palette.textPrimary, BlendMode.srcIn),
                 ),
           const SizedBox(width: 12),
         ],
@@ -271,35 +320,12 @@ class _OrderTrackingScreenState extends ConsumerState<OrderTrackingScreen> {
     );
   }
 
-  Widget _buildTrackerTimeline(AppLocalizations loc, bool isAr) {
-    // 3 states: Processing, Shipped, Delivered
-    final steps = [
-      _TimelineStep(
-        title: loc.translate('statusProcessing'),
-        subtitle: '09:15',
-        isCompleted: true,
-      ),
-      _TimelineStep(
-        title: loc.translate('statusShipped'),
-        subtitle: '12:00',
-        isCompleted: true,
-      ),
-      _TimelineStep(
-        title: loc.translate('statusDelivered'),
-        subtitle: '--:--',
-        isCompleted: false,
-      ),
-    ];
-
+  Widget _buildTrackerTimeline(OrderTracking tracking, bool isAr) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
-      children: List.generate(steps.length, (index) {
-        final step = steps[index];
-        final isLast = index == steps.length - 1;
-
-        // No custom RTL logic needed here — the parent Directionality(rtl)
-        // already mirrors MainAxisAlignment.start to the right side in Arabic.
-        // Indicator is always first → appears on right in AR, left in EN.
+      children: List.generate(tracking.timeline.length, (index) {
+        final step = tracking.timeline[index];
+        final isLast = index == tracking.timeline.length - 1;
         return Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           mainAxisSize: MainAxisSize.min,
@@ -313,10 +339,9 @@ class _OrderTrackingScreenState extends ConsumerState<OrderTrackingScreen> {
     );
   }
 
-  Widget _buildTimelineIndicatorColumn(_TimelineStep step, bool isLast) {
+  Widget _buildTimelineIndicatorColumn(OrderTrackingStep step, bool isLast) {
     return Column(
       children: [
-        // Indicator circle check
         AnimatedContainer(
           duration: const Duration(milliseconds: 200),
           width: 28,
@@ -325,24 +350,23 @@ class _OrderTrackingScreenState extends ConsumerState<OrderTrackingScreen> {
             shape: BoxShape.circle,
             color: context.palette.background,
             border: Border.all(
-              color: step.isCompleted
+              color: step.completed
                   ? const Color(0xFF5CC0A7)
                   : AppColors.primary.withValues(alpha: 0.4),
               width: 1.5,
             ),
           ),
-          child: step.isCompleted
+          child: step.completed
               ? const Center(
                   child: Icon(Icons.check, color: Color(0xFF5CC0A7), size: 16),
                 )
               : null,
         ),
-        // Timeline Connector Line
         if (!isLast)
           Container(
             width: 1.5,
             height: 50,
-            color: step.isCompleted
+            color: step.completed
                 ? const Color(0xFF5CC0A7)
                 : AppColors.primary.withValues(alpha: 0.4),
           ),
@@ -350,15 +374,16 @@ class _OrderTrackingScreenState extends ConsumerState<OrderTrackingScreen> {
     );
   }
 
-  Widget _buildStepText(_TimelineStep step, {bool alignRight = false}) {
+  Widget _buildStepText(OrderTrackingStep step, {bool alignRight = false}) {
+    final time = step.timestamp;
     return Column(
-      crossAxisAlignment: alignRight
-          ? CrossAxisAlignment.end
-          : CrossAxisAlignment.start,
+      crossAxisAlignment: alignRight ? CrossAxisAlignment.end : CrossAxisAlignment.start,
       children: [
-        Text(step.title, style: AppStyle.timelineTitle),
+        Text(step.label, style: AppStyle.timelineTitle),
         Text(
-          step.subtitle,
+          time != null
+              ? '${time.hour.toString().padLeft(2, '0')}:${time.minute.toString().padLeft(2, '0')}'
+              : '--:--',
           style: AppStyle.timelineSubtitle.copyWith(
             color: context.palette.textPrimary.withValues(alpha: 0.5),
           ),
@@ -367,20 +392,16 @@ class _OrderTrackingScreenState extends ConsumerState<OrderTrackingScreen> {
     );
   }
 
-  Widget _buildDeliveryCard(AppLocalizations loc, bool isAr) {
+  Widget _buildDeliveryCard(OrderDriver driver) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.start,
       children: [
-        // Circle Truck Icon — on the left
         Container(
           width: 56,
           height: 56,
           decoration: BoxDecoration(
             shape: BoxShape.circle,
-            border: Border.all(
-              color: AppColors.primary.withValues(alpha: 0.4),
-              width: 1.2,
-            ),
+            border: Border.all(color: AppColors.primary.withValues(alpha: 0.4), width: 1.2),
           ),
           child: Center(
             child: SvgPicture.asset(
@@ -391,34 +412,19 @@ class _OrderTrackingScreenState extends ConsumerState<OrderTrackingScreen> {
             ),
           ),
         ),
-
         const SizedBox(width: 12),
-
-        // Agent name + company — tight to the right of the icon
         Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           mainAxisSize: MainAxisSize.min,
           children: [
-            Text('أحمد محمد', style: AppStyle.cardTitle),
-            Text(
-              loc.translate('deliveryCompanyValue'),
-              style: AppStyle.cardSubtitle,
+            Text(driver.name, style: AppStyle.cardTitle),
+            Directionality(
+              textDirection: TextDirection.ltr,
+              child: Text(driver.phone, style: AppStyle.cardSubtitle),
             ),
           ],
         ),
       ],
     );
   }
-}
-
-class _TimelineStep {
-  final String title;
-  final String subtitle;
-  final bool isCompleted;
-
-  _TimelineStep({
-    required this.title,
-    required this.subtitle,
-    required this.isCompleted,
-  });
 }

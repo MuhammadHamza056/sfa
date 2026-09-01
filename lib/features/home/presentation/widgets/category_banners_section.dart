@@ -1,53 +1,54 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:sfa/utils/Values.dart';
 import 'package:sfa/utils/app_style.dart';
+import 'package:sfa/features/catalog/providers/catalog_providers.dart';
+import 'package:sfa/features/brands/models/brand_nav_args.dart';
 
-class CategoryBannersSection extends StatelessWidget {
+class CategoryBannersSection extends ConsumerWidget {
   final bool isAr;
 
   const CategoryBannersSection({super.key, required this.isAr});
 
   @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(
-        horizontal: Values.horizontalPadding,
-        vertical: 12,
-      ),
-      child: Column(
-        children: [
-          _buildBannerCard(
-            context,
-            imageUrl:
-                'https://images.unsplash.com/photo-1508214751196-bcfd4ca60f91?w=600&q=80',
-            title: isAr ? 'منتجات نسائية' : "Women's Products",
-            alignment: isAr ? Alignment.centerRight : Alignment.centerLeft,
-            gradientBegin: isAr ? Alignment.centerRight : Alignment.centerLeft,
-            gradientEnd: isAr ? Alignment.centerLeft : Alignment.centerRight,
+  Widget build(BuildContext context, WidgetRef ref) {
+    final bannersAsync = ref.watch(bannersProvider);
+
+    return bannersAsync.maybeWhen(
+      data: (banners) {
+        if (banners.isEmpty) return const SizedBox.shrink();
+        return Padding(
+          padding: const EdgeInsets.symmetric(
+            horizontal: Values.horizontalPadding,
+            vertical: 12,
           ),
-          const SizedBox(height: 4),
-          _buildBannerCard(
-            context,
-            imageUrl:
-                'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=600&q=80',
-            title: isAr ? 'منتجات رجالية' : "Men's Products",
-            alignment: isAr ? Alignment.centerLeft : Alignment.centerRight,
-            gradientBegin: isAr ? Alignment.centerLeft : Alignment.centerRight,
-            gradientEnd: isAr ? Alignment.centerRight : Alignment.centerLeft,
+          child: Column(
+            children: [
+              for (var i = 0; i < banners.length; i++) ...[
+                if (i > 0) const SizedBox(height: 4),
+                _buildBannerCard(
+                  context,
+                  imageUrl: banners[i].imageUrl,
+                  title: banners[i].title.resolve(isAr),
+                  alignment: i.isEven
+                      ? (isAr ? Alignment.centerRight : Alignment.centerLeft)
+                      : (isAr ? Alignment.centerLeft : Alignment.centerRight),
+                  gradientBegin: i.isEven
+                      ? (isAr ? Alignment.centerRight : Alignment.centerLeft)
+                      : (isAr ? Alignment.centerLeft : Alignment.centerRight),
+                  gradientEnd: i.isEven
+                      ? (isAr ? Alignment.centerLeft : Alignment.centerRight)
+                      : (isAr ? Alignment.centerRight : Alignment.centerLeft),
+                  linkType: banners[i].linkType,
+                  linkId: banners[i].linkId,
+                ),
+              ],
+            ],
           ),
-          const SizedBox(height: 4),
-          _buildBannerCard(
-            context,
-            imageUrl:
-                'https://images.unsplash.com/photo-1502086223501-7ea6ecd79368?w=600&q=80',
-            title: isAr ? 'منتجات للأطفال' : "Kids' Products",
-            alignment: isAr ? Alignment.centerRight : Alignment.centerLeft,
-            gradientBegin: isAr ? Alignment.centerRight : Alignment.centerLeft,
-            gradientEnd: isAr ? Alignment.centerLeft : Alignment.centerRight,
-          ),
-        ],
-      ),
+        );
+      },
+      orElse: () => const SizedBox.shrink(),
     );
   }
 
@@ -58,9 +59,19 @@ class CategoryBannersSection extends StatelessWidget {
     required Alignment alignment,
     required Alignment gradientBegin,
     required Alignment gradientEnd,
+    String? linkType,
+    String? linkId,
   }) {
     return GestureDetector(
-      onTap: () => context.push('/featured-products'),
+      onTap: () {
+        if (linkType == 'category' && linkId != null) {
+          context.push('/featured-products');
+        } else if (linkType == 'brand' && linkId != null) {
+          context.push('/brand-detail', extra: BrandNavArgs(id: linkId, name: title));
+        } else {
+          context.push('/featured-products');
+        }
+      },
       child: Container(
         height: 160,
         width: double.infinity,

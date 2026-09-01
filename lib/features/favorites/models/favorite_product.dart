@@ -1,28 +1,36 @@
 class FavoriteProduct {
+  final String productId;
   final String title;
   final String imageUrl;
   final String price;
   final String rating;
+  final String? brandName;
 
   FavoriteProduct({
+    required this.productId,
     required this.title,
     required this.imageUrl,
     required this.price,
-    required this.rating,
+    this.rating = '',
+    this.brandName,
   });
 
   Map<String, dynamic> toJson() => {
+        'productId': productId,
         'title': title,
         'imageUrl': imageUrl,
         'price': price,
         'rating': rating,
+        'brandName': brandName,
       };
 
   factory FavoriteProduct.fromJson(Map<String, dynamic> json) => FavoriteProduct(
+        productId: json['productId'] ?? '',
         title: json['title'] ?? '',
         imageUrl: json['imageUrl'] ?? '',
         price: json['price'] ?? '',
         rating: json['rating'] ?? '',
+        brandName: json['brandName'],
       );
 
   @override
@@ -30,8 +38,8 @@ class FavoriteProduct {
       identical(this, other) ||
       other is FavoriteProduct &&
           runtimeType == other.runtimeType &&
-          title == other.title;
+          productId == other.productId;
 
   @override
-  int get hashCode => title.hashCode;
+  int get hashCode => productId.hashCode;
 }

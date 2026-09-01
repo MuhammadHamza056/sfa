@@ -12,6 +12,7 @@ void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await SecureStorage.init();
   themeNotifier.loadFromStorage();
+  localeNotifier.loadFromStorage();
   runApp(const ProviderScope(child: MyApp()));
 }
 

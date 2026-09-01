@@ -22,21 +22,42 @@ class LoginScreen extends ConsumerStatefulWidget {
 class _LoginScreenState extends ConsumerState<LoginScreen> {
   final TextEditingController _phoneController = TextEditingController();
   final TextEditingController _emailController = TextEditingController();
+  final TextEditingController _passwordController = TextEditingController();
 
   @override
   void dispose() {
     _phoneController.dispose();
     _emailController.dispose();
+    _passwordController.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
     final loc = AppLocalizations.of(context);
+    final state = ref.watch(authProvider);
 
     final Widget loginBtn = ElevatedButton(
       onPressed: () {
-        context.go('/dashboard');
+        if (state.isEmailMode) {
+          final email = _emailController.text.trim();
+          final password = _passwordController.text;
+          if (email.isEmpty || password.isEmpty) {
+            Fluttertoast.showToast(
+              msg: loc.isArabic
+                  ? "الرجاء إدخال البريد الإلكتروني وكلمة المرور"
+                  : "Please enter email and password",
+              backgroundColor: AppColors.redcolor,
+              textColor: Colors.white,
+            );
+            return;
+          }
+          ref
+              .read(authProvider.notifier)
+              .loginWithPassword(email: email, password: password);
+          return;
+        }
+        ref.read(authProvider.notifier).submitLogin();
       },
       style: ElevatedButton.styleFrom(
         backgroundColor: AppColors.primary,
@@ -127,24 +148,25 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       ),
     );
 
-    ref.listen<AuthState>(authProvider, (previous, state) {
-      if (state.status == AuthStatus.success) {
+    ref.listen<AuthState>(authProvider, (previous, next) {
+      if (next.status == AuthStatus.otpSent) {
+        context.push('/otp');
+      } else if (next.status == AuthStatus.authenticated) {
         Fluttertoast.showToast(
           msg: loc.isArabic ? "تسجيل الدخول بنجاح!" : "Login Successful!",
           backgroundColor: AppColors.greencolor,
           textColor: Colors.white,
         );
         context.go('/dashboard');
-      } else if (state.status == AuthStatus.failure &&
-          state.errorMessage != null) {
+      } else if (next.status == AuthStatus.failure &&
+          next.errorMessage != null) {
         Fluttertoast.showToast(
-          msg: state.errorMessage!,
+          msg: next.errorMessage!,
           backgroundColor: AppColors.redcolor,
           textColor: Colors.white,
         );
       }
     });
-    final state = ref.watch(authProvider);
 
     return Scaffold(
       backgroundColor: context.palette.backgroundSubtle,
@@ -337,6 +359,40 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
               hintText: loc.isArabic
                   ? 'أدخل البريد الإلكتروني'
                   : 'Enter email address',
+              hintStyle: AppStyle.inputHint.copyWith(
+                color: context.palette.textPrimary.withValues(alpha: 0.4),
+              ),
+              contentPadding: const EdgeInsets.symmetric(
+                horizontal: 16,
+                vertical: 14,
+              ),
+              border: InputBorder.none,
+            ),
+          ),
+        ),
+        const SizedBox(height: 20),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 4),
+          child: Text(
+            loc.translate("passwordLabel"),
+            style: AppStyle.fieldLabel,
+          ),
+        ),
+        const SizedBox(height: 8),
+        Container(
+          decoration: BoxDecoration(
+            color: context.palette.backgroundSubtle,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: context.palette.divider),
+          ),
+          child: TextField(
+            controller: _passwordController,
+            obscureText: true,
+            style: AppStyle.inputText,
+            onTapOutside: (event) =>
+                FocusManager.instance.primaryFocus?.unfocus(),
+            decoration: InputDecoration(
+              hintText: loc.isArabic ? 'أدخل كلمة المرور' : 'Enter password',
               hintStyle: AppStyle.inputHint.copyWith(
                 color: context.palette.textPrimary.withValues(alpha: 0.4),
               ),

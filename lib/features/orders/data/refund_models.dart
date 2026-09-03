@@ -15,8 +15,9 @@ class RefundReason {
   }
 }
 
-/// M57 — matches the guide's response example exactly: just the new
-/// refund's id and initial status, not the full detail.
+/// M57 — the real backend returns the whole refund document (`_id`,
+/// `targetId`, `amountFils`, `status`, ...), not the guide's documented
+/// `{refundId, status}` shape, so `_id`/`id` is read as a fallback.
 class RefundSubmitResult {
   final String refundId;
   final String status;
@@ -25,7 +26,7 @@ class RefundSubmitResult {
 
   factory RefundSubmitResult.fromJson(Map<String, dynamic> json) {
     return RefundSubmitResult(
-      refundId: json['refundId']?.toString() ?? '',
+      refundId: (json['refundId'] ?? json['_id'] ?? json['id'])?.toString() ?? '',
       status: json['status']?.toString() ?? 'PENDING',
     );
   }
@@ -85,6 +86,7 @@ class RefundDetail {
   /// refunded), matched loosely against whatever status string comes back.
   /// `APPROVED` (the guide's own example status) is included.
   static const stages = [
+    'REQUESTED',
     'PENDING',
     'PROCESSING',
     'RECEIVED',
@@ -101,11 +103,12 @@ class RefundDetail {
 
   factory RefundDetail.fromJson(Map<String, dynamic> json) {
     return RefundDetail(
-      id: json['id']?.toString() ?? '',
-      orderId: json['orderId']?.toString() ?? '',
+      id: (json['_id'] ?? json['id'])?.toString() ?? '',
+      orderId: (json['orderId'] ?? json['targetId'])?.toString() ?? '',
       status: json['status']?.toString() ?? 'PENDING',
       reason: json['reason'] as String?,
-      refundAmountFils: (json['refundAmountFils'] as num?)?.toInt() ?? 0,
+      refundAmountFils:
+          (json['refundAmountFils'] as num?)?.toInt() ?? (json['amountFils'] as num?)?.toInt() ?? 0,
       createdAt: DateTime.tryParse(json['createdAt']?.toString() ?? ''),
     );
   }

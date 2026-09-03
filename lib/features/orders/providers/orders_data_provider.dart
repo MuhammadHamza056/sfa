@@ -44,9 +44,12 @@ final orderStatisticsProvider = FutureProvider<OrderStatistics>((ref) async {
   return result.when(success: (data) => data, failure: (e) => throw e);
 });
 
-/// M55 — keyed by order id.
+/// M55 — keyed by order id. `autoDispose` for the same reason as
+/// [ordersDataProvider] — otherwise leaving the refund-request page and
+/// coming back keeps serving the first fetch instead of hitting the API
+/// again.
 final returnableItemsProvider =
-    FutureProvider.family<List<ReturnableItem>, String>((ref, id) async {
+    FutureProvider.autoDispose.family<List<ReturnableItem>, String>((ref, id) async {
   final result = await ref.read(ordersRepositoryProvider).getReturnableItems(id);
   return result.when(success: (data) => data, failure: (e) => throw e);
 });

@@ -26,6 +26,7 @@ import '../features/brands/presentation/screens/brand_detail_screen.dart';
 import '../features/brands/presentation/screens/product_detail_screen.dart';
 import '../features/favorites/presentation/screens/favorites_screen.dart';
 import '../features/orders/presentation/screens/order_tracking_screen.dart';
+import '../features/orders/presentation/screens/delivery_otp_screen.dart';
 import '../features/orders/presentation/screens/previous_orders_screen.dart';
 import '../features/checkout/presentation/screens/checkout_screen.dart';
 import '../features/checkout/presentation/screens/payment_success_screen.dart';
@@ -197,6 +198,15 @@ final router = GoRouter(
           body: OrderTrackingScreen(orderId: orderId),
           bottomNavigationBar: const AppBottomNavBar(overrideIndex: 3),
         );
+      },
+    ),
+    GoRoute(
+      path: '/delivery-otp/:id',
+      parentNavigatorKey: _rootNavigatorKey,
+      builder: (context, state) {
+        final orderId = state.pathParameters['id'] ?? '';
+        final args = state.extra as DeliveryOtpArgs?;
+        return DeliveryOtpScreen(orderId: orderId, debugOtp: args?.debugOtp);
       },
     ),
     GoRoute(

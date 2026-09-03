@@ -175,6 +175,24 @@ class CatalogRepository {
     );
   }
 
+  /// Categories with active brand/product counts, for the Brands tab's
+  /// category chip row.
+  Future<ApiResult<List<BrandCategory>>> getBrandCategories() {
+    return _client.get<List<BrandCategory>>(
+      ApiEndpoints.brandCategories,
+      fromJson: (data) => _asList(data, BrandCategory.fromJson),
+    );
+  }
+
+  /// Brands filtered by a single category id or slug (Brands tab category
+  /// chips, as opposed to M22's unfiltered directory).
+  Future<ApiResult<List<CatalogBrand>>> getBrandsByCategory(String categoryId) {
+    return _client.get<List<CatalogBrand>>(
+      ApiEndpoints.brandsByCategory(categoryId),
+      fromJson: (data) => _asList(data, CatalogBrand.fromJson),
+    );
+  }
+
   /// M23: Brand profile & brand story
   Future<ApiResult<CatalogBrand>> getBrand(String id) {
     return _client.get<CatalogBrand>(

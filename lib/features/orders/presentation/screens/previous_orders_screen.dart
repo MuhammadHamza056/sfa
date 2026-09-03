@@ -6,6 +6,7 @@ import 'package:sfa/core/localization/app_localizations.dart';
 import 'package:sfa/utils/assets_constants.dart';
 import 'package:sfa/utils/color_constants.dart';
 import 'package:sfa/utils/currency_formatter.dart';
+import 'package:sfa/utils/order_id_formatter.dart';
 import 'package:sfa/utils/app_style.dart';
 import 'package:sfa/features/orders/data/order_models.dart';
 import 'package:sfa/features/orders/providers/orders_data_provider.dart';
@@ -199,13 +200,6 @@ class _PreviousOrdersScreenState extends ConsumerState<PreviousOrdersScreen>
     );
   }
 
-  // `orderNumber` falls back to the raw Mongo order id when the API sends
-  // no dedicated order-number field, which is too long for the tile without
-  // wrapping/overflowing — show just enough to disambiguate visually.
-  String _shortOrderNumber(String orderNumber) {
-    return orderNumber.length > 4 ? orderNumber.substring(orderNumber.length - 4) : orderNumber;
-  }
-
   Widget _buildOrderCard(
     AppLocalizations loc,
     bool isAr,
@@ -247,7 +241,7 @@ class _PreviousOrdersScreenState extends ConsumerState<PreviousOrdersScreen>
                   style: TextStyle(fontSize: 14, color: context.palette.textMuted),
                 ),
                 Text(
-                  '#${_shortOrderNumber(order.orderNumber)}',
+                  '#${OrderIdFormatter.shorten(order.orderNumber)}',
                   style: TextStyle(
                     fontSize: 15,
                     fontWeight: FontWeight.bold,

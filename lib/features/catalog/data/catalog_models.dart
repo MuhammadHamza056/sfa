@@ -10,10 +10,13 @@ class CatalogBrandRef {
   const CatalogBrandRef({required this.id, required this.name, this.logo});
 
   factory CatalogBrandRef.fromJson(Map<String, dynamic> json) {
+    final localizedName = json['localizedName'];
     return CatalogBrandRef(
       id: json['_id']?.toString() ?? '',
-      name: LocalizedText.fromJson(json['name'] as Map<String, dynamic>? ?? const {}),
-      logo: json['logo'] as String?,
+      name: localizedName is Map<String, dynamic>
+          ? LocalizedText.fromJson(localizedName)
+          : LocalizedText.fromDynamic(json['name']),
+      logo: (json['logo'] ?? json['vendorImageUrl']) as String?,
     );
   }
 }
@@ -33,7 +36,7 @@ class CatalogProductVariant {
 
   factory CatalogProductVariant.fromJson(Map<String, dynamic> json) {
     return CatalogProductVariant(
-      name: LocalizedText.fromJson(json['name'] as Map<String, dynamic>? ?? const {}),
+      name: LocalizedText.fromDynamic(json['name']),
       sku: json['sku'] as String?,
       priceFils: (json['priceFils'] as num?)?.toInt() ?? 0,
       stock: (json['stock'] as num?)?.toInt() ?? 0,
@@ -58,12 +61,18 @@ class CatalogProductOption {
       values.isNotEmpty && values.every((v) => v.startsWith('#'));
 
   factory CatalogProductOption.fromJson(Map<String, dynamic> json) {
+    // Some endpoints send a flat `values: [String]`; the product-detail
+    // shape instead sends `choices: [{name, priceDeltaFils, stock}]`.
+    final choices = json['choices'] as List?;
+    final values = json['values'] as List?;
     return CatalogProductOption(
       id: json['id']?.toString() ?? '',
-      name: LocalizedText.fromJson(json['name'] as Map<String, dynamic>? ?? const {}),
-      values: (json['values'] as List? ?? const [])
-          .map((v) => v.toString())
-          .toList(),
+      name: LocalizedText.fromDynamic(json['name']),
+      values: choices != null
+          ? choices
+              .map((v) => (v as Map<String, dynamic>)['name']?.toString() ?? '')
+              .toList()
+          : (values ?? const []).map((v) => v.toString()).toList(),
     );
   }
 }
@@ -82,7 +91,7 @@ class CatalogProductAddon {
   factory CatalogProductAddon.fromJson(Map<String, dynamic> json) {
     return CatalogProductAddon(
       id: json['id']?.toString() ?? '',
-      name: LocalizedText.fromJson(json['name'] as Map<String, dynamic>? ?? const {}),
+      name: LocalizedText.fromDynamic(json['name']),
       priceFils: (json['priceFils'] as num?)?.toInt() ?? 0,
     );
   }
@@ -132,9 +141,9 @@ class CatalogProduct {
     final vendorJson = json['vendorId'] ?? json['brand'];
     return CatalogProduct(
       id: json['_id']?.toString() ?? '',
-      name: LocalizedText.fromJson(json['name'] as Map<String, dynamic>? ?? const {}),
-      description: json['description'] is Map<String, dynamic>
-          ? LocalizedText.fromJson(json['description'] as Map<String, dynamic>)
+      name: LocalizedText.fromDynamic(json['name']),
+      description: json['description'] != null
+          ? LocalizedText.fromDynamic(json['description'])
           : null,
       priceFils: (json['priceFils'] as num?)?.toInt() ?? 0,
       oldPriceFils: (json['oldPriceFils'] as num?)?.toInt(),
@@ -187,8 +196,40 @@ class CatalogCategory {
   factory CatalogCategory.fromJson(Map<String, dynamic> json) {
     return CatalogCategory(
       id: json['_id']?.toString() ?? '',
-      name: LocalizedText.fromJson(json['name'] as Map<String, dynamic>? ?? const {}),
+      name: LocalizedText.fromDynamic(json['name']),
       iconUrl: json['icon'] as String?,
+    );
+  }
+}
+
+/// A category as returned by `/brands/categories`, used to drive the Brands
+/// tab's category chip row — distinct from [CatalogCategory] (`/categories`)
+/// since this one carries brand/product counts for that specific screen.
+class BrandCategory {
+  final String id;
+  final LocalizedText name;
+  final String slug;
+  final String? iconUrl;
+  final int brandCount;
+  final int productCount;
+
+  const BrandCategory({
+    required this.id,
+    required this.name,
+    required this.slug,
+    this.iconUrl,
+    this.brandCount = 0,
+    this.productCount = 0,
+  });
+
+  factory BrandCategory.fromJson(Map<String, dynamic> json) {
+    return BrandCategory(
+      id: json['_id']?.toString() ?? '',
+      name: LocalizedText.fromDynamic(json['name']),
+      slug: json['slug']?.toString() ?? '',
+      iconUrl: json['icon'] as String?,
+      brandCount: (json['brandCount'] as num?)?.toInt() ?? 0,
+      productCount: (json['productCount'] as num?)?.toInt() ?? 0,
     );
   }
 }
@@ -217,13 +258,13 @@ class CatalogBrand {
   factory CatalogBrand.fromJson(Map<String, dynamic> json) {
     return CatalogBrand(
       id: json['_id']?.toString() ?? '',
-      name: LocalizedText.fromJson(json['name'] as Map<String, dynamic>? ?? const {}),
+      name: LocalizedText.fromDynamic(json['name']),
       logo: json['logo'] as String?,
       businessStatus: json['businessStatus'] as String? ?? '',
       rating: (json['rating'] as num?)?.toDouble() ?? 0,
       reviewCount: (json['reviewCount'] as num?)?.toInt() ?? 0,
-      story: json['story'] is Map<String, dynamic>
-          ? LocalizedText.fromJson(json['story'] as Map<String, dynamic>)
+      story: json['story'] != null
+          ? LocalizedText.fromDynamic(json['story'])
           : null,
     );
   }
@@ -246,11 +287,11 @@ class CatalogBanner {
 
   factory CatalogBanner.fromJson(Map<String, dynamic> json) {
     return CatalogBanner(
-      id: json['id']?.toString() ?? '',
-      title: LocalizedText.fromJson(json['title'] as Map<String, dynamic>? ?? const {}),
-      imageUrl: json['imageUrl']?.toString() ?? '',
+      id: (json['_id'] ?? json['id'])?.toString() ?? '',
+      title: LocalizedText.fromDynamic(json['title']),
+      imageUrl: (json['image'] ?? json['imageUrl'])?.toString() ?? '',
       linkType: json['linkType'] as String?,
-      linkId: json['linkId'] as String?,
+      linkId: json['linkId']?.toString(),
     );
   }
 }
@@ -270,7 +311,7 @@ class HomeReel {
 
   factory HomeReel.fromJson(Map<String, dynamic> json) {
     return HomeReel(
-      id: json['id']?.toString() ?? '',
+      id: (json['_id'] ?? json['id'])?.toString() ?? '',
       videoUrl: json['videoUrl']?.toString() ?? '',
       thumbnailUrl: json['thumbnailUrl']?.toString() ?? '',
       likesCount: (json['likesCount'] as num?)?.toInt() ?? 0,

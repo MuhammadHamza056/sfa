@@ -64,9 +64,23 @@ class OrdersRepository {
     );
   }
 
-  /// M54/M63: Customer confirms receipt
-  Future<ApiResult<void>> confirmDelivery(String id) {
-    return _client.post<void>(ApiEndpoints.orderConfirmDelivery(id), fromJson: (_) {});
+  /// M54/M63: Sends an OTP to the customer to confirm delivery receipt.
+  Future<ApiResult<DeliveryOtpRequestResult>> sendDeliveryOtp(String id) {
+    return _client.post<DeliveryOtpRequestResult>(
+      ApiEndpoints.orderSendDeliveryOtp(id),
+      fromJson: (data) => DeliveryOtpRequestResult.fromJson(
+        data as Map<String, dynamic>? ?? const {},
+      ),
+    );
+  }
+
+  /// M54/M63: Verifies the delivery OTP and confirms receipt.
+  Future<ApiResult<void>> verifyDeliveryOtp(String id, {required String otp}) {
+    return _client.post<void>(
+      ApiEndpoints.orderVerifyDeliveryOtp(id),
+      data: {'otp': otp},
+      fromJson: (_) {},
+    );
   }
 
   /// M61: Assigned delivery driver info

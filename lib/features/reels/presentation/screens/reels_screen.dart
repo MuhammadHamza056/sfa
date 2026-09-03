@@ -96,6 +96,11 @@ class _ReelsScreenState extends ConsumerState<ReelsScreen> {
     _preloadController(index + 1);
     _preloadController(index - 1);
 
+    // Fetch the next page once the user is a few reels away from the end.
+    if (index >= _reels.length - 3) {
+      ref.read(reelsFeedProvider.notifier).loadMore();
+    }
+
     // Clean up far away controllers
     final indicesToDispose = <int>[];
     _controllers.keys.forEach((idx) {
@@ -150,13 +155,15 @@ class _ReelsScreenState extends ConsumerState<ReelsScreen> {
       drawerOpenProvider,
       (previous, next) => _onActiveTabOrDrawerChanged(),
     );
-    ref.listen<AsyncValue<List<Reel>>>(reelsFeedProvider, (previous, next) {
-      next.whenData((reels) {
+    ref.listen<AsyncValue<ReelsFeedState>>(reelsFeedProvider, (previous, next) {
+      next.whenData((feedState) {
         if (!_initialized) {
           setState(() {
             _initialized = true;
-            _initReels(reels);
+            _initReels(feedState.items);
           });
+        } else if (feedState.items.length != _reels.length) {
+          setState(() => _reels = feedState.items);
         }
       });
     });
@@ -173,9 +180,17 @@ class _ReelsScreenState extends ConsumerState<ReelsScreen> {
             error: (error, _) => Center(
               child: Text(error.toString(), style: const TextStyle(color: Colors.white)),
             ),
-            data: (reels) {
-              if (!_initialized || _reels.isEmpty) {
+            data: (feedState) {
+              if (!_initialized) {
                 return const Center(child: CircularProgressIndicator(color: Colors.white));
+              }
+              if (_reels.isEmpty) {
+                return Center(
+                  child: Text(
+                    loc.translate('noReelsYet'),
+                    style: const TextStyle(color: Colors.white),
+                  ),
+                );
               }
               return PageView.builder(
                 scrollDirection: Axis.vertical,
@@ -522,7 +537,7 @@ class _ReelPageItemState extends ConsumerState<_ReelPageItem>
                       SvgPicture.asset(AssetsConstants.badgeCheck, width: 16, height: 16),
                       const SizedBox(width: 6),
                       Text(
-                        reel.brand?.name ?? '',
+                        reel.brand?.name.resolve(isAr) ?? '',
                         style: AppStyle.bodyText.copyWith(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14),
                       ),
                       if (product != null) ...[

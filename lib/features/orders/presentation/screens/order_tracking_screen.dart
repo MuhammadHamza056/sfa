@@ -25,10 +25,13 @@ class OrderTrackingScreen extends ConsumerStatefulWidget {
 
 class _OrderTrackingScreenState extends ConsumerState<OrderTrackingScreen> {
   bool _busy = false;
+  bool _confirmedDelivery = false;
 
   void _showMessage(String message) {
     if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(message)));
   }
 
   Future<void> _onCancel(AppLocalizations loc) async {
@@ -39,7 +42,9 @@ class _OrderTrackingScreenState extends ConsumerState<OrderTrackingScreen> {
         title: Text(loc.translate('cancel')),
         content: TextField(
           controller: reasonController,
-          decoration: InputDecoration(hintText: loc.isArabic ? 'سبب الإلغاء' : 'Cancellation reason'),
+          decoration: InputDecoration(
+            hintText: loc.isArabic ? 'سبب الإلغاء' : 'Cancellation reason',
+          ),
         ),
         actions: [
           TextButton(
@@ -65,6 +70,7 @@ class _OrderTrackingScreenState extends ConsumerState<OrderTrackingScreen> {
       success: (_) {
         ref.invalidate(orderDetailProvider(widget.orderId));
         ref.invalidate(orderTrackingDataProvider(widget.orderId));
+        ref.invalidate(ordersDataProvider);
         _showMessage(loc.isArabic ? 'تم إلغاء الطلب' : 'Order cancelled');
       },
       failure: (error) => _showMessage(error.message),
@@ -73,13 +79,17 @@ class _OrderTrackingScreenState extends ConsumerState<OrderTrackingScreen> {
 
   Future<void> _onConfirmDelivery(AppLocalizations loc) async {
     setState(() => _busy = true);
-    final result = await ref.read(ordersRepositoryProvider).confirmDelivery(widget.orderId);
+    final result = await ref
+        .read(ordersRepositoryProvider)
+        .confirmDelivery(widget.orderId);
     if (!mounted) return;
     setState(() => _busy = false);
     result.when(
       success: (_) {
+        setState(() => _confirmedDelivery = true);
         ref.invalidate(orderDetailProvider(widget.orderId));
         ref.invalidate(orderTrackingDataProvider(widget.orderId));
+        ref.invalidate(ordersDataProvider);
         _showMessage(loc.translate('confirmDelivery'));
       },
       failure: (error) => _showMessage(error.message),
@@ -94,6 +104,17 @@ class _OrderTrackingScreenState extends ConsumerState<OrderTrackingScreen> {
 
     final detailAsync = ref.watch(orderDetailProvider(widget.orderId));
     final trackingAsync = ref.watch(orderTrackingDataProvider(widget.orderId));
+    // Hide the action buttons once we know the order is no longer actionable
+    // — either this session just confirmed delivery, or the fetched order is
+    // already in a terminal state (delivered/cancelled/... from a prior visit).
+    final hideActionButtons =
+        _confirmedDelivery || !(detailAsync.valueOrNull?.isActive ?? true);
+    // A single page-level loader for the initial fetch instead of each
+    // section (order info, timeline) showing its own spinner — only true
+    // while neither request has produced a value yet.
+    final showPageLoader =
+        (detailAsync.isLoading && !detailAsync.hasValue) ||
+        (trackingAsync.isLoading && !trackingAsync.hasValue);
 
     return Directionality(
       textDirection: textDir,
@@ -118,7 +139,9 @@ class _OrderTrackingScreenState extends ConsumerState<OrderTrackingScreen> {
         ),
 
         // ─── Body ─────────────────────────────────────────────────────
-        body: SingleChildScrollView(
+        body: showPageLoader
+            ? const Center(child: CircularProgressIndicator())
+            : SingleChildScrollView(
           padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -126,22 +149,33 @@ class _OrderTrackingScreenState extends ConsumerState<OrderTrackingScreen> {
               // ─── Order Info Header ───
               Align(
                 alignment: isAr ? Alignment.centerRight : Alignment.centerLeft,
-                child: Text(loc.translate('orderInfo'), style: AppStyle.sectionHeader),
+                child: Text(
+                  loc.translate('orderInfo'),
+                  style: AppStyle.sectionHeader,
+                ),
               ),
               const SizedBox(height: 6),
               Divider(color: context.palette.divider, thickness: 0.8),
               const SizedBox(height: 24),
 
               detailAsync.when(
-                loading: () => const Center(child: CircularProgressIndicator()),
+                // The page-level loader (showPageLoader) already covers the
+                // initial fetch, so this only fires on a rare reload with no
+                // cached value — stay quiet rather than popping a 2nd spinner.
+                loading: () => const SizedBox.shrink(),
                 error: (error, _) => Text(
                   error.toString(),
-                  style: AppStyle.bodyText.copyWith(color: context.palette.textMuted),
+                  style: AppStyle.bodyText.copyWith(
+                    color: context.palette.textMuted,
+                  ),
                 ),
                 data: (order) => Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    _buildInfoRow(loc.translate('orderNumberLabel'), '#${order.orderNumber}'),
+                    _buildInfoRow(
+                      loc.translate('orderNumberLabel'),
+                      '#${order.orderNumber}',
+                    ),
                     const SizedBox(height: 12),
                     _buildInfoRow(
                       loc.translate('orderDateLabel'),
@@ -152,7 +186,10 @@ class _OrderTrackingScreenState extends ConsumerState<OrderTrackingScreen> {
                     const SizedBox(height: 12),
                     _buildInfoRow(
                       loc.translate('totalAmountLabel'),
-                      CurrencyFormatter.fromHalalas(order.totalFils, isAr: isAr),
+                      CurrencyFormatter.fromHalalas(
+                        order.totalFils,
+                        isAr: isAr,
+                      ),
                       valueColor: AppColors.primary,
                     ),
                   ],
@@ -161,13 +198,68 @@ class _OrderTrackingScreenState extends ConsumerState<OrderTrackingScreen> {
               const SizedBox(height: 20),
 
               // ─── Cancel Order Button ───
-              _buildCancelButton(loc, isAr),
-              const SizedBox(height: 32),
+              // _buildCancelButton(loc, isAr),
+              // const SizedBox(height: 32),
+
+              // ─── Order Items ───
+              detailAsync.maybeWhen(
+                data: (order) => order.items.isEmpty
+                    ? const SizedBox.shrink()
+                    : Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          Align(
+                            alignment: isAr ? Alignment.centerRight : Alignment.centerLeft,
+                            child: Text(
+                              loc.translate('productsCount'),
+                              style: AppStyle.sectionHeader,
+                            ),
+                          ),
+                          const SizedBox(height: 6),
+                          Divider(color: context.palette.divider, thickness: 0.8),
+                          const SizedBox(height: 16),
+                          for (final item in order.items)
+                            Padding(
+                              padding: const EdgeInsets.only(bottom: 12),
+                              child: _buildOrderItemRow(item, isAr),
+                            ),
+                        ],
+                      ),
+                orElse: () => const SizedBox.shrink(),
+              ),
+              const SizedBox(height: 20),
+
+              // ─── Delivery Address ───
+              detailAsync.maybeWhen(
+                data: (order) => order.shippingAddress == null
+                    ? const SizedBox.shrink()
+                    : Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          Align(
+                            alignment: isAr ? Alignment.centerRight : Alignment.centerLeft,
+                            child: Text(
+                              loc.translate('shippingAddress'),
+                              style: AppStyle.sectionHeader,
+                            ),
+                          ),
+                          const SizedBox(height: 6),
+                          Divider(color: context.palette.divider, thickness: 0.8),
+                          const SizedBox(height: 16),
+                          _buildAddressCard(order.shippingAddress!, isAr),
+                        ],
+                      ),
+                orElse: () => const SizedBox.shrink(),
+              ),
+              const SizedBox(height: 20),
 
               // ─── Order Status Header ───
               Align(
                 alignment: isAr ? Alignment.centerRight : Alignment.centerLeft,
-                child: Text(loc.translate('orderStatus'), style: AppStyle.sectionHeader),
+                child: Text(
+                  loc.translate('orderStatus'),
+                  style: AppStyle.sectionHeader,
+                ),
               ),
               const SizedBox(height: 6),
               Divider(color: context.palette.divider, thickness: 0.8),
@@ -175,49 +267,60 @@ class _OrderTrackingScreenState extends ConsumerState<OrderTrackingScreen> {
 
               // ─── Vertical Timeline ───
               trackingAsync.when(
-                loading: () => const Center(child: CircularProgressIndicator()),
+                // See detailAsync's loading branch above — the page-level
+                // loader already handles the initial fetch.
+                loading: () => const SizedBox.shrink(),
                 error: (error, _) => Text(
                   error.toString(),
-                  style: AppStyle.bodyText.copyWith(color: context.palette.textMuted),
+                  style: AppStyle.bodyText.copyWith(
+                    color: context.palette.textMuted,
+                  ),
                 ),
                 data: (tracking) => _buildTrackerTimeline(tracking, isAr),
               ),
               const SizedBox(height: 32),
 
               // ─── Confirm Delivery Button ───
-              ElevatedButton(
-                onPressed: _busy ? null : () => _onConfirmDelivery(loc),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.primary,
-                  minimumSize: const Size(double.infinity, 54),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
-                  elevation: 0,
-                ),
-                child: Row(
-                  children: [
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Text(
-                        loc.translate('confirmDelivery'),
-                        textAlign: TextAlign.start,
-                        style: AppStyle.buttonTextPrimary,
+              if (!hideActionButtons) ...[
+                ElevatedButton(
+                  onPressed: _busy ? null : () => _onConfirmDelivery(loc),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.primary,
+                    minimumSize: const Size(double.infinity, 54),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(30),
+                    ),
+                    elevation: 0,
+                  ),
+                  child: Row(
+                    children: [
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Text(
+                          loc.translate('confirmDelivery'),
+                          textAlign: TextAlign.start,
+                          style: AppStyle.buttonTextPrimary,
+                        ),
                       ),
-                    ),
-                    SvgPicture.asset(
-                      AssetsConstants.shoppingBag,
-                      width: 18,
-                      height: 18,
-                      colorFilter: const ColorFilter.mode(Colors.white, BlendMode.srcIn),
-                    ),
-                    const SizedBox(width: 12),
-                  ],
+                      SvgPicture.asset(
+                        AssetsConstants.shoppingBag,
+                        width: 18,
+                        height: 18,
+                        colorFilter: const ColorFilter.mode(
+                          Colors.white,
+                          BlendMode.srcIn,
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                    ],
+                  ),
                 ),
-              ),
-              const SizedBox(height: 12),
+                const SizedBox(height: 12),
+              ],
 
               // ─── Bottom Cancel Button ───
-              _buildCancelButton(loc, isAr),
-              const SizedBox(height: 32),
+              // _buildCancelButton(loc, isAr),
+              // const SizedBox(height: 32),
 
               // ─── Delivery Info Header ───
               trackingAsync.maybeWhen(
@@ -227,10 +330,16 @@ class _OrderTrackingScreenState extends ConsumerState<OrderTrackingScreen> {
                         crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: [
                           Center(
-                            child: Text(loc.translate('deliveryInfo'), style: AppStyle.sectionHeader),
+                            child: Text(
+                              loc.translate('deliveryInfo'),
+                              style: AppStyle.sectionHeader,
+                            ),
                           ),
                           const SizedBox(height: 6),
-                          Divider(color: context.palette.divider, thickness: 0.8),
+                          Divider(
+                            color: context.palette.divider,
+                            thickness: 0.8,
+                          ),
                           const SizedBox(height: 24),
                           _buildDeliveryCard(tracking.driver!),
                           const SizedBox(height: 24),
@@ -240,7 +349,7 @@ class _OrderTrackingScreenState extends ConsumerState<OrderTrackingScreen> {
               ),
 
               // ─── Final Cancel Button ───
-              _buildCancelButton(loc, isAr),
+              if (!hideActionButtons) _buildCancelButton(loc, isAr),
               const SizedBox(height: 24),
             ],
           ),
@@ -251,11 +360,7 @@ class _OrderTrackingScreenState extends ConsumerState<OrderTrackingScreen> {
 
   // ── Helper Widgets ──
 
-  Widget _buildInfoRow(
-    String label,
-    String value, {
-    Color? valueColor,
-  }) {
+  Widget _buildInfoRow(String label, String value, {Color? valueColor}) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
@@ -274,6 +379,66 @@ class _OrderTrackingScreenState extends ConsumerState<OrderTrackingScreen> {
             ),
           ),
         ),
+      ],
+    );
+  }
+
+  Widget _buildOrderItemRow(OrderDetailItem item, bool isAr) {
+    return Row(
+      children: [
+        ClipRRect(
+          borderRadius: BorderRadius.circular(8),
+          child: Image.network(
+            item.image,
+            width: 48,
+            height: 48,
+            fit: BoxFit.cover,
+            errorBuilder: (_, __, ___) =>
+                Container(width: 48, height: 48, color: context.palette.surfaceMuted),
+          ),
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Text(
+            item.name.resolve(isAr),
+            style: AppStyle.bodyText,
+          ),
+        ),
+        Text('x${item.quantity}', style: AppStyle.bodyText),
+      ],
+    );
+  }
+
+  Widget _buildAddressCard(OrderShippingAddress address, bool isAr) {
+    final lines = [
+      address.recipientName,
+      [
+        address.street,
+        address.block,
+        address.houseNumber,
+      ].where((s) => s.isNotEmpty).join(', '),
+      [
+        address.district,
+        address.city,
+      ].where((s) => s.isNotEmpty).join(', '),
+    ].where((s) => s.isNotEmpty).toList();
+
+    return Column(
+      crossAxisAlignment: isAr ? CrossAxisAlignment.end : CrossAxisAlignment.start,
+      children: [
+        for (final line in lines)
+          Padding(
+            padding: const EdgeInsets.only(bottom: 4),
+            child: Text(line, style: AppStyle.bodyText),
+          ),
+        if (address.phone.isNotEmpty)
+          Directionality(
+            textDirection: TextDirection.ltr,
+            child: Text(
+              address.phone,
+              style: AppStyle.bodyText.copyWith(color: context.palette.textMuted),
+            ),
+          ),
       ],
     );
   }
@@ -305,14 +470,20 @@ class _OrderTrackingScreenState extends ConsumerState<OrderTrackingScreen> {
                     AssetsConstants.moveLeft,
                     width: 18,
                     height: 18,
-                    colorFilter: ColorFilter.mode(context.palette.textPrimary, BlendMode.srcIn),
+                    colorFilter: ColorFilter.mode(
+                      context.palette.textPrimary,
+                      BlendMode.srcIn,
+                    ),
                   ),
                 )
               : SvgPicture.asset(
                   AssetsConstants.moveLeft,
                   width: 18,
                   height: 18,
-                  colorFilter: ColorFilter.mode(context.palette.textPrimary, BlendMode.srcIn),
+                  colorFilter: ColorFilter.mode(
+                    context.palette.textPrimary,
+                    BlendMode.srcIn,
+                  ),
                 ),
           const SizedBox(width: 12),
         ],
@@ -377,7 +548,9 @@ class _OrderTrackingScreenState extends ConsumerState<OrderTrackingScreen> {
   Widget _buildStepText(OrderTrackingStep step, {bool alignRight = false}) {
     final time = step.timestamp;
     return Column(
-      crossAxisAlignment: alignRight ? CrossAxisAlignment.end : CrossAxisAlignment.start,
+      crossAxisAlignment: alignRight
+          ? CrossAxisAlignment.end
+          : CrossAxisAlignment.start,
       children: [
         Text(step.label, style: AppStyle.timelineTitle),
         Text(
@@ -401,7 +574,10 @@ class _OrderTrackingScreenState extends ConsumerState<OrderTrackingScreen> {
           height: 56,
           decoration: BoxDecoration(
             shape: BoxShape.circle,
-            border: Border.all(color: AppColors.primary.withValues(alpha: 0.4), width: 1.2),
+            border: Border.all(
+              color: AppColors.primary.withValues(alpha: 0.4),
+              width: 1.2,
+            ),
           ),
           child: Center(
             child: SvgPicture.asset(

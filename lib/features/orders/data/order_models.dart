@@ -1,5 +1,16 @@
 import '../../../core/models/localized_text.dart';
 
+/// The guide's statuses read as an active/completed split even though it
+/// doesn't enumerate the full set; anything not obviously terminal is
+/// treated as "current" so an unrecognized status still shows up somewhere.
+const _terminalOrderStatuses = {
+  'DELIVERED',
+  'COMPLETED',
+  'CANCELLED',
+  'CANCELED',
+  'REFUNDED',
+};
+
 class OrderLineItem {
   final LocalizedText name;
   final int quantity;
@@ -11,7 +22,7 @@ class OrderLineItem {
     return OrderLineItem(
       name: LocalizedText.fromJson(json['name'] as Map<String, dynamic>? ?? const {}),
       quantity: (json['quantity'] as num?)?.toInt() ?? 1,
-      image: json['image']?.toString() ?? '',
+      image: (json['image'] ?? json['imageUrl'])?.toString() ?? '',
     );
   }
 }
@@ -36,21 +47,13 @@ class Order {
     this.items = const [],
   });
 
-  /// The guide's statuses read as an active/completed split even though it
-  /// doesn't enumerate the full set; anything not obviously terminal is
-  /// treated as "current" so an unrecognized status still shows up somewhere.
-  bool get isActive => !{
-        'DELIVERED',
-        'COMPLETED',
-        'CANCELLED',
-        'CANCELED',
-        'REFUNDED',
-      }.contains(status.toUpperCase());
+  bool get isActive => !_terminalOrderStatuses.contains(status.toUpperCase());
 
   factory Order.fromJson(Map<String, dynamic> json) {
+    final id = (json['_id'] ?? json['id'])?.toString() ?? '';
     return Order(
-      id: json['id']?.toString() ?? '',
-      orderNumber: json['orderNumber']?.toString() ?? '',
+      id: id,
+      orderNumber: json['orderNumber']?.toString() ?? id,
       createdAt: DateTime.tryParse(json['createdAt']?.toString() ?? ''),
       status: json['status']?.toString() ?? '',
       totalFils: (json['totalFils'] as num?)?.toInt() ?? 0,
@@ -94,7 +97,7 @@ class OrderDetailItem {
       priceFils: (json['priceFils'] as num?)?.toInt() ?? 0,
       selectedSize: json['selectedSize'] as String?,
       selectedColor: json['selectedColor'] as String?,
-      image: json['image']?.toString() ?? '',
+      image: (json['image'] ?? json['imageUrl'])?.toString() ?? '',
       brandName: (json['brand'] as Map<String, dynamic>?)?['name'] as String?,
     );
   }
@@ -103,25 +106,35 @@ class OrderDetailItem {
 class OrderShippingAddress {
   final String city;
   final String district;
+  final String block;
   final String street;
+  final String houseNumber;
   final String recipientName;
   final String phone;
 
   const OrderShippingAddress({
     required this.city,
     required this.district,
+    this.block = '',
     required this.street,
+    this.houseNumber = '',
     required this.recipientName,
     required this.phone,
   });
 
+  /// The guide's example used flat `city`/`district`/`recipientName`/`phone`,
+  /// but the real API nests the full address under the order's `addressId`
+  /// (despite the name, it's the populated address object, not just an id)
+  /// with `governorate`/`area`/`name`/`contactNumber` instead.
   factory OrderShippingAddress.fromJson(Map<String, dynamic> json) {
     return OrderShippingAddress(
-      city: json['city']?.toString() ?? '',
-      district: json['district']?.toString() ?? '',
+      city: (json['city'] ?? json['governorate'])?.toString() ?? '',
+      district: (json['district'] ?? json['area'])?.toString() ?? '',
+      block: json['block']?.toString() ?? '',
       street: json['street']?.toString() ?? '',
-      recipientName: json['recipientName']?.toString() ?? '',
-      phone: json['phone']?.toString() ?? '',
+      houseNumber: json['houseNumber']?.toString() ?? '',
+      recipientName: (json['recipientName'] ?? json['name'])?.toString() ?? '',
+      phone: (json['phone'] ?? json['contactNumber'])?.toString() ?? '',
     );
   }
 }
@@ -158,10 +171,19 @@ class OrderDetail {
     this.shippingAddress,
   });
 
+  bool get isActive => !_terminalOrderStatuses.contains(status.toUpperCase());
+
   factory OrderDetail.fromJson(Map<String, dynamic> json) {
+    final id = (json['_id'] ?? json['id'])?.toString() ?? '';
+    // The real API has no `orderNumber` field at all, so fall back to the
+    // order id (mirrors CheckoutConfirmResult.fromJson's same fallback).
+    final orderNumber = json['orderNumber']?.toString() ?? id;
+    // `shippingAddress` was the guide's field name; the real API nests the
+    // populated address object under `addressId` instead.
+    final rawAddress = json['shippingAddress'] ?? json['addressId'];
     return OrderDetail(
-      id: json['id']?.toString() ?? '',
-      orderNumber: json['orderNumber']?.toString() ?? '',
+      id: id,
+      orderNumber: orderNumber,
       status: json['status']?.toString() ?? '',
       createdAt: DateTime.tryParse(json['createdAt']?.toString() ?? ''),
       items: (json['items'] as List? ?? const [])
@@ -174,8 +196,8 @@ class OrderDetail {
       totalFils: (json['totalFils'] as num?)?.toInt() ?? 0,
       currency: json['currency'] as String? ?? 'SAR',
       deliveryMethod: json['deliveryMethod'] as String? ?? 'DELIVERY',
-      shippingAddress: json['shippingAddress'] is Map<String, dynamic>
-          ? OrderShippingAddress.fromJson(json['shippingAddress'] as Map<String, dynamic>)
+      shippingAddress: rawAddress is Map<String, dynamic>
+          ? OrderShippingAddress.fromJson(rawAddress)
           : null,
     );
   }
@@ -195,15 +217,26 @@ class OrderTrackingStep {
   });
 
   factory OrderTrackingStep.fromJson(Map<String, dynamic> json) {
+    final status = json['status']?.toString() ?? '';
     return OrderTrackingStep(
-      status: json['status']?.toString() ?? '',
-      label: json['label']?.toString() ?? '',
+      status: status,
+      // The real API sends only `status`/`completed`/`current` per step —
+      // no `label` — so humanize the status as a fallback display string.
+      label: json['label']?.toString() ?? _humanizeStatus(status),
       completed: json['completed'] as bool? ?? false,
       timestamp: json['timestamp'] == null
           ? null
           : DateTime.tryParse(json['timestamp'].toString()),
     );
   }
+}
+
+String _humanizeStatus(String status) {
+  if (status.isEmpty) return status;
+  return status
+      .split('_')
+      .map((w) => w.isEmpty ? w : w[0].toUpperCase() + w.substring(1))
+      .join(' ');
 }
 
 class OrderDriver {
@@ -214,8 +247,8 @@ class OrderDriver {
 
   factory OrderDriver.fromJson(Map<String, dynamic> json) {
     return OrderDriver(
-      name: json['name']?.toString() ?? '',
-      phone: json['phone']?.toString() ?? '',
+      name: (json['name'] ?? json['driverName'])?.toString() ?? '',
+      phone: (json['phone'] ?? json['phoneNumber'])?.toString() ?? '',
     );
   }
 }
@@ -235,14 +268,20 @@ class OrderTracking {
   });
 
   factory OrderTracking.fromJson(Map<String, dynamic> json) {
+    // The real API nests the timeline under `steps` (not `timeline`) and
+    // reports the order under `orderId`/`status` (not `orderNumber`/
+    // `currentStatus`) — see the sample response pasted while debugging the
+    // tracking screen showing an empty timeline.
+    final rawSteps = (json['timeline'] ?? json['steps']) as List? ?? const [];
+    final rawDriver = json['driver'] ?? json['delivery'];
     return OrderTracking(
-      orderNumber: json['orderNumber']?.toString() ?? '',
-      currentStatus: json['currentStatus']?.toString() ?? '',
-      timeline: (json['timeline'] as List? ?? const [])
+      orderNumber: (json['orderNumber'] ?? json['orderId'])?.toString() ?? '',
+      currentStatus: (json['currentStatus'] ?? json['status'])?.toString() ?? '',
+      timeline: rawSteps
           .map((v) => OrderTrackingStep.fromJson(v as Map<String, dynamic>))
           .toList(),
-      driver: json['driver'] is Map<String, dynamic>
-          ? OrderDriver.fromJson(json['driver'] as Map<String, dynamic>)
+      driver: rawDriver is Map<String, dynamic>
+          ? OrderDriver.fromJson(rawDriver)
           : null,
     );
   }

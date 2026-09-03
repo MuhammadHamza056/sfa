@@ -199,6 +199,13 @@ class _PreviousOrdersScreenState extends ConsumerState<PreviousOrdersScreen>
     );
   }
 
+  // `orderNumber` falls back to the raw Mongo order id when the API sends
+  // no dedicated order-number field, which is too long for the tile without
+  // wrapping/overflowing — show just enough to disambiguate visually.
+  String _shortOrderNumber(String orderNumber) {
+    return orderNumber.length > 4 ? orderNumber.substring(orderNumber.length - 4) : orderNumber;
+  }
+
   Widget _buildOrderCard(
     AppLocalizations loc,
     bool isAr,
@@ -240,7 +247,7 @@ class _PreviousOrdersScreenState extends ConsumerState<PreviousOrdersScreen>
                   style: TextStyle(fontSize: 14, color: context.palette.textMuted),
                 ),
                 Text(
-                  '#${order.orderNumber}',
+                  '#${_shortOrderNumber(order.orderNumber)}',
                   style: TextStyle(
                     fontSize: 15,
                     fontWeight: FontWeight.bold,

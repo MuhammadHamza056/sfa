@@ -30,82 +30,82 @@ class BrandsPromoBanner extends StatelessWidget {
           fit: StackFit.expand,
           children: [
             // ── Background image ──
-            CachedNetworkImage(
-              imageUrl: imageUrl,
-              fit: BoxFit.cover,
-              placeholder: (_, __) => Container(color: const Color(0xFF111111)),
-              errorWidget: (_, __, ___) =>
-                  Container(color: const Color(0xFF111111)),
-            ),
+            // CachedNetworkImage(
+            //   imageUrl: imageUrl,
+            //   fit: BoxFit.cover,
+            //   placeholder: (_, __) => Container(color: const Color(0xFF111111)),
+            //   errorWidget: (_, __, ___) =>
+            //       Container(color: const Color(0xFF111111)),
+            // ),
 
             // ── Dark/Tint overlay ──
             Container(color: Colors.black.withOpacity(0.25)),
 
             // ── Summer / Beach line drawings overlay ──
-            Positioned.fill(
-              child: CustomPaint(painter: _PromoBannerDecorationPainter()),
-            ),
+            // Positioned.fill(
+            //   child: CustomPaint(painter: _PromoBannerDecorationPainter()),
+            // ),
 
             // ── Text content — Centered ──
-            Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Text(
-                    title,
-                    textAlign: TextAlign.center,
-                    style: AppStyle.promoBannerTitle.copyWith(
-                      fontSize: 32,
-                      fontWeight: FontWeight.w900,
-                      color: Colors.white,
-                      height: 1.2,
-                      shadows: [
-                        const Shadow(
-                          color: Colors.black45,
-                          blurRadius: 8,
-                          offset: Offset(0, 2),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    subtitle,
-                    textAlign: TextAlign.center,
-                    style: AppStyle.promoBannerSubtitle.copyWith(
-                      fontSize: 22,
-                      fontWeight: FontWeight.w700,
-                      color: Colors.white,
-                      height: 1.2,
-                      shadows: [
-                        const Shadow(
-                          color: Colors.black45,
-                          blurRadius: 6,
-                          offset: Offset(0, 2),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  Container(
-                    decoration: const BoxDecoration(
-                      border: Border(
-                        bottom: BorderSide(color: Colors.white, width: 1.5),
-                      ),
-                    ),
-                    padding: const EdgeInsets.symmetric(vertical: 2),
-                    child: Text(
-                      'تسوق الآن',
-                      style: AppStyle.bodyText.copyWith(
-                        fontSize: 15,
-                        fontWeight: FontWeight.w600,
-                        color: Colors.white,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
+            // Center(
+            //   child: Column(
+            //     mainAxisAlignment: MainAxisAlignment.center,
+            //     children: [
+            //       Text(
+            //         title,
+            //         textAlign: TextAlign.center,
+            //         style: AppStyle.promoBannerTitle.copyWith(
+            //           fontSize: 32,
+            //           fontWeight: FontWeight.w900,
+            //           color: Colors.white,
+            //           height: 1.2,
+            //           shadows: [
+            //             const Shadow(
+            //               color: Colors.black45,
+            //               blurRadius: 8,
+            //               offset: Offset(0, 2),
+            //             ),
+            //           ],
+            //         ),
+            //       ),
+            //       const SizedBox(height: 4),
+            //       Text(
+            //         subtitle,
+            //         textAlign: TextAlign.center,
+            //         style: AppStyle.promoBannerSubtitle.copyWith(
+            //           fontSize: 22,
+            //           fontWeight: FontWeight.w700,
+            //           color: Colors.white,
+            //           height: 1.2,
+            //           shadows: [
+            //             const Shadow(
+            //               color: Colors.black45,
+            //               blurRadius: 6,
+            //               offset: Offset(0, 2),
+            //             ),
+            //           ],
+            //         ),
+            //       ),
+            //       const SizedBox(height: 16),
+            //       Container(
+            //         decoration: const BoxDecoration(
+            //           border: Border(
+            //             bottom: BorderSide(color: Colors.white, width: 1.5),
+            //           ),
+            //         ),
+            //         padding: const EdgeInsets.symmetric(vertical: 2),
+            //         child: Text(
+            //           'تسوق الآن',
+            //           style: AppStyle.bodyText.copyWith(
+            //             fontSize: 15,
+            //             fontWeight: FontWeight.w600,
+            //             color: Colors.white,
+            //           ),
+            //         ),
+            //       ),
+            //     ],
+            //   ),
+            // ),
           ],
         ),
       ),

@@ -1,14 +1,8 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_svg/flutter_svg.dart';
-import 'package:go_router/go_router.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:sfa/core/localization/app_localizations.dart';
-import 'package:sfa/core/providers/nav_providers.dart';
-import 'package:sfa/core/widgets/cart_icon_button.dart';
 import 'package:sfa/utils/app_style.dart';
-import 'package:sfa/utils/assets_constants.dart';
 import 'package:sfa/features/brands/providers/brands_provider.dart';
 
 class BrandsHeader extends ConsumerWidget {
@@ -45,269 +39,189 @@ class BrandsHeader extends ConsumerWidget {
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          SafeArea(
-            bottom: false,
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(16, 4, 16, 0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  // ── Custom AppBar ──
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      // Left side: Shopping Bag & Heart
-                      Row(
-                        children: [
-                          CartIconButton(
-                            icon: AssetsConstants.shoppingBag,
-                            color: Colors.white,
-                            size: 24,
-                          ),
-                          const SizedBox(width: 4),
-                          IconButton(
-                            icon: SvgPicture.asset(
-                              AssetsConstants.heart2,
-                              colorFilter: const ColorFilter.mode(
-                                Colors.white,
-                                BlendMode.srcIn,
-                              ),
-                              width: 24,
-                              height: 24,
-                            ),
-                            onPressed: () => context.push('/favorites'),
-                          ),
-                        ],
-                      ),
-                      // Center: SFA Serif Logo
-                      Text(
-                        'SFA',
-                        style: GoogleFonts.playfairDisplay(
-                          color: Colors.white,
-                          fontSize: 38,
-                          fontWeight: FontWeight.w500,
-                          letterSpacing: 1.5,
-                        ),
-                      ),
-                      // Right side: Search & Menu
-                      Row(
-                        children: [
-                          // IconButton(
-                          //   icon: SvgPicture.asset(
-                          //     AssetsConstants.search,
-                          //     colorFilter: const ColorFilter.mode(
-                          //       Colors.white,
-                          //       BlendMode.srcIn,
-                          //     ),
-                          //     width: 24,
-                          //     height: 24,
-                          //   ),
-                          //   onPressed: () {},
-                          // ),
-                          const SizedBox(width: 4),
-                          IconButton(
-                            icon: SvgPicture.asset(
-                              AssetsConstants.menu,
-                              colorFilter: const ColorFilter.mode(
-                                Colors.white,
-                                BlendMode.srcIn,
-                              ),
-                              width: 24,
-                              height: 24,
-                            ),
-                            onPressed: () =>
-                                ref.read(drawerOpenProvider.notifier).state =
-                                    true,
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 4, 16, 0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                // Divider Line
+                Container(
+                  height: 1,
+                  color: Colors.white.withOpacity(0.18),
+                  margin: const EdgeInsets.only(top: 4, bottom: 16),
+                ),
 
-                  // Divider Line
-                  Container(
-                    height: 1,
-                    color: Colors.white.withOpacity(0.18),
-                    margin: const EdgeInsets.only(top: 4, bottom: 16),
-                  ),
-
-                  // ── Heading (Right-aligned) ──
-                  Align(
-                    alignment: isAr
-                        ? Alignment.centerRight
-                        : Alignment.centerLeft,
-                    child: Text(
-                      heading,
-                      style: AppStyle.headerHeading.copyWith(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w600,
-                        color: Colors.white,
-                      ),
+                // ── Heading (Right-aligned) ──
+                Align(
+                  alignment: isAr
+                      ? Alignment.centerRight
+                      : Alignment.centerLeft,
+                  child: Text(
+                    heading,
+                    style: AppStyle.headerHeading.copyWith(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.white,
                     ),
                   ),
+                ),
 
-                  const SizedBox(height: 16),
+                const SizedBox(height: 16),
 
-                  // ── Gender tabs ──
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                    children: List.generate(genderTabs.length, (i) {
-                      final isSelected = state.selectedGender == i;
-                      return GestureDetector(
-                        onTap: () =>
-                            ref.read(brandsProvider.notifier).changeGender(i),
-                        child: isSelected
-                            ? Column(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  ClipRRect(
-                                    borderRadius: BorderRadius.circular(8),
-                                    child: BackdropFilter(
-                                      filter: ImageFilter.blur(
-                                        sigmaX: 10,
-                                        sigmaY: 10,
+                // ── Gender tabs ──
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                  children: List.generate(genderTabs.length, (i) {
+                    final isSelected = state.selectedGender == i;
+                    return GestureDetector(
+                      onTap: () =>
+                          ref.read(brandsProvider.notifier).changeGender(i),
+                      child: isSelected
+                          ? Column(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                ClipRRect(
+                                  borderRadius: BorderRadius.circular(8),
+                                  child: BackdropFilter(
+                                    filter: ImageFilter.blur(
+                                      sigmaX: 10,
+                                      sigmaY: 10,
+                                    ),
+                                    child: Container(
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 32,
+                                        vertical: 10,
                                       ),
-                                      child: Container(
-                                        padding: const EdgeInsets.symmetric(
-                                          horizontal: 32,
-                                          vertical: 10,
+                                      decoration: BoxDecoration(
+                                        color: Colors.white.withOpacity(0.18),
+                                        borderRadius: BorderRadius.circular(8),
+                                        border: Border.all(
+                                          color: Colors.white.withOpacity(0.35),
+                                          width: 1,
                                         ),
-                                        decoration: BoxDecoration(
-                                          color: Colors.white.withOpacity(0.18),
-                                          borderRadius: BorderRadius.circular(
-                                            8,
-                                          ),
-                                          border: Border.all(
-                                            color: Colors.white.withOpacity(
-                                              0.35,
-                                            ),
-                                            width: 1,
-                                          ),
-                                        ),
-                                        child: Text(
-                                          genderTabs[i],
-                                          style: AppStyle.tabSelected.copyWith(
-                                            fontSize: 16,
-                                            fontWeight: FontWeight.w700,
-                                            color: Colors.white,
-                                          ),
+                                      ),
+                                      child: Text(
+                                        genderTabs[i],
+                                        style: AppStyle.tabSelected.copyWith(
+                                          fontSize: 16,
+                                          fontWeight: FontWeight.w700,
+                                          color: Colors.white,
                                         ),
                                       ),
                                     ),
                                   ),
-                                  CustomPaint(
-                                    size: const Size(12, 6),
-                                    painter: _DownCaretPainter(),
-                                  ),
-                                ],
-                              )
-                            : Padding(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 24,
-                                  vertical: 10,
                                 ),
-                                child: Text(
-                                  genderTabs[i],
-                                  style: AppStyle.tabUnselected.copyWith(
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.w400,
-                                    color: Colors.white.withOpacity(0.70),
-                                  ),
+                                CustomPaint(
+                                  size: const Size(12, 6),
+                                  painter: _DownCaretPainter(),
+                                ),
+                              ],
+                            )
+                          : Padding(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 24,
+                                vertical: 10,
+                              ),
+                              child: Text(
+                                genderTabs[i],
+                                style: AppStyle.tabUnselected.copyWith(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w400,
+                                  color: Colors.white.withOpacity(0.70),
                                 ),
                               ),
-                      );
-                    }),
-                  ),
-
-                  const SizedBox(height: 16),
-
-                  // ── Category row ──
-                  SingleChildScrollView(
-                    scrollDirection: Axis.horizontal,
-                    reverse: isAr,
-                    child: Row(
-                      children: List.generate(categories.length, (i) {
-                        final sel = state.selectedCategory == i;
-                        return GestureDetector(
-                          onTap: () => ref
-                              .read(brandsProvider.notifier)
-                              .changeCategory(i),
-                          child: Padding(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 16,
-                              vertical: 4,
                             ),
-                            child: Text(
-                              categories[i],
-                              style: AppStyle.categoryLabel.copyWith(
-                                fontSize: 15,
-                                fontWeight: sel
-                                    ? FontWeight.w700
-                                    : FontWeight.w400,
-                                color: sel
-                                    ? Colors.white
-                                    : Colors.white.withOpacity(0.60),
-                              ),
-                            ),
+                    );
+                  }),
+                ),
+
+                const SizedBox(height: 16),
+
+                // ── Category row ──
+                SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  reverse: isAr,
+                  child: Row(
+                    children: List.generate(categories.length, (i) {
+                      final sel = state.selectedCategory == i;
+                      return GestureDetector(
+                        onTap: () =>
+                            ref.read(brandsProvider.notifier).changeCategory(i),
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 16,
+                            vertical: 4,
                           ),
-                        );
-                      }),
-                    ),
-                  ),
-
-                  const SizedBox(height: 20),
-
-                  // ── Search bar — transparent with white outline ──
-                  Container(
-                    height: 48,
-                    decoration: BoxDecoration(
-                      color: Colors.transparent,
-                      borderRadius: BorderRadius.circular(10),
-                      border: Border.all(
-                        color: Colors.white.withOpacity(0.75),
-                        width: 1.2,
-                      ),
-                    ),
-                    child: Row(
-                      children: [
-                        const SizedBox(width: 16),
-                        Expanded(
-                          child: TextField(
-                            textAlign: isAr ? TextAlign.end : TextAlign.start,
-                            style: AppStyle.searchHint.copyWith(
-                              fontSize: 13,
-                              color: Colors.white,
-                            ),
-                            decoration: InputDecoration(
-                              hintText: searchHint,
-                              hintStyle: AppStyle.searchHint.copyWith(
-                                fontSize: 13,
-                                color: Colors.white.withOpacity(0.60),
-                              ),
-                              border: InputBorder.none,
-                              isDense: true,
-                              contentPadding: EdgeInsets.zero,
+                          child: Text(
+                            categories[i],
+                            style: AppStyle.categoryLabel.copyWith(
+                              fontSize: 15,
+                              fontWeight: sel
+                                  ? FontWeight.w700
+                                  : FontWeight.w400,
+                              color: sel
+                                  ? Colors.white
+                                  : Colors.white.withOpacity(0.60),
                             ),
                           ),
                         ),
-                        // Padding(
-                        //   padding: const EdgeInsets.only(right: 14, left: 10),
-                        //   child: SvgPicture.asset(
-                        //     AssetsConstants.search2,
-                        //     colorFilter: const ColorFilter.mode(
-                        //       Colors.white,
-                        //       BlendMode.srcIn,
-                        //     ),
-                        //     width: 18,
-                        //     height: 18,
-                        //   ),
-                        // ),
-                      ],
+                      );
+                    }),
+                  ),
+                ),
+
+                const SizedBox(height: 20),
+
+                // ── Search bar — transparent with white outline ──
+                Container(
+                  height: 48,
+                  decoration: BoxDecoration(
+                    color: Colors.transparent,
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(
+                      color: Colors.white.withOpacity(0.75),
+                      width: 1.2,
                     ),
                   ),
-                  const SizedBox(height: 2),
-                ],
-              ),
+                  child: Row(
+                    children: [
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: TextField(
+                          textAlign: isAr ? TextAlign.end : TextAlign.start,
+                          style: AppStyle.searchHint.copyWith(
+                            fontSize: 13,
+                            color: Colors.white,
+                          ),
+                          decoration: InputDecoration(
+                            hintText: searchHint,
+                            hintStyle: AppStyle.searchHint.copyWith(
+                              fontSize: 13,
+                              color: Colors.white.withOpacity(0.60),
+                            ),
+                            border: InputBorder.none,
+                            isDense: true,
+                            contentPadding: EdgeInsets.zero,
+                          ),
+                        ),
+                      ),
+                      // Padding(
+                      //   padding: const EdgeInsets.only(right: 14, left: 10),
+                      //   child: SvgPicture.asset(
+                      //     AssetsConstants.search2,
+                      //     colorFilter: const ColorFilter.mode(
+                      //       Colors.white,
+                      //       BlendMode.srcIn,
+                      //     ),
+                      //     width: 18,
+                      //     height: 18,
+                      //   ),
+                      // ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 2),
+              ],
             ),
           ),
         ],

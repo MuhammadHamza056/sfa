@@ -9,17 +9,13 @@ class ReelsRepository {
 
   final ApiClient _client;
 
-  /// M68: Social commerce reels video feed
-  Future<ApiResult<List<Reel>>> getReels({int page = 1, int limit = 20}) {
-    return _client.get<List<Reel>>(
+  /// M68: Social commerce reels video feed. Paginated — `{ items, total,
+  /// page, limit, totalPages }`.
+  Future<ApiResult<ReelsPage>> getReels({int page = 1, int limit = 10}) {
+    return _client.get<ReelsPage>(
       ApiEndpoints.reels,
       queryParameters: {'page': page, 'limit': limit},
-      fromJson: (data) {
-        final raw = data is Map<String, dynamic> && data['items'] is List
-            ? data['items'] as List
-            : (data is List ? data : const []);
-        return raw.map((v) => Reel.fromJson(v as Map<String, dynamic>)).toList();
-      },
+      fromJson: (data) => ReelsPage.fromJson(data as Map<String, dynamic>? ?? const {}),
     );
   }
 

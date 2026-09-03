@@ -36,11 +36,26 @@ class NotificationsScreen extends ConsumerWidget {
     final offersAsync = ref.watch(offerNotificationsProvider);
     final notificationsAsync = ref.watch(notificationsListProvider);
 
-    final Color statActiveBg = context.isDarkMode ? const Color(0xFF631731) : const Color(0xFFF4ECE1);
-    final Color statBg = context.isDarkMode ? context.palette.surfaceAlt : const Color(0xFFF8F8F8);
-    final Color promoSoftBg = context.isDarkMode ? const Color(0xFF631731) : const Color(0xFFF6F6F6);
-    final Color promoStrongBg = context.isDarkMode ? Colors.white : const Color(0xFF3F1B24);
-    final Color promoStrongText = context.isDarkMode ? const Color(0xFF451425) : Colors.white;
+    final Color statActiveBg = context.isDarkMode
+        ? const Color(0xFF631731)
+        : const Color(0xFFF4ECE1);
+    final Color statBg = context.isDarkMode
+        ? context.palette.surfaceAlt
+        : const Color(0xFFF8F8F8);
+    final Color promoSoftBg = context.isDarkMode
+        ? const Color(0xFF631731)
+        : const Color(0xFFF6F6F6);
+    final Color promoStrongBg = context.isDarkMode
+        ? Colors.white
+        : const Color(0xFF3F1B24);
+    final Color promoStrongText = context.isDarkMode
+        ? const Color(0xFF451425)
+        : Colors.white;
+
+    final bool isInitialLoading =
+        (statsAsync.isLoading && !statsAsync.hasValue) ||
+        (offersAsync.isLoading && !offersAsync.hasValue) ||
+        (notificationsAsync.isLoading && !notificationsAsync.hasValue);
 
     return Scaffold(
       backgroundColor: context.palette.background,
@@ -54,26 +69,40 @@ class NotificationsScreen extends ConsumerWidget {
               ref.invalidate(offerNotificationsProvider);
               ref.invalidate(notificationsListProvider);
             },
-            child: SingleChildScrollView(
+            child: isInitialLoading
+                ? const Center(child: CircularProgressIndicator())
+                : SingleChildScrollView(
               physics: const AlwaysScrollableScrollPhysics(),
-              padding: const EdgeInsets.symmetric(horizontal: Values.horizontalPadding, vertical: 10),
+              padding: const EdgeInsets.symmetric(
+                horizontal: Values.horizontalPadding,
+                vertical: 10,
+              ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   // 1. Order Statistics Header
                   Text(
                     loc.translate('orderStatistics'),
-                    style: AppStyle.welcomeTitle.copyWith(fontSize: 16, fontWeight: FontWeight.bold),
+                    style: AppStyle.welcomeTitle.copyWith(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                   const SizedBox(height: 16),
-                  Divider(height: 1, thickness: 0.5, color: context.palette.divider),
+                  Divider(
+                    height: 1,
+                    thickness: 0.5,
+                    color: context.palette.divider,
+                  ),
                   const SizedBox(height: 16),
 
                   statsAsync.when(
-                    loading: () => const Center(child: CircularProgressIndicator()),
+                    loading: () => const SizedBox.shrink(),
                     error: (error, _) => Text(
                       error.toString(),
-                      style: AppStyle.bodyText.copyWith(color: context.palette.textMuted),
+                      style: AppStyle.bodyText.copyWith(
+                        color: context.palette.textMuted,
+                      ),
                     ),
                     data: (stats) => GridView.count(
                       shrinkWrap: true,
@@ -100,7 +129,9 @@ class NotificationsScreen extends ConsumerWidget {
                         OrderStatsCard(
                           iconPath: AssetsConstants.truck,
                           count: '${stats.totalOrders}',
-                          label: loc.isArabic ? 'إجمالي الطلبات' : 'Total Orders',
+                          label: loc.isArabic
+                              ? 'إجمالي الطلبات'
+                              : 'Total Orders',
                           backgroundColor: statBg,
                           iconColor: context.palette.textPrimary,
                         ),
@@ -114,25 +145,26 @@ class NotificationsScreen extends ConsumerWidget {
                       ],
                     ),
                   ),
-                  const SizedBox(height: 28),
+                  // const SizedBox(height: 28),
 
                   // 2. Offers & Discounts Header
-                  Text(
-                    loc.translate('offersAndDiscounts'),
-                    style: AppStyle.welcomeTitle.copyWith(fontSize: 16, fontWeight: FontWeight.bold),
-                  ),
-                  const SizedBox(height: 16),
-                  Divider(height: 1, thickness: 0.5, color: context.palette.divider),
-                  const SizedBox(height: 16),
-
-                  const NationalDayHeroBanner(),
-                  const SizedBox(height: 16),
-
+                  // Text(
+                  //   loc.translate('offersAndDiscounts'),
+                  //   style: AppStyle.welcomeTitle.copyWith(fontSize: 16, fontWeight: FontWeight.bold),
+                  // ),
+                  // const SizedBox(height: 16),
+                  // Divider(height: 1, thickness: 0.5, color: context.palette.divider),
+                  // const SizedBox(height: 16),
+                  //
+                  // const NationalDayHeroBanner(),
+                  // const SizedBox(height: 16),
                   offersAsync.when(
-                    loading: () => const Center(child: CircularProgressIndicator()),
+                    loading: () => const SizedBox.shrink(),
                     error: (error, _) => Text(
                       error.toString(),
-                      style: AppStyle.bodyText.copyWith(color: context.palette.textMuted),
+                      style: AppStyle.bodyText.copyWith(
+                        color: context.palette.textMuted,
+                      ),
                     ),
                     data: (offers) {
                       if (offers.isEmpty) return const SizedBox.shrink();
@@ -145,10 +177,21 @@ class NotificationsScreen extends ConsumerWidget {
                               PromoCard(
                                 badgeText: offers[i].badgeText ?? '',
                                 titleText: offers[i].title,
-                                backgroundColor: i.isEven ? promoSoftBg : promoStrongBg,
-                                badgeColor: i.isEven ? AppColors.primary : const Color(0xFFC5A880),
-                                titleColor: i.isEven ? context.palette.textPrimary : promoStrongText,
-                                border: i.isEven ? Border.all(color: context.palette.divider, width: 1.2) : null,
+                                backgroundColor: i.isEven
+                                    ? promoSoftBg
+                                    : promoStrongBg,
+                                badgeColor: i.isEven
+                                    ? AppColors.primary
+                                    : const Color(0xFFC5A880),
+                                titleColor: i.isEven
+                                    ? context.palette.textPrimary
+                                    : promoStrongText,
+                                border: i.isEven
+                                    ? Border.all(
+                                        color: context.palette.divider,
+                                        width: 1.2,
+                                      )
+                                    : null,
                               ),
                             ],
                           ],
@@ -164,44 +207,63 @@ class NotificationsScreen extends ConsumerWidget {
                     children: [
                       Text(
                         loc.translate('recentNotifications'),
-                        style: AppStyle.welcomeTitle.copyWith(fontSize: 16, fontWeight: FontWeight.bold),
+                        style: AppStyle.welcomeTitle.copyWith(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
                       TextButton(
                         onPressed: () async {
-                          final result = await ref.read(notificationsRepositoryProvider).markAllRead();
+                          final result = await ref
+                              .read(notificationsRepositoryProvider)
+                              .markAllRead();
                           if (result.isSuccess) {
                             ref.invalidate(notificationsListProvider);
                           }
                         },
                         child: Text(
                           loc.isArabic ? 'تعليم الكل كمقروء' : 'Mark all read',
-                          style: AppStyle.subtitleDesc.copyWith(fontSize: 13, color: AppColors.primary),
+                          style: AppStyle.subtitleDesc.copyWith(
+                            fontSize: 13,
+                            color: AppColors.primary,
+                          ),
                         ),
                       ),
                     ],
                   ),
-                  Divider(height: 1, thickness: 0.5, color: context.palette.divider),
+                  Divider(
+                    height: 1,
+                    thickness: 0.5,
+                    color: context.palette.divider,
+                  ),
                   const SizedBox(height: 16),
 
                   notificationsAsync.when(
-                    loading: () => const Center(child: CircularProgressIndicator()),
+                    loading: () => const SizedBox.shrink(),
                     error: (error, _) => Text(
                       error.toString(),
-                      style: AppStyle.bodyText.copyWith(color: context.palette.textMuted),
+                      style: AppStyle.bodyText.copyWith(
+                        color: context.palette.textMuted,
+                      ),
                     ),
                     data: (notifications) {
                       if (notifications.isEmpty) {
                         return Text(
                           loc.isArabic ? 'لا توجد إشعارات' : 'No notifications',
-                          style: AppStyle.bodyText.copyWith(color: context.palette.textMuted),
+                          style: AppStyle.bodyText.copyWith(
+                            color: context.palette.textMuted,
+                          ),
                         );
                       }
                       return ListView.separated(
                         shrinkWrap: true,
                         physics: const NeverScrollableScrollPhysics(),
                         itemCount: notifications.length,
-                        separatorBuilder: (_, __) =>
-                            Divider(height: 1, thickness: 0.5, color: context.palette.divider),
+                        separatorBuilder: (_, __) => Divider(
+                          height: 1,
+                          thickness: 0.5,
+                          color: context.palette.divider,
+                        ),
                         itemBuilder: (context, index) {
                           final notification = notifications[index];
                           return Opacity(

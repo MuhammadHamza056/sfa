@@ -79,9 +79,9 @@ class CartLineItem {
     return CartLineItem(
       id: (json['cartItemId'] ?? json['id'])?.toString() ?? '',
       productId: (json['productId'] ?? json['itemId'])?.toString() ?? '',
-      name: LocalizedText.fromJson(json['name'] as Map<String, dynamic>? ?? const {}),
-      imageUrl: json['image']?.toString() ??
-          json['imageUrl']?.toString() ??
+      name: LocalizedText.fromDynamic(json['name']),
+      imageUrl: json['imageUrl']?.toString() ??
+          json['image']?.toString() ??
           (images != null && images.isNotEmpty ? images.first.toString() : ''),
       brandName: brandNameOverride ??
           (json['brand'] as Map<String, dynamic>?)?['name'] as String? ??
@@ -90,7 +90,7 @@ class CartLineItem {
       quantity: quantity,
       selectedSize: json['selectedSize'] as String?,
       selectedColor: json['selectedColor'] as String?,
-      addons: (json['selectedAddons'] as List? ?? const [])
+      addons: ((json['addons'] ?? json['selectedAddons']) as List? ?? const [])
           .map((v) => CartAddon.fromJson(v as Map<String, dynamic>))
           .toList(),
       itemTotalFils: (json['lineTotalFils'] as num?)?.toInt() ??
@@ -142,9 +142,7 @@ class CartData {
     if (vendors != null) {
       items = vendors.expand((vendorJson) {
         final vendor = vendorJson as Map<String, dynamic>;
-        final vendorName = LocalizedText.fromJson(
-          vendor['vendorName'] as Map<String, dynamic>? ?? const {},
-        );
+        final vendorName = LocalizedText.fromDynamic(vendor['vendorName']);
         return (vendor['items'] as List? ?? const []).map(
           (v) => CartLineItem.fromJson(
             v as Map<String, dynamic>,

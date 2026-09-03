@@ -11,6 +11,23 @@ const _terminalOrderStatuses = {
   'REFUNDED',
 };
 
+/// Response of `send-delivery-otp` — mirrors auth's `OtpRequestResult`.
+/// Non-production backends echo the OTP straight back (`debugOtp`) so the
+/// delivery-OTP screen can prefill it without a real SMS.
+class DeliveryOtpRequestResult {
+  final int? expiresInSeconds;
+  final String? debugOtp;
+
+  const DeliveryOtpRequestResult({this.expiresInSeconds, this.debugOtp});
+
+  factory DeliveryOtpRequestResult.fromJson(Map<String, dynamic> json) {
+    return DeliveryOtpRequestResult(
+      expiresInSeconds: (json['otpExpiresInSeconds'] as num?)?.toInt(),
+      debugOtp: json['otp']?.toString(),
+    );
+  }
+}
+
 class OrderLineItem {
   final LocalizedText name;
   final int quantity;

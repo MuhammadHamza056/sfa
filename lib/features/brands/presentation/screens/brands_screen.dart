@@ -9,6 +9,7 @@ import 'package:sfa/core/widgets/cart_icon_button.dart';
 import 'package:sfa/features/brands/presentation/widgets/brands_grid.dart';
 import 'package:sfa/features/brands/presentation/widgets/brands_header.dart';
 // import 'package:sfa/features/brands/presentation/widgets/brands_promo_banner.dart';
+import 'package:sfa/features/brands/providers/brands_provider.dart';
 import 'package:sfa/features/catalog/providers/catalog_providers.dart';
 import 'package:sfa/core/theme/app_palette.dart';
 import 'package:sfa/utils/app_style.dart';
@@ -26,7 +27,16 @@ class BrandsScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final loc = AppLocalizations.of(context);
     final isAr = loc.isArabic;
-    final brandsAsync = ref.watch(brandsListProvider);
+    final selectedCategoryId = ref.watch(brandsProvider).selectedCategoryId;
+    final categoriesAsync = ref.watch(brandCategoriesProvider);
+    final brandsAsync = selectedCategoryId.isEmpty
+        ? ref.watch(brandsListProvider)
+        : ref.watch(brandsByCategoryProvider(selectedCategoryId));
+
+    // Categories (used by BrandsHeader's chip row) and brands both fetch on
+    // entry; gating the one loader below on both means the header and grid
+    // populate together instead of a second spinner flashing separately.
+    final isLoading = categoriesAsync.isLoading || brandsAsync.isLoading;
 
     return Directionality(
       textDirection: isAr ? TextDirection.rtl : TextDirection.ltr,
@@ -58,23 +68,28 @@ class BrandsScreen extends ConsumerWidget {
                       // ── Header: heading + tabs + categories + search ──
                       const BrandsHeader(),
                       const SizedBox(height: 15),
-                      brandsAsync.when(
-                        loading: () => const SizedBox(
-                          height: 300,
-                          child: Center(child: CircularProgressIndicator()),
-                        ),
-                        error: (error, _) => SizedBox(
-                          height: 300,
-                          child: Center(
-                            child: Text(
-                              error.toString(),
-                              style: AppStyle.bodyText.copyWith(
-                                color: context.palette.textMuted,
+                      Builder(
+                        builder: (context) {
+                          if (isLoading) {
+                            return const SizedBox(
+                              height: 300,
+                              child: Center(child: CircularProgressIndicator()),
+                            );
+                          }
+                          if (brandsAsync.hasError) {
+                            return SizedBox(
+                              height: 300,
+                              child: Center(
+                                child: Text(
+                                  brandsAsync.error.toString(),
+                                  style: AppStyle.bodyText.copyWith(
+                                    color: context.palette.textMuted,
+                                  ),
+                                ),
                               ),
-                            ),
-                          ),
-                        ),
-                        data: (brands) {
+                            );
+                          }
+                          final brands = brandsAsync.value ?? const [];
                           if (brands.isEmpty) {
                             return SizedBox(
                               height: 300,
@@ -186,8 +201,7 @@ class _BrandsAppBar extends ConsumerWidget implements PreferredSizeWidget {
               width: 24,
               height: 24,
             ),
-            onPressed: () =>
-                ref.read(drawerOpenProvider.notifier).state = true,
+            onPressed: () => ref.read(drawerOpenProvider.notifier).state = true,
           ),
         ),
       ],

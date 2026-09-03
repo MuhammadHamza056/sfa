@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:sfa/features/orders/data/refund_models.dart';
 import 'package:sfa/features/orders/providers/orders_provider.dart';
 import 'package:sfa/features/orders/providers/refunds_providers.dart';
+import 'package:sfa/utils/order_id_formatter.dart';
 import 'package:sfa/utils/currency_formatter.dart';
 import 'package:sfa/core/theme/app_palette.dart';
 import 'package:sfa/core/widgets/primary_app_bar.dart';
@@ -58,7 +59,8 @@ class _RefundStatusScreenState extends ConsumerState<RefundStatusScreen> {
             child: Text(error.toString(), style: TextStyle(color: context.palette.textMuted)),
           ),
           data: (refund) {
-            final titleText = '${loc.translate('refundRequestTitle')} #${refund.orderId}';
+            final titleText =
+                '${loc.translate('refundRequestTitle')} #${OrderIdFormatter.shorten(refund.orderId)}';
             // Map the refund's real status onto the 3-milestone UI: doc
             // gives no per-refund timeline (unlike orders' M52), so this is
             // a best-faith reduction of `stageIndex` into 3 buckets.

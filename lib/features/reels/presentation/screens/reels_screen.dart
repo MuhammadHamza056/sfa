@@ -162,7 +162,13 @@ class _ReelsScreenState extends ConsumerState<ReelsScreen> {
             _initialized = true;
             _initReels(feedState.items);
           });
-        } else if (feedState.items.length != _reels.length) {
+        } else if (!identical(feedState.items, _reels)) {
+          // Covers both pagination (list grows) and an in-place like/save
+          // toggle (same length, new list instance from the notifier's
+          // `_replace`) — a length-only check missed the latter, so a
+          // like/save never made it past the provider into this screen's
+          // cached `_reels`, and the heart/bookmark icon never visually
+          // updated even though the API call succeeded.
           setState(() => _reels = feedState.items);
         }
       });
@@ -176,13 +182,20 @@ class _ReelsScreenState extends ConsumerState<ReelsScreen> {
       body: Stack(
         children: [
           feedAsync.when(
-            loading: () => const Center(child: CircularProgressIndicator(color: Colors.white)),
+            loading: () => const Center(
+              child: CircularProgressIndicator(color: Colors.white),
+            ),
             error: (error, _) => Center(
-              child: Text(error.toString(), style: const TextStyle(color: Colors.white)),
+              child: Text(
+                error.toString(),
+                style: const TextStyle(color: Colors.white),
+              ),
             ),
             data: (feedState) {
               if (!_initialized) {
-                return const Center(child: CircularProgressIndicator(color: Colors.white));
+                return const Center(
+                  child: CircularProgressIndicator(color: Colors.white),
+                );
               }
               if (_reels.isEmpty) {
                 return Center(
@@ -401,9 +414,16 @@ class _ReelPageItemState extends ConsumerState<_ReelPageItem>
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    const Icon(Icons.error_outline, color: Colors.white, size: 48),
+                    const Icon(
+                      Icons.error_outline,
+                      color: Colors.white,
+                      size: 48,
+                    ),
                     const SizedBox(height: 16),
-                    Text(loc.translate('videoError'), style: const TextStyle(color: Colors.white)),
+                    Text(
+                      loc.translate('videoError'),
+                      style: const TextStyle(color: Colors.white),
+                    ),
                   ],
                 ),
               )
@@ -422,7 +442,9 @@ class _ReelPageItemState extends ConsumerState<_ReelPageItem>
             else if (reel.thumbnailUrl.isNotEmpty)
               CachedNetworkImage(imageUrl: reel.thumbnailUrl, fit: BoxFit.cover)
             else
-              const Center(child: CircularProgressIndicator(color: Colors.white)),
+              const Center(
+                child: CircularProgressIndicator(color: Colors.white),
+              ),
 
             // Dark overlay for readability
             Container(
@@ -452,7 +474,11 @@ class _ReelPageItemState extends ConsumerState<_ReelPageItem>
                         color: Colors.black.withValues(alpha: 0.55),
                         shape: BoxShape.circle,
                       ),
-                      child: Icon(state.playPauseIcon, size: 48, color: Colors.white),
+                      child: Icon(
+                        state.playPauseIcon,
+                        size: 48,
+                        color: Colors.white,
+                      ),
                     ),
                   ),
                 ),
@@ -466,28 +492,39 @@ class _ReelPageItemState extends ConsumerState<_ReelPageItem>
               child: Column(
                 children: [
                   _buildSidebarButton(
-                    icon: reel.isLiked ? AssetsConstants.heartFilled : AssetsConstants.heart2,
+                    icon: reel.isLiked
+                        ? AssetsConstants.heartFilled
+                        : AssetsConstants.heart2,
                     label: formatReelCount(reel.likesCount),
                     tint: reel.isLiked ? AppColors.primary : Colors.white,
-                    onTap: () => ref.read(reelsFeedProvider.notifier).toggleLike(reel.id),
+                    onTap: () => ref
+                        .read(reelsFeedProvider.notifier)
+                        .toggleLike(reel.id),
                   ),
                   const SizedBox(height: 16),
                   _buildSidebarButton(
                     icon: AssetsConstants.bookmark,
-                    label: reel.isSaved ? loc.translate('reelSaved') : loc.translate('reelSave'),
+                    label: reel.isSaved
+                        ? loc.translate('reelSaved')
+                        : loc.translate('reelSave'),
                     tint: reel.isSaved ? AppColors.primary : Colors.white,
-                    onTap: () => ref.read(reelsFeedProvider.notifier).toggleSave(reel.id),
+                    onTap: () => ref
+                        .read(reelsFeedProvider.notifier)
+                        .toggleSave(reel.id),
                   ),
                   const SizedBox(height: 16),
                   _buildSidebarButton(
                     icon: AssetsConstants.iconShare2,
                     label: loc.translate('reelShare'),
                     onTap: () async {
-                      final result =
-                          await ref.read(reelsRepositoryProvider).getShareLink(reel.id);
+                      final result = await ref
+                          .read(reelsRepositoryProvider)
+                          .getShareLink(reel.id);
                       final link = result.dataOrNull;
                       if (link != null && link.isNotEmpty) {
-                        Share.share(link);
+                        SharePlus.instance.share(
+                          ShareParams(uri: Uri.parse(link)),
+                        );
                       }
                     },
                   ),
@@ -498,7 +535,10 @@ class _ReelPageItemState extends ConsumerState<_ReelPageItem>
                       height: 44,
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
-                        border: Border.all(color: AppColors.goldAccent, width: 1.5),
+                        border: Border.all(
+                          color: AppColors.goldAccent,
+                          width: 1.5,
+                        ),
                         image: DecorationImage(
                           image: CachedNetworkImageProvider(reel.brand!.logo!),
                           fit: BoxFit.cover,
@@ -517,51 +557,55 @@ class _ReelPageItemState extends ConsumerState<_ReelPageItem>
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      if (reel.brand?.logo != null)
-                        Container(
-                          width: 36,
-                          height: 36,
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            border: Border.all(color: AppColors.goldAccent, width: 1),
-                            image: DecorationImage(
-                              image: CachedNetworkImageProvider(reel.brand!.logo!),
-                              fit: BoxFit.cover,
-                            ),
-                          ),
-                        ),
-                      const SizedBox(width: 8),
-                      SvgPicture.asset(AssetsConstants.badgeCheck, width: 16, height: 16),
-                      const SizedBox(width: 6),
-                      Text(
-                        reel.brand?.name.resolve(isAr) ?? '',
-                        style: AppStyle.bodyText.copyWith(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14),
-                      ),
-                      if (product != null) ...[
-                        const SizedBox(width: 10),
-                        GestureDetector(
-                          onTap: () => context.push('/product-detail', extra: _productArgs(isAr)),
-                          child: Container(
-                            decoration: BoxDecoration(color: AppColors.goldAccent, borderRadius: BorderRadius.circular(20)),
-                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                            child: Text(
-                              loc.translate('reelGoToProduct'),
-                              style: AppStyle.bodyText.copyWith(color: context.palette.textPrimary, fontWeight: FontWeight.bold, fontSize: 11),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ],
-                  ),
+                  // Row(
+                  //   mainAxisSize: MainAxisSize.min,
+                  //   children: [
+                  //     if (reel.brand?.logo != null)
+                  //       Container(
+                  //         width: 36,
+                  //         height: 36,
+                  //         decoration: BoxDecoration(
+                  //           shape: BoxShape.circle,
+                  //           border: Border.all(color: AppColors.goldAccent, width: 1),
+                  //           image: DecorationImage(
+                  //             image: CachedNetworkImageProvider(reel.brand!.logo!),
+                  //             fit: BoxFit.cover,
+                  //           ),
+                  //         ),
+                  //       ),
+                  //     const SizedBox(width: 8),
+                  //     SvgPicture.asset(AssetsConstants.badgeCheck, width: 16, height: 16),
+                  //     const SizedBox(width: 6),
+                  //     Text(
+                  //       reel.brand?.name.resolve(isAr) ?? '',
+                  //       style: AppStyle.bodyText.copyWith(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14),
+                  //     ),
+                  //     if (product != null) ...[
+                  //       const SizedBox(width: 10),
+                  //       GestureDetector(
+                  //         onTap: () => context.push('/product-detail', extra: _productArgs(isAr)),
+                  //         child: Container(
+                  //           decoration: BoxDecoration(color: AppColors.goldAccent, borderRadius: BorderRadius.circular(20)),
+                  //           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                  //           child: Text(
+                  //             loc.translate('reelGoToProduct'),
+                  //             style: AppStyle.bodyText.copyWith(color: context.palette.textPrimary, fontWeight: FontWeight.bold, fontSize: 11),
+                  //           ),
+                  //         ),
+                  //       ),
+                  //     ],
+                  //   ],
+                  // ),
                   const SizedBox(height: 10),
                   Text(
                     reel.description,
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
-                    style: AppStyle.bodyText.copyWith(color: Colors.white.withValues(alpha: 0.95), fontSize: 12.5, height: 1.4),
+                    style: AppStyle.bodyText.copyWith(
+                      color: Colors.white.withValues(alpha: 0.95),
+                      fontSize: 12.5,
+                      height: 1.4,
+                    ),
                   ),
                 ],
               ),
@@ -574,12 +618,18 @@ class _ReelPageItemState extends ConsumerState<_ReelPageItem>
                 left: 16,
                 right: 16,
                 child: GestureDetector(
-                  onTap: () => context.push('/product-detail', extra: _productArgs(isAr)),
+                  onTap: () => context.push(
+                    '/product-detail',
+                    extra: _productArgs(isAr),
+                  ),
                   child: Container(
                     decoration: BoxDecoration(
                       color: AppColors.black_50,
                       borderRadius: BorderRadius.circular(16),
-                      border: Border.all(color: AppColors.goldAccent_25, width: 1),
+                      border: Border.all(
+                        color: AppColors.goldAccent_25,
+                        width: 1,
+                      ),
                     ),
                     padding: const EdgeInsets.all(10),
                     child: Row(
@@ -588,11 +638,17 @@ class _ReelPageItemState extends ConsumerState<_ReelPageItem>
                         Container(
                           width: 40,
                           height: 40,
-                          decoration: const BoxDecoration(color: Color(0xFFD49E4B), shape: BoxShape.circle),
+                          decoration: const BoxDecoration(
+                            color: Color(0xFFD49E4B),
+                            shape: BoxShape.circle,
+                          ),
                           child: Center(
                             child: SvgPicture.asset(
                               AssetsConstants.shoppingBag,
-                              colorFilter: const ColorFilter.mode(Color(0xFF451425), BlendMode.srcIn),
+                              colorFilter: const ColorFilter.mode(
+                                Color(0xFF451425),
+                                BlendMode.srcIn,
+                              ),
                               width: 18,
                               height: 18,
                             ),
@@ -606,13 +662,24 @@ class _ReelPageItemState extends ConsumerState<_ReelPageItem>
                               Text(
                                 product.name.resolve(isAr),
                                 textAlign: TextAlign.center,
-                                style: AppStyle.bodyText.copyWith(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13.5),
+                                style: AppStyle.bodyText.copyWith(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 13.5,
+                                ),
                               ),
                               const SizedBox(height: 2),
                               Text(
-                                CurrencyFormatter.fromHalalas(product.priceFils, isAr: isAr),
+                                CurrencyFormatter.fromHalalas(
+                                  product.priceFils,
+                                  isAr: isAr,
+                                ),
                                 textAlign: TextAlign.center,
-                                style: AppStyle.bodyText.copyWith(color: const Color(0xFFD49E4B), fontWeight: FontWeight.w600, fontSize: 12),
+                                style: AppStyle.bodyText.copyWith(
+                                  color: const Color(0xFFD49E4B),
+                                  fontWeight: FontWeight.w600,
+                                  fontSize: 12,
+                                ),
                               ),
                             ],
                           ),
@@ -620,7 +687,12 @@ class _ReelPageItemState extends ConsumerState<_ReelPageItem>
                         const SizedBox(width: 12),
                         ClipRRect(
                           borderRadius: BorderRadius.circular(8),
-                          child: CachedNetworkImage(imageUrl: product.image, width: 48, height: 48, fit: BoxFit.cover),
+                          child: CachedNetworkImage(
+                            imageUrl: product.image,
+                            width: 48,
+                            height: 48,
+                            fit: BoxFit.cover,
+                          ),
                         ),
                       ],
                     ),
@@ -660,7 +732,11 @@ class _ReelPageItemState extends ConsumerState<_ReelPageItem>
           const SizedBox(height: 4),
           Text(
             label,
-            style: AppStyle.bodyText.copyWith(color: Colors.white, fontSize: 11, fontWeight: FontWeight.w600),
+            style: AppStyle.bodyText.copyWith(
+              color: Colors.white,
+              fontSize: 11,
+              fontWeight: FontWeight.w600,
+            ),
           ),
         ],
       ),

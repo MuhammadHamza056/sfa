@@ -2,14 +2,17 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 class BrandsState {
   final int selectedGender;
-  final int selectedCategory;
 
-  const BrandsState({this.selectedGender = 0, this.selectedCategory = 0});
+  /// Selected brand category id from `/brands/categories`; empty string
+  /// means the "All" chip, which lists brands via the unfiltered `/brands`.
+  final String selectedCategoryId;
 
-  BrandsState copyWith({int? selectedGender, int? selectedCategory}) {
+  const BrandsState({this.selectedGender = 0, this.selectedCategoryId = ''});
+
+  BrandsState copyWith({int? selectedGender, String? selectedCategoryId}) {
     return BrandsState(
       selectedGender: selectedGender ?? this.selectedGender,
-      selectedCategory: selectedCategory ?? this.selectedCategory,
+      selectedCategoryId: selectedCategoryId ?? this.selectedCategoryId,
     );
   }
 }
@@ -26,8 +29,8 @@ class BrandsNotifier extends Notifier<BrandsState> {
     state = state.copyWith(selectedGender: genderIndex);
   }
 
-  void changeCategory(int categoryIndex) {
-    state = state.copyWith(selectedCategory: categoryIndex);
+  void changeCategory(String categoryId) {
+    state = state.copyWith(selectedCategoryId: categoryId);
   }
 }
 

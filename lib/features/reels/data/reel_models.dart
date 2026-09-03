@@ -32,9 +32,7 @@ class ReelBrand {
   factory ReelBrand.fromJson(Map<String, dynamic> json) {
     return ReelBrand(
       id: (json['_id'] ?? json['id'])?.toString() ?? '',
-      name: LocalizedText.fromJson(
-        json['name'] as Map<String, dynamic>? ?? const {},
-      ),
+      name: LocalizedText.fromDynamic(json['name']),
       logo: json['logo'] as String?,
     );
   }
@@ -61,9 +59,7 @@ class ReelTaggedProduct {
     final images = json['images'] as List?;
     return ReelTaggedProduct(
       id: (json['_id'] ?? json['id'])?.toString() ?? '',
-      name: LocalizedText.fromJson(
-        json['name'] as Map<String, dynamic>? ?? const {},
-      ),
+      name: LocalizedText.fromDynamic(json['name']),
       priceFils: (json['priceFils'] as num?)?.toInt() ?? 0,
       currency: json['currency'] as String? ?? 'SAR',
       image:

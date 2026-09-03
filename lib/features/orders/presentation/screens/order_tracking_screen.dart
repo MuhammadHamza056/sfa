@@ -8,8 +8,10 @@ import 'package:sfa/utils/assets_constants.dart';
 import 'package:sfa/utils/color_constants.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:sfa/features/orders/data/order_models.dart';
+import 'package:sfa/features/orders/presentation/screens/delivery_otp_screen.dart';
 import 'package:sfa/features/orders/providers/orders_data_provider.dart';
 import 'package:sfa/utils/currency_formatter.dart';
+import 'package:sfa/utils/order_id_formatter.dart';
 import 'package:sfa/core/theme/app_palette.dart';
 import 'package:sfa/core/widgets/primary_app_bar.dart';
 
@@ -81,19 +83,23 @@ class _OrderTrackingScreenState extends ConsumerState<OrderTrackingScreen> {
     setState(() => _busy = true);
     final result = await ref
         .read(ordersRepositoryProvider)
-        .confirmDelivery(widget.orderId);
+        .sendDeliveryOtp(widget.orderId);
     if (!mounted) return;
     setState(() => _busy = false);
-    result.when(
-      success: (_) {
-        setState(() => _confirmedDelivery = true);
-        ref.invalidate(orderDetailProvider(widget.orderId));
-        ref.invalidate(orderTrackingDataProvider(widget.orderId));
-        ref.invalidate(ordersDataProvider);
-        _showMessage(loc.translate('confirmDelivery'));
-      },
-      failure: (error) => _showMessage(error.message),
+    if (!result.isSuccess) {
+      _showMessage(result.errorOrNull?.message ?? '');
+      return;
+    }
+    final verified = await context.push<bool>(
+      '/delivery-otp/${widget.orderId}',
+      extra: DeliveryOtpArgs(debugOtp: result.dataOrNull?.debugOtp),
     );
+    if (verified != true || !mounted) return;
+    setState(() => _confirmedDelivery = true);
+    ref.invalidate(orderDetailProvider(widget.orderId));
+    ref.invalidate(orderTrackingDataProvider(widget.orderId));
+    ref.invalidate(ordersDataProvider);
+    _showMessage(loc.translate('confirmDelivery'));
   }
 
   @override
@@ -174,7 +180,7 @@ class _OrderTrackingScreenState extends ConsumerState<OrderTrackingScreen> {
                   children: [
                     _buildInfoRow(
                       loc.translate('orderNumberLabel'),
-                      '#${order.orderNumber}',
+                      '#${OrderIdFormatter.shorten(order.orderNumber)}',
                     ),
                     const SizedBox(height: 12),
                     _buildInfoRow(

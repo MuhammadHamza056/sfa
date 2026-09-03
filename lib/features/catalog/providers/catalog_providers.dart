@@ -62,8 +62,24 @@ final brandsListProvider = FutureProvider<List<CatalogBrand>>((ref) async {
   return result.when(success: (data) => data, failure: (e) => throw e);
 });
 
-/// M23 — keyed by brand id.
-final brandDetailProvider = FutureProvider.family<CatalogBrand, String>((
+/// Brands tab category chips — categories with active brand/product counts.
+final brandCategoriesProvider = FutureProvider<List<BrandCategory>>((ref) async {
+  final result = await ref.read(catalogRepositoryProvider).getBrandCategories();
+  return result.when(success: (data) => data, failure: (e) => throw e);
+});
+
+/// Brands tab category chips — keyed by category id/slug.
+final brandsByCategoryProvider =
+    FutureProvider.family<List<CatalogBrand>, String>((ref, categoryId) async {
+  final result =
+      await ref.read(catalogRepositoryProvider).getBrandsByCategory(categoryId);
+  return result.when(success: (data) => data, failure: (e) => throw e);
+});
+
+/// M23 — keyed by brand id. `.autoDispose` so the brand detail screen
+/// refetches on every visit instead of Riverpod serving a stale cached
+/// result from a previous visit.
+final brandDetailProvider = FutureProvider.autoDispose.family<CatalogBrand, String>((
   ref,
   id,
 ) async {
@@ -71,9 +87,10 @@ final brandDetailProvider = FutureProvider.family<CatalogBrand, String>((
   return result.when(success: (data) => data, failure: (e) => throw e);
 });
 
-/// M24 — keyed by brand id.
-final brandProductsProvider =
-    FutureProvider.family<List<CatalogProduct>, String>((ref, brandId) async {
+/// M24 — keyed by brand id. `.autoDispose` for the same reason as
+/// [brandDetailProvider].
+final brandProductsProvider = FutureProvider.autoDispose
+    .family<List<CatalogProduct>, String>((ref, brandId) async {
   final result =
       await ref.read(catalogRepositoryProvider).getBrandProducts(brandId);
   return result.when(success: (data) => data, failure: (e) => throw e);

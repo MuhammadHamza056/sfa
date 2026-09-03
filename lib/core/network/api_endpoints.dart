@@ -38,6 +38,9 @@ class ApiEndpoints {
   static const String brands = '/brands';
   static String brandDetail(String id) => '/brands/$id';
   static String brandProducts(String id) => '/brands/$id/products';
+  static const String brandCategories = '/brands/categories';
+  static String brandsByCategory(String categoryId) =>
+      '/brands/category/$categoryId';
   static const String contentDeliveryTerms = '/content/delivery-terms';
   static const String contentAbout = '/content/about';
   static const String contentTerms = '/content/terms';
@@ -80,7 +83,10 @@ class ApiEndpoints {
   static String orderDetail(String id) => '/orders/$id';
   static String orderTracking(String id) => '/orders/$id/tracking';
   static String orderCancel(String id) => '/orders/$id/cancel';
-  static String orderConfirmDelivery(String id) => '/orders/$id/confirm-delivery';
+  static String orderSendDeliveryOtp(String id) =>
+      '/orders/$id/send-delivery-otp';
+  static String orderVerifyDeliveryOtp(String id) =>
+      '/orders/$id/verify-delivery-otp';
   static String orderReturnableItems(String id) => '/orders/$id/returnable-items';
   static const String orderStatistics = '/orders/statistics';
   static String orderDeliveryInfo(String id) => '/orders/$id/delivery';
@@ -162,6 +168,7 @@ class ApiEndpoints {
     productSearch,
     productFilters,
     brands,
+    brandCategories,
     regions,
     addressGeocode,
     refundReasons,

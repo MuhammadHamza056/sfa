@@ -7,6 +7,7 @@ import 'package:sfa/features/orders/providers/orders_data_provider.dart';
 import 'package:sfa/features/orders/providers/orders_provider.dart';
 import 'package:sfa/features/orders/providers/refunds_providers.dart';
 import 'package:sfa/utils/loader.dart';
+import 'package:sfa/utils/order_id_formatter.dart';
 import 'package:sfa/core/theme/app_palette.dart';
 import 'package:sfa/core/widgets/primary_app_bar.dart';
 
@@ -58,7 +59,8 @@ class _RefundRequestScreenState extends ConsumerState<RefundRequestScreen> {
     final isAr = loc.isArabic;
     final textDir = isAr ? TextDirection.rtl : TextDirection.ltr;
 
-    final titleText = '${loc.translate('refundRequestTitle')} #${widget.orderId}';
+    final titleText =
+        '${loc.translate('refundRequestTitle')} #${OrderIdFormatter.shorten(widget.orderId)}';
     final orderNumLabel = loc.translate('orderNumberLabel');
     final orderDateLabel = loc.translate('orderDateLabel');
     final sectionTitle = loc.translate('productsToReturn');
@@ -70,6 +72,13 @@ class _RefundRequestScreenState extends ConsumerState<RefundRequestScreen> {
     final ordersAsync = ref.watch(ordersDataProvider);
     final order = ordersAsync.valueOrNull?.where((o) => o.id == widget.orderId).firstOrNull;
 
+    // The three sources above load independently; without this each one
+    // popped its own inline spinner into the page as it resolved, so the
+    // user briefly saw two or three loaders at once. Wait for all of them
+    // before rendering anything so only a single top-level loader shows.
+    final isLoading =
+        returnableAsync.isLoading || reasonsAsync.isLoading || ordersAsync.isLoading;
+
     return Directionality(
       textDirection: textDir,
       child: Scaffold(
@@ -80,7 +89,9 @@ class _RefundRequestScreenState extends ConsumerState<RefundRequestScreen> {
           onCartTap: () => context.go('/cart'),
           onHeartTap: () => context.go('/favorites'),
         ),
-        body: ListView(
+        body: isLoading
+            ? const Center(child: CircularProgressIndicator())
+            : ListView(
           padding: const EdgeInsets.all(24.0),
           children: [
             Text(

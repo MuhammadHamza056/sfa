@@ -69,17 +69,22 @@ class CartLineItem {
 
   Color? get colorValue => colorFromHex(selectedColor);
 
-  factory CartLineItem.fromJson(Map<String, dynamic> json) {
+  /// [brandNameOverride] covers the real API's shape, where the vendor/
+  /// brand name lives one level up on the vendor group, not on the line
+  /// item itself — see [CartData.fromJson].
+  factory CartLineItem.fromJson(Map<String, dynamic> json, {String? brandNameOverride}) {
     final priceFils = (json['priceFils'] as num?)?.toInt() ?? 0;
     final quantity = (json['quantity'] as num?)?.toInt() ?? 1;
     final images = json['images'] as List?;
     return CartLineItem(
-      id: json['id']?.toString() ?? '',
+      id: (json['cartItemId'] ?? json['id'])?.toString() ?? '',
       productId: (json['productId'] ?? json['itemId'])?.toString() ?? '',
       name: LocalizedText.fromJson(json['name'] as Map<String, dynamic>? ?? const {}),
       imageUrl: json['image']?.toString() ??
+          json['imageUrl']?.toString() ??
           (images != null && images.isNotEmpty ? images.first.toString() : ''),
-      brandName: (json['brand'] as Map<String, dynamic>?)?['name'] as String? ??
+      brandName: brandNameOverride ??
+          (json['brand'] as Map<String, dynamic>?)?['name'] as String? ??
           json['brandName'] as String?,
       priceFils: priceFils,
       quantity: quantity,
@@ -88,7 +93,9 @@ class CartLineItem {
       addons: (json['selectedAddons'] as List? ?? const [])
           .map((v) => CartAddon.fromJson(v as Map<String, dynamic>))
           .toList(),
-      itemTotalFils: (json['itemTotalFils'] as num?)?.toInt() ?? priceFils * quantity,
+      itemTotalFils: (json['lineTotalFils'] as num?)?.toInt() ??
+          (json['itemTotalFils'] as num?)?.toInt() ??
+          priceFils * quantity,
     );
   }
 }
@@ -125,9 +132,32 @@ class CartData {
   bool get isEmpty => items.isEmpty;
 
   factory CartData.fromJson(Map<String, dynamic> json) {
-    final items = (json['items'] as List? ?? const [])
-        .map((v) => CartLineItem.fromJson(v as Map<String, dynamic>))
-        .toList();
+    // The real API groups lines by vendor/branch: `data.vendors[].items[]`,
+    // each vendor carrying its own `subtotalFils` and the cart as a whole
+    // carrying `grandTotalFils` — there is no flat `data.items[]`. Flatten
+    // that here so the rest of the app can keep treating the cart as one
+    // simple line list, and fall back to a flat `items` shape for safety.
+    final vendors = json['vendors'] as List?;
+    final List<CartLineItem> items;
+    if (vendors != null) {
+      items = vendors.expand((vendorJson) {
+        final vendor = vendorJson as Map<String, dynamic>;
+        final vendorName = LocalizedText.fromJson(
+          vendor['vendorName'] as Map<String, dynamic>? ?? const {},
+        );
+        return (vendor['items'] as List? ?? const []).map(
+          (v) => CartLineItem.fromJson(
+            v as Map<String, dynamic>,
+            brandNameOverride: vendorName.en,
+          ),
+        );
+      }).toList();
+    } else {
+      items = (json['items'] as List? ?? const [])
+          .map((v) => CartLineItem.fromJson(v as Map<String, dynamic>))
+          .toList();
+    }
+
     final subtotalFils = (json['subtotalFils'] as num?)?.toInt() ??
         items.fold<int>(0, (sum, i) => sum + i.itemTotalFils);
     final discountFils = (json['discountFils'] as num?)?.toInt() ?? 0;
@@ -144,7 +174,8 @@ class CartData {
       discountFils: discountFils,
       pointsRedeemed: (json['pointsRedeemed'] as num?)?.toInt() ?? 0,
       pointsDiscountFils: pointsDiscountFils,
-      totalFils: (json['totalFils'] as num?)?.toInt() ??
+      totalFils: (json['grandTotalFils'] as num?)?.toInt() ??
+          (json['totalFils'] as num?)?.toInt() ??
           (subtotalFils - discountFils - pointsDiscountFils),
     );
   }

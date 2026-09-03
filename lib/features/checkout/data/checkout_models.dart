@@ -23,12 +23,20 @@ class Region {
   }
 }
 
-/// M38 — matches the guide's response example exactly.
+/// M38 — the real response nests the money breakdown under `data.totals`
+/// (not flattened onto `data` itself), e.g.:
+/// `{cart:{...}, address:null, totals:{subtotalFils,...,grandTotalFils,
+/// giftWrapFeeFils,currency}}`. `totals` falls back to the top-level map so
+/// a flatter response shape still parses. Accepted payment methods aren't
+/// sourced from here anymore — see `MyFatoorahPaymentMethod` /
+/// `/payments/methods/myfatoorah`, which prices them against this preview's
+/// `totalFils`.
 class CheckoutPreview {
   final int subtotalFils;
   final int discountFils;
   final int pointsDiscountFils;
   final int deliveryFeeFils;
+  final int giftWrapFeeFils;
   final int taxFils;
   final int totalFils;
   final String currency;
@@ -40,7 +48,8 @@ class CheckoutPreview {
     required this.discountFils,
     required this.pointsDiscountFils,
     required this.deliveryFeeFils,
-    required this.taxFils,
+    this.giftWrapFeeFils = 0,
+    this.taxFils = 0,
     required this.totalFils,
     this.currency = 'SAR',
     this.itemsCount = 0,
@@ -48,21 +57,32 @@ class CheckoutPreview {
   });
 
   factory CheckoutPreview.fromJson(Map<String, dynamic> json) {
+    final totals = json['totals'] as Map<String, dynamic>? ?? json;
     return CheckoutPreview(
-      subtotalFils: (json['subtotalFils'] as num?)?.toInt() ?? 0,
-      discountFils: (json['discountFils'] as num?)?.toInt() ?? 0,
-      pointsDiscountFils: (json['pointsDiscountFils'] as num?)?.toInt() ?? 0,
-      deliveryFeeFils: (json['deliveryFeeFils'] as num?)?.toInt() ?? 0,
-      taxFils: (json['taxFils'] as num?)?.toInt() ?? 0,
-      totalFils: (json['totalFils'] as num?)?.toInt() ?? 0,
-      currency: json['currency'] as String? ?? 'SAR',
+      subtotalFils: (totals['subtotalFils'] as num?)?.toInt() ?? 0,
+      discountFils: (totals['discountFils'] as num?)?.toInt() ?? 0,
+      pointsDiscountFils: (totals['pointsDiscountFils'] as num?)?.toInt() ?? 0,
+      deliveryFeeFils: (totals['deliveryFeeFils'] as num?)?.toInt() ?? 0,
+      giftWrapFeeFils: (totals['giftWrapFeeFils'] as num?)?.toInt() ?? 0,
+      taxFils: (totals['taxFils'] as num?)?.toInt() ?? 0,
+      totalFils: (totals['grandTotalFils'] as num?)?.toInt() ??
+          (totals['totalFils'] as num?)?.toInt() ??
+          0,
+      currency: totals['currency'] as String? ?? 'SAR',
       itemsCount: (json['itemsCount'] as num?)?.toInt() ?? 0,
       estimatedDelivery: json['estimatedDelivery'] as String?,
     );
   }
 }
 
-/// M39 — matches the guide's response example exactly.
+/// M39 — the real response nests the created order(s) under `data.orders`
+/// (one per vendor) alongside a top-level `grandTotalFils`, e.g.
+/// `{orders:[{_id,totalFils,paymentMethod,paymentStatus,...}],
+/// grandTotalFils}` — not the flat `orderId`/`orderNumber`/`totalFils` the
+/// guide's example implied. There's no separate order-number field, so it
+/// falls back to the order id. Multi-vendor carts create multiple orders;
+/// only the first is tracked here since checkout only pays for one at a
+/// time today.
 class CheckoutConfirmResult {
   final String orderId;
   final String orderNumber;
@@ -77,10 +97,17 @@ class CheckoutConfirmResult {
   });
 
   factory CheckoutConfirmResult.fromJson(Map<String, dynamic> json) {
+    final orders = json['orders'] as List?;
+    final firstOrder =
+        orders != null && orders.isNotEmpty ? orders.first as Map<String, dynamic> : null;
+    final orderId = (firstOrder?['_id'] ?? firstOrder?['id'] ?? json['orderId'])?.toString() ?? '';
     return CheckoutConfirmResult(
-      orderId: json['orderId']?.toString() ?? '',
-      orderNumber: json['orderNumber']?.toString() ?? '',
-      totalFils: (json['totalFils'] as num?)?.toInt() ?? 0,
+      orderId: orderId,
+      orderNumber: (json['orderNumber'] ?? firstOrder?['orderNumber'])?.toString() ?? orderId,
+      totalFils: (json['grandTotalFils'] as num?)?.toInt() ??
+          (firstOrder?['totalFils'] as num?)?.toInt() ??
+          (json['totalFils'] as num?)?.toInt() ??
+          0,
       paymentUrl: json['paymentUrl'] as String?,
     );
   }

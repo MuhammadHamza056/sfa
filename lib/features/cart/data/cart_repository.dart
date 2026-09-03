@@ -48,48 +48,67 @@ class CartRepository {
     String? selectedSize,
     String? selectedColor,
   }) {
-    return _client.put<CartData>(
-      ApiEndpoints.cartItem(cartItemId),
-      data: {
-        if (quantity != null) 'quantity': quantity,
-        if (selectedSize != null) 'selectedSize': selectedSize,
-        if (selectedColor != null) 'selectedColor': selectedColor,
-      },
-      fromJson: (data) => CartData.fromJson(data as Map<String, dynamic>),
-    );
+    return _mutateAndParse(() => _client.put<Map<String, dynamic>?>(
+          ApiEndpoints.cartItem(cartItemId),
+          data: {
+            if (quantity != null) 'quantity': quantity,
+            if (selectedSize != null) 'selectedSize': selectedSize,
+            if (selectedColor != null) 'selectedColor': selectedColor,
+          },
+          fromJson: (data) => data is Map<String, dynamic> ? data : null,
+        ));
   }
 
   /// M30: Remove single item from cart
   Future<ApiResult<CartData>> removeItem(String cartItemId) {
-    return _client.delete<CartData>(
-      ApiEndpoints.cartItem(cartItemId),
-      fromJson: (data) => CartData.fromJson(data as Map<String, dynamic>),
-    );
+    return _mutateAndParse(() => _client.delete<Map<String, dynamic>?>(
+          ApiEndpoints.cartItem(cartItemId),
+          fromJson: (data) => data is Map<String, dynamic> ? data : null,
+        ));
   }
 
   /// M31: Move cart item to favorites
   Future<ApiResult<CartData>> moveToFavorite(String cartItemId) {
-    return _client.post<CartData>(
-      ApiEndpoints.cartItemFavorite(cartItemId),
-      fromJson: (data) => CartData.fromJson(data as Map<String, dynamic>),
-    );
+    return _mutateAndParse(() => _client.post<Map<String, dynamic>?>(
+          ApiEndpoints.cartItemFavorite(cartItemId),
+          fromJson: (data) => data is Map<String, dynamic> ? data : null,
+        ));
+  }
+
+  /// Some mutation endpoints hand back the full updated cart (matching
+  /// `getCart()`'s `{vendors:[...]}` shape) and some don't (a bare ack, or
+  /// no body at all e.g. `204 No Content`). Rather than assume one or the
+  /// other and risk crashing on a cast, use the body when it actually looks
+  /// like a cart and fall back to a fresh `GET /cart` otherwise — either
+  /// way the caller gets authoritative post-mutation state.
+  Future<ApiResult<CartData>> _mutateAndParse(
+    Future<ApiResult<Map<String, dynamic>?>> Function() call,
+  ) async {
+    final result = await call();
+    final error = result.errorOrNull;
+    if (error != null) return ApiFailure<CartData>(error);
+    final data = result.dataOrNull;
+    if (data != null && (data.containsKey('vendors') || data.containsKey('items'))) {
+      return ApiSuccess<CartData>(CartData.fromJson(data));
+    }
+    return getCart();
   }
 
   /// M32: Apply promo coupon code
   Future<ApiResult<CartData>> applyCoupon(String code) {
-    return _client.post<CartData>(
-      ApiEndpoints.cartCoupon,
-      data: {'code': code},
-      fromJson: (data) => CartData.fromJson(data as Map<String, dynamic>),
-    );
+    return _mutateAndParse(() => _client.post<Map<String, dynamic>?>(
+          ApiEndpoints.cartCoupon,
+          data: {'code': code},
+          fromJson: (data) => data is Map<String, dynamic> ? data : null,
+        ));
   }
 
   /// M33: Remove applied promo coupon
   Future<ApiResult<CartData>> removeCoupon() {
-    return _client.delete<CartData>(
-      ApiEndpoints.cartCoupon,
-      fromJson: (data) => CartData.fromJson(data as Map<String, dynamic>),
-    );
+    return _mutateAndParse(() => _client.delete<Map<String, dynamic>?>(
+          ApiEndpoints.cartCoupon,
+          fromJson: (data) => data is Map<String, dynamic> ? data : null,
+        ));
   }
 
   /// M34: Add luxury gift wrapping & card note. The guide's body is just
@@ -98,23 +117,23 @@ class CartRepository {
     required bool giftWrap,
     String? giftMessage,
   }) {
-    return _client.patch<CartData>(
-      ApiEndpoints.cartGiftWrap,
-      data: {
-        'giftWrap': giftWrap,
-        if (giftMessage != null) 'giftMessage': giftMessage,
-      },
-      fromJson: (data) => CartData.fromJson(data as Map<String, dynamic>),
-    );
+    return _mutateAndParse(() => _client.patch<Map<String, dynamic>?>(
+          ApiEndpoints.cartGiftWrap,
+          data: {
+            'giftWrap': giftWrap,
+            if (giftMessage != null) 'giftMessage': giftMessage,
+          },
+          fromJson: (data) => data is Map<String, dynamic> ? data : null,
+        ));
   }
 
   /// M35: Redeem loyalty points for discount
   Future<ApiResult<CartData>> redeemPoints(int points) {
-    return _client.post<CartData>(
-      ApiEndpoints.cartRedeemPoints,
-      data: {'points': points},
-      fromJson: (data) => CartData.fromJson(data as Map<String, dynamic>),
-    );
+    return _mutateAndParse(() => _client.post<Map<String, dynamic>?>(
+          ApiEndpoints.cartRedeemPoints,
+          data: {'points': points},
+          fromJson: (data) => data is Map<String, dynamic> ? data : null,
+        ));
   }
 
   /// M36: Recalculate summary breakdown

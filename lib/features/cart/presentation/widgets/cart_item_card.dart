@@ -11,12 +11,15 @@ class CartItemCard extends StatelessWidget {
   final String brand;
   final String title;
   final String price;
-  final Color itemColor;
-  final String size;
+  final Color? itemColor;
+  final String? size;
   final int quantity;
   final bool showWarning;
+  final bool isDeleting;
+  final bool isFavoriting;
   final VoidCallback? onDelete;
   final VoidCallback? onFavorite;
+  final ValueChanged<int>? onQuantityChanged;
 
   const CartItemCard({
     super.key,
@@ -24,12 +27,15 @@ class CartItemCard extends StatelessWidget {
     required this.brand,
     required this.title,
     required this.price,
-    required this.itemColor,
-    required this.size,
+    this.itemColor,
+    this.size,
     required this.quantity,
     required this.showWarning,
+    this.isDeleting = false,
+    this.isFavoriting = false,
     this.onDelete,
     this.onFavorite,
+    this.onQuantityChanged,
   });
 
   @override
@@ -108,69 +114,8 @@ class CartItemCard extends StatelessWidget {
 
                       Divider(height: 1, thickness: 0.5, color: context.palette.divider),
 
-                      // Color Row
-                      _buildAttributeRow(
-                        label: loc.translate('colorLabel'),
-                        valueWidget: Container(
-                          width: 18,
-                          height: 18,
-                          decoration: BoxDecoration(
-                            color: itemColor,
-                            shape: BoxShape.circle,
-                          ),
-                        ),
-                      ),
-                      Divider(height: 1, thickness: 0.5, color: context.palette.divider),
-
-                      // Size Row
-                      _buildAttributeRow(
-                        label: loc.translate('sizeLabel'),
-                        valueWidget: Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                          decoration: BoxDecoration(
-                            color: context.palette.surfaceMuted,
-                            borderRadius: BorderRadius.circular(4),
-                          ),
-                          child: Text(
-                            size,
-                            style: AppStyle.fieldLabel.copyWith(
-                              fontSize: 12,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ),
-                      ),
-                      Divider(height: 1, thickness: 0.5, color: context.palette.divider),
-
-                      // Quantity Row
-                      _buildAttributeRow(
-                        label: loc.translate('quantityLabel'),
-                        valueWidget: Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                          decoration: BoxDecoration(
-                            color: context.palette.surfaceMuted,
-                            borderRadius: BorderRadius.circular(4),
-                          ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Text(
-                                quantity.toString(),
-                                style: AppStyle.fieldLabel.copyWith(
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                              const SizedBox(width: 4),
-                              Icon(
-                                Icons.keyboard_arrow_down,
-                                size: 14,
-                                color: context.palette.textPrimary,
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
+                      for (final row in _buildRows(context, loc))
+                        row,
                     ],
                   ),
                 ),
@@ -198,82 +143,23 @@ class CartItemCard extends StatelessWidget {
           // Bottom Row: Action Buttons
           Row(
             children: [
-              // Favorite Button
               Expanded(
-                child: OutlinedButton(
+                child: _buildActionButton(
+                  context: context,
+                  iconPath: AssetsConstants.heartPlus,
+                  label: loc.translate('favorite'),
                   onPressed: onFavorite,
-                  style: OutlinedButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 12),
-                    side: BorderSide(color: context.palette.divider, width: 1.2),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(30),
-                    ),
-                  ),
-                  child: Row(
-                    textDirection: TextDirection.ltr,
-                    children: [
-                      SvgPicture.asset(
-                        AssetsConstants.heartPlus,
-                        width: 22,
-                        height: 22,
-                        colorFilter: ColorFilter.mode(
-                          context.palette.textMuted,
-                          BlendMode.srcIn,
-                        ),
-                      ),
-                      Expanded(
-                        child: Text(
-                          loc.translate('favorite'),
-                          textAlign: TextAlign.right,
-                          style: AppStyle.fieldLabel.copyWith(
-                            color: context.palette.textMuted,
-                            fontSize: 13,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
+                  isLoading: isFavoriting,
                 ),
               ),
               const SizedBox(width: 12),
-
-              // Delete Button
               Expanded(
-                child: OutlinedButton(
+                child: _buildActionButton(
+                  context: context,
+                  iconPath: AssetsConstants.trash,
+                  label: loc.translate('delete'),
                   onPressed: onDelete,
-                  style: OutlinedButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 12),
-                    side: BorderSide(color: context.palette.divider, width: 1.2),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(30),
-                    ),
-                  ),
-                  child: Row(
-                    textDirection: TextDirection.ltr,
-                    children: [
-                      SvgPicture.asset(
-                        AssetsConstants.trash,
-                        width: 22,
-                        height: 22,
-                        colorFilter: ColorFilter.mode(
-                          context.palette.textMuted,
-                          BlendMode.srcIn,
-                        ),
-                      ),
-                      Expanded(
-                        child: Text(
-                          loc.translate('delete'),
-                          textAlign: TextAlign.right,
-                          style: AppStyle.fieldLabel.copyWith(
-                            color: context.palette.textMuted,
-                            fontSize: 13,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
+                  isLoading: isDeleting,
                 ),
               ),
             ],
@@ -283,7 +169,139 @@ class CartItemCard extends StatelessWidget {
     );
   }
 
-  Widget _buildAttributeRow({required String label, required Widget valueWidget}) {
+  Widget _buildActionButton({
+    required BuildContext context,
+    required String iconPath,
+    required String label,
+    required bool isLoading,
+    VoidCallback? onPressed,
+  }) {
+    return OutlinedButton(
+      onPressed: isLoading ? null : onPressed,
+      style: OutlinedButton.styleFrom(
+        padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 12),
+        side: BorderSide(color: context.palette.divider, width: 1.2),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
+      ),
+      child: isLoading
+          ? SizedBox(
+              height: 18,
+              width: 18,
+              child: CircularProgressIndicator(
+                strokeWidth: 2,
+                valueColor: AlwaysStoppedAnimation<Color>(context.palette.textMuted),
+              ),
+            )
+          : Row(
+              textDirection: TextDirection.ltr,
+              children: [
+                SvgPicture.asset(
+                  iconPath,
+                  width: 22,
+                  height: 22,
+                  colorFilter: ColorFilter.mode(context.palette.textMuted, BlendMode.srcIn),
+                ),
+                Expanded(
+                  child: Text(
+                    label,
+                    textAlign: TextAlign.right,
+                    style: AppStyle.fieldLabel.copyWith(
+                      color: context.palette.textMuted,
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+    );
+  }
+
+  /// Color/size rows only appear when the line actually has that
+  /// attribute — plenty of products carry neither. Quantity always shows.
+  /// A divider separates each row that's actually rendered, with none
+  /// trailing the last one.
+  List<Widget> _buildRows(BuildContext context, AppLocalizations loc) {
+    final attributeRows = <Widget>[
+      if (itemColor != null)
+        _buildAttributeRow(
+          label: loc.translate('colorLabel'),
+          valueWidget: Container(
+            width: 18,
+            height: 18,
+            decoration: BoxDecoration(color: itemColor, shape: BoxShape.circle),
+          ),
+        ),
+      if (size != null && size!.isNotEmpty)
+        _buildAttributeRow(
+          label: loc.translate('sizeLabel'),
+          valueWidget: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+            decoration: BoxDecoration(
+              color: context.palette.surfaceMuted,
+              borderRadius: BorderRadius.circular(4),
+            ),
+            child: Text(
+              size!,
+              style: AppStyle.fieldLabel.copyWith(fontSize: 12, fontWeight: FontWeight.bold),
+            ),
+          ),
+        ),
+      _buildAttributeRow(
+        label: loc.translate('quantityLabel'),
+        valueWidget: _buildQuantityPicker(context),
+      ),
+    ];
+
+    final rows = <Widget>[];
+    for (var i = 0; i < attributeRows.length; i++) {
+      rows.add(attributeRows[i]);
+      if (i != attributeRows.length - 1) {
+        rows.add(Divider(height: 1, thickness: 0.5, color: context.palette.divider));
+      }
+    }
+    return rows;
+  }
+
+  /// Offers quantity-5..quantity+5 (clamped to a minimum of 1) rather than
+  /// an open-ended list, since re-picking a wildly different quantity is
+  /// rare — most edits are a small nudge up or down from what's in the cart.
+  Widget _buildQuantityPicker(BuildContext context) {
+    return PopupMenuButton<int>(
+      enabled: onQuantityChanged != null,
+      onSelected: onQuantityChanged,
+      itemBuilder: (context) {
+        final lowest = quantity - 5 < 1 ? 1 : quantity - 5;
+        return [
+          for (var q = lowest; q <= quantity + 5; q++)
+            PopupMenuItem<int>(value: q, child: Text(q.toString())),
+        ];
+      },
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+        decoration: BoxDecoration(
+          color: context.palette.surfaceMuted,
+          borderRadius: BorderRadius.circular(4),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              quantity.toString(),
+              style: AppStyle.fieldLabel.copyWith(fontSize: 12, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(width: 4),
+            Icon(Icons.keyboard_arrow_down, size: 14, color: context.palette.textPrimary),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildAttributeRow({
+    required String label,
+    required Widget valueWidget,
+  }) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 8.0),
       child: Row(

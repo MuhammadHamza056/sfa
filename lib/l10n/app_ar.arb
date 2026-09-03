@@ -80,6 +80,7 @@
   "favorite": "المفضلة",
   "delete": "حذف",
   "itemAddedToCart": "تمت إضافة المنتج إلى السلة",
+  "itemAddedToCartFailed": "تعذّرت إضافة المنتج إلى السلة. حاول مرة أخرى.",
   "cartEmpty": "سلتك فارغة",
   "couponCode": "رمز قسيمة",
   "apply": "تطبيق",

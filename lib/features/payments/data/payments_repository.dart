@@ -41,17 +41,23 @@ class PaymentsRepository {
     );
   }
 
-  /// M46: Get live payment methods directly from MyFatoorah for a given
-  /// amount (was previously guessed as "process a payment" — the revised
-  /// guide clarifies it's a methods lookup, not a charge).
-  Future<ApiResult<Map<String, dynamic>>> getLiveMyFatoorahMethods({
+  /// M46: Get live, priced payment methods directly from MyFatoorah for a
+  /// given amount — this is now the source of truth for what checkout
+  /// offers, since it returns exactly the method codes and MyFatoorah ids
+  /// `/payments/methods/initiate` expects back.
+  Future<ApiResult<List<MyFatoorahPaymentMethod>>> getLiveMyFatoorahMethods({
     required double amount,
     String currency = 'SAR',
   }) {
-    return _client.post<Map<String, dynamic>>(
+    return _client.post<List<MyFatoorahPaymentMethod>>(
       ApiEndpoints.paymentMyFatoorah,
       data: {'amount': amount, 'currency': currency},
-      fromJson: (data) => data as Map<String, dynamic>,
+      fromJson: (data) {
+        final raw = data is List ? data : const [];
+        return raw
+            .map((v) => MyFatoorahPaymentMethod.fromJson(v as Map<String, dynamic>))
+            .toList();
+      },
     );
   }
 

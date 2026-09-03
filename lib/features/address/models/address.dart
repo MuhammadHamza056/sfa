@@ -1,73 +1,98 @@
 /// M40-M42 — a saved delivery address. The API only ever hands back plain
 /// user-entered text (no bilingual objects here, unlike catalog content),
 /// so display is language-independent.
+///
+/// Field set matches the backend's Kuwait-style address DTO
+/// (governorate/area/block/houseNumber) — `recipientName`, `phone`,
+/// `city`, `district`, `building` are rejected by the API and must not be
+/// sent.
 class Address {
   final String id;
   final String name;
-  final String recipientName;
-  final String phoneNumber;
-  final String city;
-  final String district;
+  final String contactNumber;
+  final String governorate;
+  final String area;
+  final String block;
   final String street;
-  final String building;
-  final double? latitude;
-  final double? longitude;
+  final String houseNumber;
+  final double latitude;
+  final double longitude;
   final bool isDefault;
 
   const Address({
     required this.id,
     required this.name,
-    required this.recipientName,
-    required this.phoneNumber,
-    required this.city,
-    required this.district,
+    required this.contactNumber,
+    required this.governorate,
+    required this.area,
+    required this.block,
     required this.street,
-    required this.building,
-    this.latitude,
-    this.longitude,
+    required this.houseNumber,
+    this.latitude = 0,
+    this.longitude = 0,
     this.isDefault = false,
   });
 
-  String get line1 => building.isEmpty ? street : '$street، $building';
-  String get line2 => district.isEmpty ? city : '$district، $city';
+  String get line1 => houseNumber.isEmpty ? street : '$street، $houseNumber';
+  String get line2 => area.isEmpty ? governorate : '$area، $governorate';
+
+  /// `latitude`/`longitude` default to 0 when the backend didn't send real
+  /// coordinates — used to decide whether a map pin would be meaningful.
+  bool get hasLocation => latitude != 0 || longitude != 0;
+
+  /// Best-effort mapping onto the checkout confirm endpoint's
+  /// `shippingAddress` shape (`fullName/phone/city/district/street/
+  /// buildingNo`), which doesn't match this app's Kuwait-style saved
+  /// address fields 1:1 — verify against the real API guide if orders are
+  /// rejected.
+  Map<String, dynamic> toShippingAddressJson() => {
+    'fullName': name,
+    'phone': contactNumber,
+    'city': governorate,
+    'district': area,
+    'street': street,
+    'buildingNo': houseNumber,
+    'latitude': latitude,
+    'longitude': longitude,
+  };
 
   factory Address.fromJson(Map<String, dynamic> json) {
     return Address(
-      id: json['id']?.toString() ?? '',
+      id: (json['id'] ?? json['_id'])?.toString() ?? '',
       name: json['name']?.toString() ?? '',
-      recipientName: json['recipientName']?.toString() ?? '',
-      phoneNumber: (json['phone'] ?? json['phoneNumber'])?.toString() ?? '',
-      city: json['city']?.toString() ?? '',
-      district: json['district']?.toString() ?? '',
+      contactNumber: json['contactNumber']?.toString() ?? '',
+      governorate: json['governorate']?.toString() ?? '',
+      area: json['area']?.toString() ?? '',
+      block: json['block']?.toString() ?? '',
       street: json['street']?.toString() ?? '',
-      building: json['building']?.toString() ?? '',
-      latitude: (json['latitude'] as num?)?.toDouble(),
-      longitude: (json['longitude'] as num?)?.toDouble(),
+      houseNumber: json['houseNumber']?.toString() ?? '',
+      latitude: (json['latitude'] as num?)?.toDouble() ?? 0,
+      longitude: (json['longitude'] as num?)?.toDouble() ?? 0,
       isDefault: json['isDefault'] as bool? ?? false,
     );
   }
 
   Map<String, dynamic> toJson() => {
     'name': name,
-    'recipientName': recipientName,
-    'phone': phoneNumber,
-    'city': city,
-    'district': district,
+    'contactNumber': contactNumber,
+    'governorate': governorate,
+    'area': area,
+    'block': block,
     'street': street,
-    'building': building,
-    if (latitude != null) 'latitude': latitude,
-    if (longitude != null) 'longitude': longitude,
+    'houseNumber': houseNumber,
+    'latitude': latitude,
+    'longitude': longitude,
     'isDefault': isDefault,
   };
 
   Address copyWith({
     String? name,
-    String? recipientName,
-    String? phoneNumber,
-    String? city,
-    String? district,
+    String? contactNumber,
+    String? governorate,
+    String? area,
+    String? block,
     String? street,
-    String? building,
+    String? houseNumber,
     double? latitude,
     double? longitude,
     bool? isDefault,
@@ -75,12 +100,12 @@ class Address {
     return Address(
       id: id,
       name: name ?? this.name,
-      recipientName: recipientName ?? this.recipientName,
-      phoneNumber: phoneNumber ?? this.phoneNumber,
-      city: city ?? this.city,
-      district: district ?? this.district,
+      contactNumber: contactNumber ?? this.contactNumber,
+      governorate: governorate ?? this.governorate,
+      area: area ?? this.area,
+      block: block ?? this.block,
       street: street ?? this.street,
-      building: building ?? this.building,
+      houseNumber: houseNumber ?? this.houseNumber,
       latitude: latitude ?? this.latitude,
       longitude: longitude ?? this.longitude,
       isDefault: isDefault ?? this.isDefault,

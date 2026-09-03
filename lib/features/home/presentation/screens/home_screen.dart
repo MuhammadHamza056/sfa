@@ -344,7 +344,7 @@ class HomeScreen extends ConsumerWidget {
                                 ),
                               ),
                               GestureDetector(
-                                onTap: () => context.go('/brands'),
+                                onTap: () => context.push('/brands'),
                                 child: Row(
                                   mainAxisSize: MainAxisSize.min,
                                   textDirection: isAr
@@ -413,25 +413,33 @@ class HomeScreen extends ConsumerWidget {
                               final brandsAsync = ref.watch(brandsListProvider);
                               return brandsAsync.maybeWhen(
                                 data: (brands) {
-                                  if (brands.isEmpty) return const SizedBox.shrink();
+                                  if (brands.isEmpty)
+                                    return const SizedBox.shrink();
                                   final top = brands.take(3).toList();
                                   return Directionality(
-                                    textDirection:
-                                        isAr ? TextDirection.rtl : TextDirection.ltr,
+                                    textDirection: isAr
+                                        ? TextDirection.rtl
+                                        : TextDirection.ltr,
                                     child: Row(
                                       children: [
-                                        for (var i = 0; i < top.length; i++) ...[
+                                        for (
+                                          var i = 0;
+                                          i < top.length;
+                                          i++
+                                        ) ...[
                                           if (i > 0) const SizedBox(width: 4),
                                           Expanded(
                                             child: _buildBrandCard(
                                               context,
                                               imageUrl: top[i].logo ?? '',
-                                              name: top[i].name,
+                                              name: top[i].name.resolve(isAr),
                                               onTap: () => context.push(
                                                 '/brand-detail',
                                                 extra: BrandNavArgs(
                                                   id: top[i].id,
-                                                  name: top[i].name,
+                                                  name: top[i].name.resolve(
+                                                    isAr,
+                                                  ),
                                                 ),
                                               ),
                                             ),
@@ -445,29 +453,29 @@ class HomeScreen extends ConsumerWidget {
                               );
                             },
                           ),
-                          SizedBox(height: 4),
-                          GestureDetector(
-                            onTap: () => context.go('/brands'),
-                            child: Image.asset(
-                              AssetsConstants.containerPng,
-                              height: 500,
-                              width: double.infinity,
-                              fit: BoxFit.cover,
-                            ),
-                          ),
+                          // SizedBox(height: 4),
+                          // GestureDetector(
+                          //   onTap: () => context.go('/brands'),
+                          //   child: Image.asset(
+                          //     AssetsConstants.containerPng,
+                          //     height: 500,
+                          //     width: double.infinity,
+                          //     fit: BoxFit.cover,
+                          //   ),
+                          // ),
                         ],
                       ),
                     ),
 
                     // Reels Section
                     ReelsSection(isAr: isAr),
-                    SizedBox(height: 10),
-                    Image.asset(
-                      AssetsConstants.container2Png,
-                      height: 500,
-                      width: double.infinity,
-                      fit: BoxFit.cover,
-                    ),
+                    // SizedBox(height: 10),
+                    // Image.asset(
+                    //   AssetsConstants.container2Png,
+                    //   height: 500,
+                    //   width: double.infinity,
+                    //   fit: BoxFit.cover,
+                    // ),
                     CategoryBannersSection(isAr: isAr),
                     FeaturedProductsSection(isAr: isAr),
                   ],

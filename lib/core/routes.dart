@@ -29,6 +29,7 @@ import '../features/orders/presentation/screens/order_tracking_screen.dart';
 import '../features/orders/presentation/screens/previous_orders_screen.dart';
 import '../features/checkout/presentation/screens/checkout_screen.dart';
 import '../features/checkout/presentation/screens/payment_success_screen.dart';
+import '../features/checkout/presentation/screens/payment_webview_screen.dart';
 import '../features/profile/presentation/screens/aichat_screen.dart';
 import '../features/home/presentation/screens/featured_products_screen.dart';
 import '../features/orders/presentation/screens/refund_request_screen.dart';
@@ -177,6 +178,14 @@ final router = GoRouter(
       builder: (context, state) {
         final order = state.extra as CheckoutConfirmResult?;
         return PaymentSuccessScreen(order: order);
+      },
+    ),
+    GoRoute(
+      path: '/payment-webview',
+      parentNavigatorKey: _rootNavigatorKey,
+      builder: (context, state) {
+        final args = state.extra as PaymentWebviewArgs;
+        return PaymentWebviewScreen(paymentUrl: args.paymentUrl, order: args.order);
       },
     ),
     GoRoute(

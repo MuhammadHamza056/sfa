@@ -27,6 +27,52 @@ class SavedPaymentMethod {
   }
 }
 
+/// M46 — live, priced payment method options for the current cart total,
+/// quoted through MyFatoorah. `code` is the same enum create-order and
+/// `/payments/methods/initiate` expect (`WALLET/CARD/KNET/APPLE_PAY/
+/// GOOGLE_PAY`), and `id` is the `methodMyfatoorahId` initiate needs back
+/// alongside it.
+class MyFatoorahPaymentMethod {
+  final int id;
+  final String nameAr;
+  final String nameEn;
+  final String code;
+  final bool isDirectPayment;
+  final double serviceCharge;
+  final double totalAmount;
+  final String currencyIso;
+  final String imageUrl;
+  final bool isEmbeddedSupported;
+
+  const MyFatoorahPaymentMethod({
+    required this.id,
+    required this.nameAr,
+    required this.nameEn,
+    required this.code,
+    this.isDirectPayment = false,
+    this.serviceCharge = 0,
+    this.totalAmount = 0,
+    this.currencyIso = 'SAR',
+    this.imageUrl = '',
+    this.isEmbeddedSupported = false,
+  });
+
+  factory MyFatoorahPaymentMethod.fromJson(Map<String, dynamic> json) {
+    return MyFatoorahPaymentMethod(
+      id: (json['PaymentMethodId'] as num?)?.toInt() ?? 0,
+      nameAr: json['PaymentMethodAr']?.toString() ?? '',
+      nameEn: json['PaymentMethodEn']?.toString() ?? '',
+      code: json['PaymentMethodCode']?.toString() ?? '',
+      isDirectPayment: json['IsDirectPayment'] as bool? ?? false,
+      serviceCharge: (json['ServiceCharge'] as num?)?.toDouble() ?? 0,
+      totalAmount: (json['TotalAmount'] as num?)?.toDouble() ?? 0,
+      currencyIso: json['CurrencyIso']?.toString() ?? 'SAR',
+      imageUrl: json['ImageUrl']?.toString() ?? '',
+      isEmbeddedSupported: json['IsEmbeddedSupported'] as bool? ?? false,
+    );
+  }
+}
+
 /// M45 — matches the guide's response example exactly.
 class PaymentInitiateResult {
   final String paymentUrl;

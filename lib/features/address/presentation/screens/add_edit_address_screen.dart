@@ -30,11 +30,12 @@ class AddEditAddressScreen extends ConsumerStatefulWidget {
 
 class _AddEditAddressScreenState extends ConsumerState<AddEditAddressScreen> {
   late final TextEditingController _labelController;
-  late final TextEditingController _recipientController;
-  late final TextEditingController _phoneController;
-  late final TextEditingController _cityController;
-  late final TextEditingController _districtController;
-  late final TextEditingController _detailedAddressController;
+  late final TextEditingController _contactNumberController;
+  late final TextEditingController _governorateController;
+  late final TextEditingController _areaController;
+  late final TextEditingController _blockController;
+  late final TextEditingController _streetController;
+  late final TextEditingController _houseNumberController;
   bool _saving = false;
 
   @override
@@ -42,43 +43,42 @@ class _AddEditAddressScreenState extends ConsumerState<AddEditAddressScreen> {
     super.initState();
     final address = widget.address;
     _labelController = TextEditingController(text: address?.name ?? '');
-    _recipientController = TextEditingController(text: address?.recipientName ?? '');
-    _phoneController = TextEditingController(text: address?.phoneNumber ?? '');
-    _cityController = TextEditingController(text: address?.city ?? '');
-    _districtController = TextEditingController(text: address?.district ?? '');
-    _detailedAddressController = TextEditingController(
-      text: address == null
-          ? ''
-          : (address.building.isEmpty
-              ? address.street
-              : '${address.street} ${address.building}'.trim()),
-    );
+    _contactNumberController = TextEditingController(text: address?.contactNumber ?? '');
+    _governorateController = TextEditingController(text: address?.governorate ?? '');
+    _areaController = TextEditingController(text: address?.area ?? '');
+    _blockController = TextEditingController(text: address?.block ?? '');
+    _streetController = TextEditingController(text: address?.street ?? '');
+    _houseNumberController = TextEditingController(text: address?.houseNumber ?? '');
   }
 
   @override
   void dispose() {
     _labelController.dispose();
-    _recipientController.dispose();
-    _phoneController.dispose();
-    _cityController.dispose();
-    _districtController.dispose();
-    _detailedAddressController.dispose();
+    _contactNumberController.dispose();
+    _governorateController.dispose();
+    _areaController.dispose();
+    _blockController.dispose();
+    _streetController.dispose();
+    _houseNumberController.dispose();
     super.dispose();
   }
 
   Future<void> _onSave(AppLocalizations loc) async {
     final label = _labelController.text.trim();
-    final recipient = _recipientController.text.trim();
-    final phone = _phoneController.text.trim();
-    final city = _cityController.text.trim();
-    final district = _districtController.text.trim();
-    final detailed = _detailedAddressController.text.trim();
+    final contactNumber = _contactNumberController.text.trim();
+    final governorate = _governorateController.text.trim();
+    final area = _areaController.text.trim();
+    final block = _blockController.text.trim();
+    final street = _streetController.text.trim();
+    final houseNumber = _houseNumberController.text.trim();
 
     if (label.isEmpty ||
-        recipient.isEmpty ||
-        phone.isEmpty ||
-        city.isEmpty ||
-        detailed.isEmpty) {
+        contactNumber.isEmpty ||
+        governorate.isEmpty ||
+        area.isEmpty ||
+        block.isEmpty ||
+        street.isEmpty ||
+        houseNumber.isEmpty) {
       Loader.showError(loc.translate('fieldRequired'));
       return;
     }
@@ -89,14 +89,14 @@ class _AddEditAddressScreenState extends ConsumerState<AddEditAddressScreen> {
     final address = Address(
       id: existing?.id ?? '',
       name: label,
-      recipientName: recipient,
-      phoneNumber: phone,
-      city: city,
-      district: district,
-      street: detailed,
-      building: '',
-      latitude: existing?.latitude,
-      longitude: existing?.longitude,
+      contactNumber: contactNumber,
+      governorate: governorate,
+      area: area,
+      block: block,
+      street: street,
+      houseNumber: houseNumber,
+      latitude: 0,
+      longitude: 0,
       isDefault: existing?.isDefault ?? false,
     );
 
@@ -138,39 +138,46 @@ class _AddEditAddressScreenState extends ConsumerState<AddEditAddressScreen> {
               ),
               const SizedBox(height: 20),
               _FormField(
-                label: loc.translate('fullNameLabel'),
-                hint: loc.translate('fullNameHint'),
-                controller: _recipientController,
-                textAlign: textAlign,
-              ),
-              const SizedBox(height: 20),
-              _FormField(
                 label: loc.translate('phoneLabel'),
                 hint: loc.translate('phoneHint'),
-                controller: _phoneController,
+                controller: _contactNumberController,
                 keyboardType: TextInputType.phone,
                 textDirection: TextDirection.ltr,
                 textAlign: TextAlign.left,
               ),
               const SizedBox(height: 20),
               _FormField(
-                label: loc.translate('cityLabel'),
-                hint: isAr ? 'مثل: الرياض' : 'e.g. Riyadh',
-                controller: _cityController,
+                label: isAr ? 'المحافظة' : 'Governorate',
+                hint: isAr ? 'مثل: العاصمة' : 'e.g. Al Asimah',
+                controller: _governorateController,
                 textAlign: textAlign,
               ),
               const SizedBox(height: 20),
               _FormField(
-                label: isAr ? 'الحي' : 'District',
-                hint: isAr ? 'مثل: حي العليا' : 'e.g. Al Olaya',
-                controller: _districtController,
+                label: isAr ? 'المنطقة' : 'Area',
+                hint: isAr ? 'مثل: السالمية' : 'e.g. Salmiya',
+                controller: _areaController,
                 textAlign: textAlign,
               ),
               const SizedBox(height: 20),
               _FormField(
-                label: loc.translate('detailedAddressLabel'),
-                hint: loc.translate('addressLine1Hint'),
-                controller: _detailedAddressController,
+                label: isAr ? 'القطعة' : 'Block',
+                hint: isAr ? 'مثل: 4' : 'e.g. 4',
+                controller: _blockController,
+                textAlign: textAlign,
+              ),
+              const SizedBox(height: 20),
+              _FormField(
+                label: isAr ? 'الشارع' : 'Street',
+                hint: isAr ? 'مثل: شارع سالم المبارك' : 'e.g. Salem Al Mubarak St.',
+                controller: _streetController,
+                textAlign: textAlign,
+              ),
+              const SizedBox(height: 20),
+              _FormField(
+                label: isAr ? 'رقم المنزل' : 'House Number',
+                hint: isAr ? 'مثل: 12' : 'e.g. 12',
+                controller: _houseNumberController,
                 textAlign: textAlign,
               ),
               const SizedBox(height: 32),

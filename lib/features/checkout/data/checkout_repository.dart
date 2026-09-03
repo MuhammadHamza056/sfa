@@ -40,20 +40,26 @@ class CheckoutRepository {
     );
   }
 
-  /// M39: Confirm checkout and place order
+  /// M39: Confirm checkout and place order. `deliveryMethod` is lowercase
+  /// (`'delivery'`) per the real confirm-order body — unlike
+  /// `deliverySlot`/`paymentMethod`, which are uppercase enums.
   Future<ApiResult<CheckoutConfirmResult>> confirmCheckout({
     required String addressId,
     required String paymentMethod,
-    String deliveryMethod = 'DELIVERY',
+    required Map<String, dynamic> shippingAddress,
+    String deliveryMethod = 'delivery',
     String? deliverySlot,
     String? promoCode,
+    String? paymentMethodId,
   }) {
     return _client.post<CheckoutConfirmResult>(
       ApiEndpoints.checkoutCreateOrder,
       data: {
         'deliveryMethod': deliveryMethod,
         'addressId': addressId,
+        'shippingAddress': shippingAddress,
         'paymentMethod': paymentMethod,
+        if (paymentMethodId != null) 'paymentMethodId': paymentMethodId,
         if (deliverySlot != null) 'deliverySlot': deliverySlot,
         if (promoCode != null) 'promoCode': promoCode,
       },

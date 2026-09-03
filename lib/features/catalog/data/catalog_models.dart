@@ -4,16 +4,39 @@ import '../../../utils/currency_formatter.dart';
 
 class CatalogBrandRef {
   final String id;
-  final String name;
+  final LocalizedText name;
   final String? logo;
 
   const CatalogBrandRef({required this.id, required this.name, this.logo});
 
   factory CatalogBrandRef.fromJson(Map<String, dynamic> json) {
     return CatalogBrandRef(
-      id: json['id']?.toString() ?? '',
-      name: json['name']?.toString() ?? '',
+      id: json['_id']?.toString() ?? '',
+      name: LocalizedText.fromJson(json['name'] as Map<String, dynamic>? ?? const {}),
       logo: json['logo'] as String?,
+    );
+  }
+}
+
+class CatalogProductVariant {
+  final LocalizedText name;
+  final String? sku;
+  final int priceFils;
+  final int stock;
+
+  const CatalogProductVariant({
+    required this.name,
+    this.sku,
+    required this.priceFils,
+    required this.stock,
+  });
+
+  factory CatalogProductVariant.fromJson(Map<String, dynamic> json) {
+    return CatalogProductVariant(
+      name: LocalizedText.fromJson(json['name'] as Map<String, dynamic>? ?? const {}),
+      sku: json['sku'] as String?,
+      priceFils: (json['priceFils'] as num?)?.toInt() ?? 0,
+      stock: (json['stock'] as num?)?.toInt() ?? 0,
     );
   }
 }
@@ -80,6 +103,7 @@ class CatalogProduct {
   final CatalogBrandRef? brand;
   final List<CatalogProductOption> options;
   final List<CatalogProductAddon> addons;
+  final List<CatalogProductVariant> variants;
   final int stock;
   final bool isAvailable;
   final double avgRating;
@@ -97,6 +121,7 @@ class CatalogProduct {
     this.brand,
     this.options = const [],
     this.addons = const [],
+    this.variants = const [],
     this.stock = 0,
     this.isAvailable = true,
     this.avgRating = 0,
@@ -104,8 +129,9 @@ class CatalogProduct {
   });
 
   factory CatalogProduct.fromJson(Map<String, dynamic> json) {
+    final vendorJson = json['vendorId'] ?? json['brand'];
     return CatalogProduct(
-      id: json['id']?.toString() ?? '',
+      id: json['_id']?.toString() ?? '',
       name: LocalizedText.fromJson(json['name'] as Map<String, dynamic>? ?? const {}),
       description: json['description'] is Map<String, dynamic>
           ? LocalizedText.fromJson(json['description'] as Map<String, dynamic>)
@@ -117,20 +143,21 @@ class CatalogProduct {
       images: (json['images'] as List? ?? const [])
           .map((v) => v.toString())
           .toList(),
-      brand: json['brand'] is Map<String, dynamic>
-          ? CatalogBrandRef.fromJson(json['brand'] as Map<String, dynamic>)
-          : (json['brandName'] != null
-              ? CatalogBrandRef(id: '', name: json['brandName'].toString())
-              : null),
+      brand: vendorJson is Map<String, dynamic>
+          ? CatalogBrandRef.fromJson(vendorJson)
+          : null,
       options: (json['options'] as List? ?? const [])
           .map((v) => CatalogProductOption.fromJson(v as Map<String, dynamic>))
           .toList(),
       addons: (json['addons'] as List? ?? const [])
           .map((v) => CatalogProductAddon.fromJson(v as Map<String, dynamic>))
           .toList(),
+      variants: (json['variants'] as List? ?? const [])
+          .map((v) => CatalogProductVariant.fromJson(v as Map<String, dynamic>))
+          .toList(),
       stock: (json['stock'] as num?)?.toInt() ?? 0,
-      isAvailable: json['isAvailable'] as bool? ?? true,
-      avgRating: (json['avgRating'] as num?)?.toDouble() ?? 0,
+      isAvailable: json['isActive'] as bool? ?? true,
+      avgRating: (json['rating'] as num?)?.toDouble() ?? 0,
       reviewCount: (json['reviewCount'] as num?)?.toInt() ?? 0,
     );
   }
@@ -142,7 +169,7 @@ class CatalogProduct {
       title: name.resolve(isAr),
       price: CurrencyFormatter.fromHalalas(priceFils, isAr: isAr),
       rating: avgRating.toStringAsFixed(1),
-      brandName: brand?.name,
+      brandName: brand?.name.resolve(isAr),
       reviewsLabel: reviewCount > 0
           ? (isAr ? '$reviewCount تقييمًا' : '$reviewCount reviews')
           : null,
@@ -159,40 +186,42 @@ class CatalogCategory {
 
   factory CatalogCategory.fromJson(Map<String, dynamic> json) {
     return CatalogCategory(
-      id: json['id']?.toString() ?? '',
+      id: json['_id']?.toString() ?? '',
       name: LocalizedText.fromJson(json['name'] as Map<String, dynamic>? ?? const {}),
-      iconUrl: json['iconUrl'] as String?,
+      iconUrl: json['icon'] as String?,
     );
   }
 }
 
 class CatalogBrand {
   final String id;
-  final String name;
-  final String? slug;
+  final LocalizedText name;
   final String? logo;
-  final bool isVerified;
+  final String businessStatus;
   final double rating;
+  final int reviewCount;
   final LocalizedText? story;
 
   const CatalogBrand({
     required this.id,
     required this.name,
-    this.slug,
     this.logo,
-    this.isVerified = false,
+    this.businessStatus = '',
     this.rating = 0,
+    this.reviewCount = 0,
     this.story,
   });
 
+  bool get isOpen => businessStatus == 'OPEN';
+
   factory CatalogBrand.fromJson(Map<String, dynamic> json) {
     return CatalogBrand(
-      id: json['id']?.toString() ?? '',
-      name: json['name']?.toString() ?? '',
-      slug: json['slug'] as String?,
+      id: json['_id']?.toString() ?? '',
+      name: LocalizedText.fromJson(json['name'] as Map<String, dynamic>? ?? const {}),
       logo: json['logo'] as String?,
-      isVerified: json['isVerified'] as bool? ?? false,
+      businessStatus: json['businessStatus'] as String? ?? '',
       rating: (json['rating'] as num?)?.toDouble() ?? 0,
+      reviewCount: (json['reviewCount'] as num?)?.toInt() ?? 0,
       story: json['story'] is Map<String, dynamic>
           ? LocalizedText.fromJson(json['story'] as Map<String, dynamic>)
           : null,

@@ -19,7 +19,11 @@ class FavoritesRepository {
         : (json['name']?.toString() ?? '');
     final priceFils = (json['priceFils'] as num?)?.toInt();
     return FavoriteProduct(
-      productId: json['id']?.toString() ?? '',
+      // The favorites list entry carries its own record id separately from
+      // the product it points to (same shape as `WishlistItem` in
+      // wishlist_models.dart) — `DELETE /favorites/{productId}` needs the
+      // latter, so prefer `productId` over the entry's `id`.
+      productId: (json['productId'] ?? json['itemId'] ?? json['id'])?.toString() ?? '',
       title: title,
       imageUrl: json['image']?.toString() ?? '',
       price: priceFils != null

@@ -66,11 +66,23 @@ class BrandsScreen extends ConsumerWidget {
                         final mid = (brands.length / 2).ceil();
                         final row1 = brands
                             .take(mid)
-                            .map((b) => BrandItem(id: b.id, imageUrl: b.logo ?? '', name: b.name))
+                            .map(
+                              (b) => BrandItem(
+                                id: b.id,
+                                imageUrl: b.logo ?? '',
+                                name: b.name.resolve(isAr),
+                              ),
+                            )
                             .toList();
                         final row2 = brands
                             .skip(mid)
-                            .map((b) => BrandItem(id: b.id, imageUrl: b.logo ?? '', name: b.name))
+                            .map(
+                              (b) => BrandItem(
+                                id: b.id,
+                                imageUrl: b.logo ?? '',
+                                name: b.name.resolve(isAr),
+                              ),
+                            )
                             .toList();
 
                         return SingleChildScrollView(

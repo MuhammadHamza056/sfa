@@ -43,7 +43,7 @@ class BrandDetailScreen extends ConsumerWidget {
     return Scaffold(
       backgroundColor: context.palette.background,
       appBar: PrimaryAppBar(
-        title: brandAsync.valueOrNull?.name ?? initialName ?? '',
+        title: brandAsync.valueOrNull?.name.resolve(isAr) ?? initialName ?? '',
         fontSize: 19,
         letterSpacing: 0,
         showBackButton: true,
@@ -60,6 +60,51 @@ class BrandDetailScreen extends ConsumerWidget {
               placeholder: (_, __) => Container(color: context.palette.surfaceMuted),
               errorWidget: (_, __, ___) => Container(color: context.palette.surfaceMuted),
             ),
+
+            // 1.5. Rating / Review Count / Open-Closed Status
+            if (brandAsync.valueOrNull != null)
+              Padding(
+                padding: const EdgeInsets.fromLTRB(24, 16, 24, 0),
+                child: Row(
+                  children: [
+                    const Icon(Icons.star, size: 15, color: Colors.amber),
+                    const SizedBox(width: 4),
+                    Text(
+                      '${brandAsync.value!.rating} (${brandAsync.value!.reviewCount})',
+                      style: AppStyle.bodyText.copyWith(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                        color: context.palette.textPrimary,
+                      ),
+                    ),
+                    const Spacer(),
+                    if (brandAsync.value!.businessStatus.isNotEmpty)
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                        decoration: BoxDecoration(
+                          color:
+                              (brandAsync.value!.isOpen
+                                      ? context.palette.success
+                                      : context.palette.danger)
+                                  .withValues(alpha: 0.12),
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        child: Text(
+                          brandAsync.value!.isOpen
+                              ? (isAr ? 'مفتوح' : 'Open')
+                              : (isAr ? 'مغلق' : 'Closed'),
+                          style: AppStyle.bodyText.copyWith(
+                            fontSize: 11.5,
+                            fontWeight: FontWeight.w600,
+                            color: brandAsync.value!.isOpen
+                                ? context.palette.success
+                                : context.palette.danger,
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
+              ),
 
             // 2. Brand Description
             if (brandAsync.valueOrNull?.story != null)

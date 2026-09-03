@@ -57,6 +57,12 @@ class _CartScreenState extends ConsumerState<CartScreen> {
           child: RefreshIndicator(
             onRefresh: () => ref.read(cartProvider.notifier).refresh(),
             child: cartAsync.when(
+              // A delete/favorite/quantity mutation re-enters this as a
+              // "reload" (AsyncLoading with previous data attached). Without
+              // this flag that swaps the whole screen for a bare spinner on
+              // every tap; skipping it keeps the list on screen so the
+              // per-item spinners in [_CartBody] are what the user sees.
+              skipLoadingOnReload: true,
               loading: () => const Center(child: CircularProgressIndicator()),
               error: (error, _) => ListView(
                 padding: const EdgeInsets.symmetric(vertical: 96),
@@ -101,6 +107,23 @@ class _CartBody extends ConsumerStatefulWidget {
 }
 
 class _CartBodyState extends ConsumerState<_CartBody> {
+  final Set<String> _deletingIds = {};
+  final Set<String> _favoritingIds = {};
+
+  Future<void> _handleDelete(String cartItemId) async {
+    setState(() => _deletingIds.add(cartItemId));
+    await ref.read(cartProvider.notifier).removeItem(cartItemId);
+    if (!mounted) return;
+    setState(() => _deletingIds.remove(cartItemId));
+  }
+
+  Future<void> _handleFavorite(String cartItemId) async {
+    setState(() => _favoritingIds.add(cartItemId));
+    await ref.read(cartProvider.notifier).moveToFavorite(cartItemId);
+    if (!mounted) return;
+    setState(() => _favoritingIds.remove(cartItemId));
+  }
+
   @override
   Widget build(BuildContext context) {
     final loc = AppLocalizations.of(context);
@@ -136,14 +159,16 @@ class _CartBodyState extends ConsumerState<_CartBody> {
                         brand: item.brandName ?? '',
                         title: item.name.resolve(isAr),
                         price: CurrencyFormatter.fromHalalas(item.priceFils, isAr: isAr),
-                        itemColor: item.colorValue ?? context.palette.surfaceMuted,
-                        size: item.selectedSize ?? '',
+                        itemColor: item.colorValue,
+                        size: item.selectedSize,
                         quantity: item.quantity,
                         showWarning: false,
-                        onDelete: () =>
-                            ref.read(cartProvider.notifier).removeItem(item.id),
-                        onFavorite: () =>
-                            ref.read(cartProvider.notifier).moveToFavorite(item.id),
+                        isDeleting: _deletingIds.contains(item.id),
+                        isFavoriting: _favoritingIds.contains(item.id),
+                        onDelete: () => _handleDelete(item.id),
+                        onFavorite: () => _handleFavorite(item.id),
+                        onQuantityChanged: (q) =>
+                            ref.read(cartProvider.notifier).updateQuantity(item.id, q),
                       ),
                       if (index < cart.items.length - 1)
                         Divider(height: 24, thickness: 0.5, color: context.palette.divider),

@@ -8,14 +8,52 @@ import 'package:sfa/utils/assets_constants.dart';
 import 'package:sfa/utils/color_constants.dart';
 import 'package:sfa/utils/app_style.dart';
 import 'package:sfa/core/theme/app_palette.dart';
+import 'package:sfa/utils/loader.dart';
 import '../../models/address.dart';
 import '../../providers/address_provider.dart';
 
-class AddressScreen extends ConsumerWidget {
+class AddressScreen extends ConsumerStatefulWidget {
   const AddressScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<AddressScreen> createState() => _AddressScreenState();
+}
+
+class _AddressScreenState extends ConsumerState<AddressScreen> {
+  String? _deletingId;
+
+  Future<void> _onDelete(BuildContext context, WidgetRef ref, Address address, AppLocalizations loc) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(loc.isArabic ? 'حذف العنوان' : 'Delete Address'),
+        content: Text(
+          loc.isArabic
+              ? 'هل تريد حذف هذا العنوان؟'
+              : 'Are you sure you want to delete this address?',
+        ),
+        actions: [
+          TextButton(onPressed: () => context.pop(false), child: Text(loc.translate('cancel'))),
+          TextButton(
+            onPressed: () => context.pop(true),
+            child: Text(loc.isArabic ? 'حذف' : 'Delete'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true) return;
+
+    setState(() => _deletingId = address.id);
+    final ok = await ref.read(addressProvider.notifier).removeAddress(address.id);
+    if (!mounted) return;
+    setState(() => _deletingId = null);
+    if (!ok) {
+      Loader.showError(loc.isArabic ? 'تعذر حذف العنوان' : 'Could not delete address');
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final loc = AppLocalizations.of(context);
     final isAr = loc.isArabic;
     final addressesAsync = ref.watch(addressProvider);
@@ -62,7 +100,7 @@ class AddressScreen extends ConsumerWidget {
                           itemCount: addresses.length,
                           separatorBuilder: (context, index) => const SizedBox(height: 16),
                           itemBuilder: (context, index) {
-                            return _buildAddressCard(context, ref, addresses[index]);
+                            return _buildAddressCard(context, ref, addresses[index], loc);
                           },
                         ),
                 ),
@@ -119,6 +157,7 @@ class AddressScreen extends ConsumerWidget {
     BuildContext context,
     WidgetRef ref,
     Address address,
+    AppLocalizations loc,
   ) {
     return Container(
       padding: const EdgeInsets.all(16),
@@ -208,7 +247,7 @@ class AddressScreen extends ConsumerWidget {
                     ),
                     const SizedBox(width: 6),
                     Text(
-                      address.phoneNumber,
+                      address.contactNumber,
                       style: GoogleFonts.cairo(
                         color: context.palette.textMuted,
                         fontSize: 13,
@@ -238,15 +277,26 @@ class AddressScreen extends ConsumerWidget {
               ),
               const SizedBox(width: 12),
               GestureDetector(
-                onTap: () => ref.read(addressProvider.notifier).removeAddress(address.id),
-                child: SvgPicture.asset(
-                  AssetsConstants.trash2,
-                  width: 20,
-                  colorFilter: ColorFilter.mode(
-                    context.palette.icon,
-                    BlendMode.srcIn,
-                  ),
-                ),
+                onTap: _deletingId == address.id
+                    ? null
+                    : () => _onDelete(context, ref, address, loc),
+                child: _deletingId == address.id
+                    ? SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          valueColor: AlwaysStoppedAnimation<Color>(context.palette.icon),
+                        ),
+                      )
+                    : SvgPicture.asset(
+                        AssetsConstants.trash2,
+                        width: 20,
+                        colorFilter: ColorFilter.mode(
+                          context.palette.icon,
+                          BlendMode.srcIn,
+                        ),
+                      ),
               ),
             ],
           ),

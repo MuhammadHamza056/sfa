@@ -147,6 +147,12 @@ class _ProductDetailBody extends ConsumerWidget {
 
     final colorOption = findOption(product.options, (o) => o.isColorOption);
     final sizeOption = findOption(product.options, (o) => !o.isColorOption);
+    // The `options`/`addons` shape isn't returned by the real API — sizes
+    // come from `variants` instead (each a full SKU with its own price/
+    // stock). Prefer `sizeOption` when a backend does send it, otherwise
+    // fall back to variant names so size selection still shows real data.
+    final variantLabels = product.variants.map((v) => v.name.resolve(isAr)).toList();
+    final sizeLabels = sizeOption?.values ?? (variantLabels.isNotEmpty ? variantLabels : null);
 
     final detailState = ref.watch(productDetailProvider(product.id));
     final detailNotifier = ref.read(productDetailProvider(product.id).notifier);
@@ -154,8 +160,8 @@ class _ProductDetailBody extends ConsumerWidget {
     final selectedColorIndex = colorOption != null && colorOption.values.isNotEmpty
         ? detailState.selectedColorIndex.clamp(0, colorOption.values.length - 1)
         : 0;
-    final selectedSizeIndex = sizeOption != null && sizeOption.values.isNotEmpty
-        ? detailState.selectedSizeIndex.clamp(0, sizeOption.values.length - 1)
+    final selectedSizeIndex = sizeLabels != null && sizeLabels.isNotEmpty
+        ? detailState.selectedSizeIndex.clamp(0, sizeLabels.length - 1)
         : 0;
 
     final favoriteEntry = FavoriteProduct(
@@ -314,7 +320,7 @@ class _ProductDetailBody extends ConsumerWidget {
                       ),
                       const SizedBox(width: 8),
                       Text(
-                        product.brand?.name ?? '',
+                        product.brand?.name.resolve(isAr) ?? '',
                         style: AppStyle.bodyText.copyWith(
                           fontWeight: FontWeight.bold,
                           fontSize: 13,
@@ -454,14 +460,18 @@ class _ProductDetailBody extends ConsumerWidget {
             Divider(indent: 16, endIndent: 16, height: 1, thickness: 0.5, color: context.palette.divider),
 
             // 6. Size Selection
-            if (sizeOption != null) ...[
+            if (sizeLabels != null) ...[
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      sizeOption.name.resolve(isAr).isEmpty ? sizeLabel : sizeOption.name.resolve(isAr),
+                      sizeOption != null
+                          ? (sizeOption.name.resolve(isAr).isEmpty
+                              ? sizeLabel
+                              : sizeOption.name.resolve(isAr))
+                          : sizeLabel,
                       style: AppStyle.bodyText.copyWith(
                         fontWeight: FontWeight.bold,
                         fontSize: 14,
@@ -470,7 +480,7 @@ class _ProductDetailBody extends ConsumerWidget {
                     ),
                     const SizedBox(height: 10),
                     Wrap(
-                      children: List.generate(sizeOption.values.length, (i) {
+                      children: List.generate(sizeLabels.length, (i) {
                         final isSelected = selectedSizeIndex == i;
                         return GestureDetector(
                           onTap: () => detailNotifier.selectSize(i),
@@ -484,7 +494,7 @@ class _ProductDetailBody extends ConsumerWidget {
                             ),
                             child: Center(
                               child: Text(
-                                sizeOption.values[i],
+                                sizeLabels[i],
                                 style: AppStyle.bodyText.copyWith(
                                   fontSize: 12,
                                   fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
@@ -651,55 +661,16 @@ class _ProductDetailBody extends ConsumerWidget {
             const SizedBox(height: 16),
 
             // 9. Buy Now Button
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-              child: ElevatedButton(
-                onPressed: !product.isAvailable
-                    ? null
-                    : () async {
-                        await ref.read(cartProvider.notifier).addItem(
-                              productId: product.id,
-                              selectedColor: colorOption != null && colorOption.values.isNotEmpty
-                                  ? colorOption.values[selectedColorIndex]
-                                  : null,
-                              selectedSize: sizeOption != null && sizeOption.values.isNotEmpty
-                                  ? sizeOption.values[selectedSizeIndex]
-                                  : null,
-                            );
-                        if (!context.mounted) return;
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(content: Text(loc.translate('itemAddedToCart'))),
-                        );
-                      },
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.primary,
-                  padding: const EdgeInsets.symmetric(vertical: 14),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
-                  elevation: 0,
-                ),
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        buyNowText,
-                        style: AppStyle.bodyText.copyWith(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 15.5,
-                          color: Colors.white,
-                        ),
-                      ),
-                      SvgPicture.asset(
-                        AssetsConstants.shoppingBag2,
-                        width: 18,
-                        height: 18,
-                        colorFilter: const ColorFilter.mode(Colors.white, BlendMode.srcIn),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
+            _AddToCartButton(
+              enabled: product.isAvailable,
+              buyNowText: buyNowText,
+              productId: product.id,
+              selectedColor: colorOption != null && colorOption.values.isNotEmpty
+                  ? colorOption.values[selectedColorIndex]
+                  : null,
+              selectedSize: sizeLabels != null && sizeLabels.isNotEmpty
+                  ? sizeLabels[selectedSizeIndex]
+                  : null,
             ),
 
             const SizedBox(height: 16),
@@ -772,5 +743,101 @@ class _ProductDetailBody extends ConsumerWidget {
     if (value.length == 6) value = 'FF$value';
     final parsed = int.tryParse(value, radix: 16);
     return parsed == null ? null : Color(parsed);
+  }
+}
+
+/// Owns its own in-flight/loading state so the spinner and disabled state
+/// only ever reflect this button's own add-to-cart call, not any other
+/// concurrent cart mutation happening elsewhere in the app.
+class _AddToCartButton extends ConsumerStatefulWidget {
+  final bool enabled;
+  final String buyNowText;
+  final String productId;
+  final String? selectedColor;
+  final String? selectedSize;
+
+  const _AddToCartButton({
+    required this.enabled,
+    required this.buyNowText,
+    required this.productId,
+    this.selectedColor,
+    this.selectedSize,
+  });
+
+  @override
+  ConsumerState<_AddToCartButton> createState() => _AddToCartButtonState();
+}
+
+class _AddToCartButtonState extends ConsumerState<_AddToCartButton> {
+  bool _addingToCart = false;
+
+  Future<void> _onPressed() async {
+    final loc = AppLocalizations.of(context);
+    setState(() => _addingToCart = true);
+    final added = await ref.read(cartProvider.notifier).addItem(
+          productId: widget.productId,
+          selectedColor: widget.selectedColor,
+          selectedSize: widget.selectedSize,
+        );
+    if (!mounted) return;
+    setState(() => _addingToCart = false);
+    final errorMessage = ref.read(cartProvider).error?.toString();
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          added
+              ? loc.translate('itemAddedToCart')
+              : (errorMessage ?? loc.translate('itemAddedToCartFailed')),
+        ),
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      child: ElevatedButton(
+        onPressed: !widget.enabled || _addingToCart ? null : _onPressed,
+        style: ElevatedButton.styleFrom(
+          backgroundColor: AppColors.primary,
+          disabledBackgroundColor: AppColors.primary.withValues(alpha: 0.6),
+          padding: const EdgeInsets.symmetric(vertical: 14),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
+          elevation: 0,
+        ),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          child: _addingToCart
+              ? const SizedBox(
+                  height: 20,
+                  width: 20,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2.5,
+                    valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                  ),
+                )
+              : Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      widget.buyNowText,
+                      style: AppStyle.bodyText.copyWith(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 15.5,
+                        color: Colors.white,
+                      ),
+                    ),
+                    SvgPicture.asset(
+                      AssetsConstants.shoppingBag2,
+                      width: 18,
+                      height: 18,
+                      colorFilter: const ColorFilter.mode(Colors.white, BlendMode.srcIn),
+                    ),
+                  ],
+                ),
+        ),
+      ),
+    );
   }
 }

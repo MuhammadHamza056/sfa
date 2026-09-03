@@ -17,7 +17,11 @@ class _SplashScreenState extends State<SplashScreen> {
     super.initState();
     Future.delayed(const Duration(seconds: 2), () {
       if (mounted) {
-        context.go(SecureStorage.getLanguageSelected() ? '/onboarding' : '/language');
+        if (SecureStorage.isAuthenticated) {
+          context.go('/home');
+        } else {
+          context.go(SecureStorage.getLanguageSelected() ? '/onboarding' : '/language');
+        }
       }
     });
   }

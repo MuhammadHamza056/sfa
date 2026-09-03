@@ -15,28 +15,11 @@ import 'package:sfa/features/address/models/address.dart';
 import 'package:sfa/features/address/providers/address_provider.dart';
 import 'package:sfa/features/cart/providers/cart_provider.dart';
 import 'package:sfa/features/checkout/providers/checkout_providers.dart';
+import 'package:sfa/features/payments/data/payment_models.dart';
+import 'package:sfa/features/payments/providers/payments_providers.dart';
 import 'package:sfa/core/theme/app_palette.dart';
 import 'package:sfa/core/widgets/primary_app_bar.dart';
-
-/// Checkout-level payment methods the guide's M39 confirm example and M45
-/// initiate example both reference (`MYFATOORAH`, `APPLE_PAY`) — `MADA`
-/// added as the third common Saudi rail. The guide doesn't enumerate the
-/// full set, so this list is the best-supported inference rather than a
-/// documented enum.
-const _kPaymentMethods = ['MYFATOORAH', 'MADA', 'APPLE_PAY'];
-
-String _paymentLabel(String method, bool isAr) {
-  switch (method) {
-    case 'MYFATOORAH':
-      return isAr ? 'ماي فاتورة' : 'MyFatoorah';
-    case 'MADA':
-      return isAr ? 'مدى' : 'Mada';
-    case 'APPLE_PAY':
-      return 'Apple Pay';
-    default:
-      return method;
-  }
-}
+import 'payment_webview_screen.dart';
 
 class CheckoutScreen extends ConsumerStatefulWidget {
   const CheckoutScreen({super.key});
@@ -47,7 +30,7 @@ class CheckoutScreen extends ConsumerStatefulWidget {
 
 class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
   String? _selectedAddressId;
-  String _selectedPayment = _kPaymentMethods.first;
+  MyFatoorahPaymentMethod? _selectedMethod;
   bool _confirming = false;
 
   void _showMessage(String message) {
@@ -61,22 +44,59 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
       _showMessage(loc.isArabic ? 'الرجاء اختيار عنوان التوصيل' : 'Please choose a delivery address');
       return;
     }
+    final method = _selectedMethod;
+    if (method == null) {
+      return;
+    }
+    final selectedAddress = ref
+        .read(addressProvider)
+        .valueOrNull
+        ?.where((a) => a.id == addressId)
+        .firstOrNullWithLocation();
+    if (selectedAddress == null) {
+      _showMessage(loc.isArabic ? 'الرجاء اختيار عنوان التوصيل' : 'Please choose a delivery address');
+      return;
+    }
 
     setState(() => _confirming = true);
     final result = await ref.read(checkoutRepositoryProvider).confirmCheckout(
           addressId: addressId,
-          paymentMethod: _selectedPayment,
+          paymentMethod: method.code,
+          shippingAddress: selectedAddress.toShippingAddressJson(),
         );
     if (!mounted) return;
-    setState(() => _confirming = false);
 
-    result.when(
-      success: (order) {
+    await result.when(
+      success: (order) async {
         ref.read(cartProvider.notifier).refresh();
-        context.push('/payment-success', extra: order);
+
+        final initiateResult = await ref.read(paymentsRepositoryProvider).initiatePayment(
+              orderId: order.orderId,
+              methodKey: method.code,
+              methodMyfatoorahId: method.id,
+            );
+        if (!mounted) return;
+        initiateResult.when(
+          success: (payment) {
+            if (payment.paymentUrl.isEmpty) {
+              context.push('/payment-success', extra: order);
+              return;
+            }
+            context.push(
+              '/payment-webview',
+              extra: PaymentWebviewArgs(paymentUrl: payment.paymentUrl, order: order),
+            );
+          },
+          failure: (error) {
+            _showMessage(error.message);
+            context.push('/payment-success', extra: order);
+          },
+        );
       },
-      failure: (error) => _showMessage(error.message),
+      failure: (error) async => _showMessage(error.message),
     );
+
+    if (mounted) setState(() => _confirming = false);
   }
 
   @override
@@ -102,6 +122,25 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
     });
 
     final previewAsync = ref.watch(checkoutPreviewProvider(_selectedAddressId ?? ''));
+    final preview = previewAsync.valueOrNull;
+
+    final paymentMethodsAsync = ref.watch(
+      myFatoorahPaymentMethodsProvider(
+        (amount: (preview?.totalFils ?? 0) / 100.0, currency: preview?.currency ?? 'SAR'),
+      ),
+    );
+    final paymentMethods = paymentMethodsAsync.valueOrNull ?? const <MyFatoorahPaymentMethod>[];
+    if (paymentMethods.isNotEmpty && !paymentMethods.any((m) => m.code == _selectedMethod?.code)) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted && !paymentMethods.any((m) => m.code == _selectedMethod?.code)) {
+          setState(() => _selectedMethod = paymentMethods.first);
+        }
+      });
+    }
+
+    final selectedAddress = addressesAsync.valueOrNull
+        ?.where((a) => a.id == _selectedAddressId)
+        .firstOrNullWithLocation();
 
     return Directionality(
       textDirection: textDir,
@@ -181,17 +220,13 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                 ),
                 const SizedBox(height: 14),
 
-                if (_selectedAddressId != null) ...[
+                if (selectedAddress != null && selectedAddress.hasLocation) ...[
                   Align(
                     alignment: isAr ? Alignment.centerRight : Alignment.centerLeft,
                     child: Text(loc.translate('addressByMap'), style: AppStyle.fieldLabel),
                   ),
                   const SizedBox(height: 8),
-                  _CheckoutMap(
-                    location: addressesAsync.valueOrNull
-                        ?.where((a) => a.id == _selectedAddressId)
-                        .firstOrNullWithLocation(),
-                  ),
+                  _CheckoutMap(location: selectedAddress),
                   const SizedBox(height: 14),
                 ],
 
@@ -242,6 +277,14 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                           ),
                           const SizedBox(height: 8),
                         ],
+                        if (preview.giftWrapFeeFils > 0) ...[
+                          _buildPricingRow(
+                            label: isAr ? 'رسوم التغليف' : 'Gift Wrap Fee',
+                            amount: CurrencyFormatter.fromHalalas(preview.giftWrapFeeFils, isAr: isAr),
+                            isPrimary: false,
+                          ),
+                          const SizedBox(height: 8),
+                        ],
                         _buildPricingRow(
                           label: loc.translate('totalAmount'),
                           amount: CurrencyFormatter.fromHalalas(preview.totalFils, isAr: isAr),
@@ -253,61 +296,85 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                 ),
                 const SizedBox(height: 16),
 
-                Text(
-                  loc.translate('choosePayment'),
-                  style: AppStyle.inputHint.copyWith(
-                    color: context.palette.textPrimary.withValues(alpha: 0.4),
+                paymentMethodsAsync.when(
+                  loading: () => const Padding(
+                    padding: EdgeInsets.symmetric(vertical: 12),
+                    child: Center(child: CircularProgressIndicator()),
                   ),
-                ),
-                const SizedBox(height: 12),
-
-                // ─── Payment Options ──────────────────────────────────
-                ..._kPaymentMethods.map(
-                  (option) => Padding(
-                    padding: const EdgeInsets.only(bottom: 10),
-                    child: _buildPaymentOption(context, option, isAr),
+                  error: (error, _) => Text(
+                    error.toString(),
+                    style: AppStyle.bodyText.copyWith(color: context.palette.textMuted),
                   ),
-                ),
-                const SizedBox(height: 24),
-
-                // ─── Confirm Order Button ─────────────────────────────
-                ElevatedButton(
-                  onPressed: _confirming ? null : () => _onConfirmOrder(loc),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.primary,
-                    minimumSize: const Size(double.infinity, 54),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
-                    elevation: 0,
-                  ),
-                  child: _confirming
-                      ? const Center(
-                          child: SizedBox(
-                            height: 22,
-                            width: 22,
-                            child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                  data: (methods) {
+                    if (methods.isEmpty) return const SizedBox.shrink();
+                    return Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        Text(
+                          loc.translate('choosePayment'),
+                          style: AppStyle.inputHint.copyWith(
+                            color: context.palette.textPrimary.withValues(alpha: 0.4),
                           ),
-                        )
-                      : Row(
-                          children: [
-                            const SizedBox(width: 8),
-                            Expanded(
-                              child: Text(
-                                loc.translate('confirmOrder'),
-                                textAlign: TextAlign.start,
-                                style: AppStyle.buttonTextPrimary,
-                              ),
-                            ),
-                            SvgPicture.asset(
-                              AssetsConstants.shoppingBag,
-                              width: 18,
-                              height: 18,
-                              colorFilter: const ColorFilter.mode(Colors.white, BlendMode.srcIn),
-                            ),
-                            const SizedBox(width: 8),
-                          ],
                         ),
+                        const SizedBox(height: 12),
+
+                        // ─── Payment Options ────────────────────────
+                        ...methods.map(
+                          (method) => Padding(
+                            padding: const EdgeInsets.only(bottom: 10),
+                            child: _buildPaymentOption(context, method, isAr),
+                          ),
+                        ),
+                        const SizedBox(height: 24),
+
+                        // ─── Confirm Order Button ───────────────────
+                        ElevatedButton(
+                          onPressed: _confirming ? null : () => _onConfirmOrder(loc),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: AppColors.primary,
+                            minimumSize: const Size(double.infinity, 54),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
+                            elevation: 0,
+                          ),
+                          child: _confirming
+                              ? const Center(
+                                  child: SizedBox(
+                                    height: 22,
+                                    width: 22,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2,
+                                      color: Colors.white,
+                                    ),
+                                  ),
+                                )
+                              : Row(
+                                  children: [
+                                    const SizedBox(width: 8),
+                                    Expanded(
+                                      child: Text(
+                                        loc.translate('confirmOrder'),
+                                        textAlign: TextAlign.start,
+                                        style: AppStyle.buttonTextPrimary,
+                                      ),
+                                    ),
+                                    SvgPicture.asset(
+                                      AssetsConstants.shoppingBag,
+                                      width: 18,
+                                      height: 18,
+                                      colorFilter: const ColorFilter.mode(
+                                        Colors.white,
+                                        BlendMode.srcIn,
+                                      ),
+                                    ),
+                                    const SizedBox(width: 8),
+                                  ],
+                                ),
+                        ),
+                        const SizedBox(height: 12),
+                      ],
+                    );
+                  },
                 ),
-                const SizedBox(height: 12),
 
                 // ─── Cancel Button ────────────────────────────────────
                 OutlinedButton(
@@ -388,10 +455,10 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
     );
   }
 
-  Widget _buildPaymentOption(BuildContext context, String option, bool isAr) {
-    final isSelected = _selectedPayment == option;
+  Widget _buildPaymentOption(BuildContext context, MyFatoorahPaymentMethod method, bool isAr) {
+    final isSelected = _selectedMethod?.code == method.code;
     return GestureDetector(
-      onTap: () => setState(() => _selectedPayment = option),
+      onTap: () => setState(() => _selectedMethod = method),
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
@@ -402,7 +469,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
         ),
         child: Row(
           children: [
-            Text(_paymentLabel(option, isAr), style: AppStyle.paymentOption),
+            Text(isAr ? method.nameAr : method.nameEn, style: AppStyle.paymentOption),
             const Spacer(),
             AnimatedContainer(
               duration: const Duration(milliseconds: 200),

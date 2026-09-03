@@ -37,19 +37,22 @@ class CartNotifier extends AsyncNotifier<CartData> {
 
   Future<void> refresh() => _mutate(_repository.getCart);
 
-  /// M28
-  Future<void> addItem({
+  /// M28. Returns whether the add actually succeeded — `_mutate` swallows
+  /// errors into `state` rather than throwing, so callers that want to show
+  /// a success/error message must check this instead of assuming success.
+  Future<bool> addItem({
     required String productId,
     int quantity = 1,
     String? selectedSize,
     String? selectedColor,
-  }) {
-    return _mutate(() => _repository.addItem(
+  }) async {
+    await _mutate(() => _repository.addItem(
           productId: productId,
           quantity: quantity,
           selectedSize: selectedSize,
           selectedColor: selectedColor,
         ));
+    return !state.hasError;
   }
 
   /// M29

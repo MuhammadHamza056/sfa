@@ -80,6 +80,7 @@
   "favorite": "Favorite",
   "delete": "Delete",
   "itemAddedToCart": "Item added to cart",
+  "itemAddedToCartFailed": "Couldn't add item to cart. Please try again.",
   "cartEmpty": "Your cart is empty",
   "couponCode": "Coupon Code",
   "apply": "Apply",

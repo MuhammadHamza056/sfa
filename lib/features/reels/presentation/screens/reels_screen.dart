@@ -8,6 +8,7 @@ import 'package:share_plus/share_plus.dart';
 import 'package:video_player/video_player.dart';
 import 'package:sfa/core/localization/app_localizations.dart';
 import 'package:sfa/core/models/product_detail_args.dart';
+import 'package:sfa/core/navigation/nav_guard.dart';
 import 'package:sfa/core/providers/nav_providers.dart';
 import 'package:sfa/core/widgets/cart_icon_button.dart';
 import 'package:sfa/utils/app_style.dart';
@@ -60,6 +61,7 @@ class _ReelsScreenState extends ConsumerState<ReelsScreen> {
     _initializeFutures[index] = controller
         .initialize()
         .then((_) {
+          if (!mounted) return;
           controller.setLooping(true);
           final isReelsActive = ref.read(highlightedTabIndexProvider) == 2;
           final isDrawerOpen = ref.read(drawerOpenProvider);
@@ -74,6 +76,7 @@ class _ReelsScreenState extends ConsumerState<ReelsScreen> {
           debugPrint(
             'Error initializing video player for index $index: $error',
           );
+          if (!mounted) return;
           ref.read(reelsProvider.notifier).videoControllerUpdated();
         });
   }
@@ -250,7 +253,8 @@ class _ReelsScreenState extends ConsumerState<ReelsScreen> {
                     const SizedBox(width: 12),
                     _buildTopHeaderButton(
                       icon: AssetsConstants.heart2,
-                      onTap: () => context.push('/favorites'),
+                      onTap: () =>
+                          handleAppBarNavTap(context, '/favorites', null),
                     ),
                   ],
                 ),

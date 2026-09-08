@@ -9,6 +9,7 @@ import 'package:sfa/utils/currency_formatter.dart';
 import 'package:sfa/utils/order_id_formatter.dart';
 import 'package:sfa/utils/app_style.dart';
 import 'package:sfa/features/orders/data/order_models.dart';
+import 'package:sfa/features/orders/presentation/widgets/order_payment_flow.dart';
 import 'package:sfa/features/orders/providers/orders_data_provider.dart';
 import 'package:sfa/features/orders/providers/previous_orders_provider.dart';
 import 'package:sfa/core/theme/app_palette.dart';
@@ -26,6 +27,10 @@ class _PreviousOrdersScreenState extends ConsumerState<PreviousOrdersScreen>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
 
+  /// Id of the order whose payment session is being initiated, so only that
+  /// card's button shows a spinner.
+  String? _payingOrderId;
+
   @override
   void initState() {
     super.initState();
@@ -36,6 +41,23 @@ class _PreviousOrdersScreenState extends ConsumerState<PreviousOrdersScreen>
   void dispose() {
     _tabController.dispose();
     super.dispose();
+  }
+
+  Future<void> _onPayOrder(Order order) async {
+    final paid = await startOrderPayment(
+      context: context,
+      ref: ref,
+      orderId: order.id,
+      orderNumber: order.orderNumber,
+      totalFils: order.totalFils,
+      currency: order.currency,
+      onBusyChanged: (busy) {
+        if (mounted) setState(() => _payingOrderId = busy ? order.id : null);
+      },
+    );
+    // The order's paymentStatus changes gateway-side, so refetch rather than
+    // trusting the list we already have.
+    if (paid && mounted) ref.invalidate(ordersDataProvider);
   }
 
   @override
@@ -350,29 +372,59 @@ class _PreviousOrdersScreenState extends ConsumerState<PreviousOrdersScreen>
                   style: AppStyle.navLabel.copyWith(color: AppColors.primary),
                 ),
               ),
-              InkWell(
-                onTap: () => context.push('/refund-request/${order.id}'),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(
-                      loc.translate('requestRefund'),
-                      style: AppStyle.cardSubtitle.copyWith(fontWeight: FontWeight.bold),
-                    ),
-                    const SizedBox(width: 6),
-                    Transform.rotate(
-                      angle: isAr ? 3.14159 : 0.0,
-                      child: SvgPicture.asset(
-                        AssetsConstants.moveLeft,
-                        width: 14,
-                        colorFilter: ColorFilter.mode(AppColors.primary, BlendMode.srcIn),
-                      ),
-                    ),
-                  ],
+              // An unpaid order gets a pay button; the refund button only
+              // makes sense once the order has been delivered.
+              if (order.isAwaitingPayment)
+                _buildCardAction(
+                  label: loc.translate('payNow'),
+                  isAr: isAr,
+                  busy: _payingOrderId == order.id,
+                  onTap: () => _onPayOrder(order),
+                )
+              else if (order.isDelivered)
+                _buildCardAction(
+                  label: loc.translate('requestRefund'),
+                  isAr: isAr,
+                  onTap: () => context.push('/refund-request/${order.id}'),
                 ),
-              ),
             ],
           ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildCardAction({
+    required String label,
+    required bool isAr,
+    required VoidCallback onTap,
+    bool busy = false,
+  }) {
+    return InkWell(
+      onTap: busy ? null : onTap,
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(
+            label,
+            style: AppStyle.cardSubtitle.copyWith(fontWeight: FontWeight.bold),
+          ),
+          const SizedBox(width: 6),
+          if (busy)
+            const SizedBox(
+              width: 14,
+              height: 14,
+              child: CircularProgressIndicator(strokeWidth: 2),
+            )
+          else
+            Transform.rotate(
+              angle: isAr ? 3.14159 : 0.0,
+              child: SvgPicture.asset(
+                AssetsConstants.moveLeft,
+                width: 14,
+                colorFilter: ColorFilter.mode(AppColors.primary, BlendMode.srcIn),
+              ),
+            ),
         ],
       ),
     );

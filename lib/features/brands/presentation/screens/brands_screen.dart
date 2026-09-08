@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
-import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:sfa/core/localization/app_localizations.dart';
+import 'package:sfa/core/navigation/nav_guard.dart';
 import 'package:sfa/core/providers/nav_providers.dart';
 import 'package:sfa/core/widgets/cart_icon_button.dart';
 import 'package:sfa/features/brands/presentation/widgets/brands_grid.dart';
@@ -173,7 +173,8 @@ class _BrandsAppBar extends ConsumerWidget implements PreferredSizeWidget {
                 width: 24,
                 height: 24,
               ),
-              onPressed: () => context.push('/favorites'),
+              onPressed: () =>
+                  handleAppBarNavTap(context, '/favorites', null),
             ),
           ],
         ),

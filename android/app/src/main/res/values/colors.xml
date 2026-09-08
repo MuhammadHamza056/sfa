@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="ic_launcher_background">#451425</color>
+    <!-- Tint applied to the notification small icon and the app name in the
+         notification header. The gold from the SFA lettermark. -->
+    <color name="notification_color">#CA9A4E</color>
+</resources>

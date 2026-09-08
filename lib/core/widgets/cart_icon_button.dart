@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
-import 'package:go_router/go_router.dart';
+import 'package:sfa/core/navigation/nav_guard.dart';
 import 'package:sfa/features/cart/providers/cart_provider.dart';
 import 'package:sfa/utils/assets_constants.dart';
 import 'package:sfa/utils/color_constants.dart';
@@ -30,7 +30,7 @@ class CartIconButton extends ConsumerWidget {
     final count = ref.watch(cartItemCountProvider);
 
     return GestureDetector(
-      onTap: onTap ?? () => context.push('/cart'),
+      onTap: () => handleAppBarNavTap(context, '/cart', onTap),
       child: Padding(
         padding: padding,
         child: Stack(

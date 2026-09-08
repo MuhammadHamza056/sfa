@@ -11,6 +11,14 @@ const _terminalOrderStatuses = {
   'REFUNDED',
 };
 
+/// Payment states that mean the order still owes money, so the app offers
+/// to (re)pay it instead of, say, refunding it. Anything else — `PAID`,
+/// `REFUNDED`, … — is treated as settled.
+const _unpaidPaymentStatuses = {'PENDING', 'UNPAID', 'FAILED'};
+
+bool _isUnpaidPaymentStatus(String paymentStatus) =>
+    _unpaidPaymentStatuses.contains(paymentStatus.toUpperCase());
+
 /// Response of `send-delivery-otp` — mirrors auth's `OtpRequestResult`.
 /// Non-production backends echo the OTP straight back (`debugOtp`) so the
 /// delivery-OTP screen can prefill it without a real SMS.
@@ -52,6 +60,7 @@ class Order {
   final String status;
   final int totalFils;
   final String currency;
+  final String paymentStatus;
   final List<OrderLineItem> items;
 
   const Order({
@@ -61,10 +70,18 @@ class Order {
     required this.status,
     required this.totalFils,
     this.currency = 'SAR',
+    this.paymentStatus = '',
     this.items = const [],
   });
 
   bool get isActive => !_terminalOrderStatuses.contains(status.toUpperCase());
+
+  /// Refunds are only offered once the order has actually reached the
+  /// customer — the backend rejects a request in any other state.
+  bool get isDelivered => status.toUpperCase() == 'DELIVERED';
+
+  bool get isAwaitingPayment =>
+      _isUnpaidPaymentStatus(paymentStatus) && !_terminalOrderStatuses.contains(status.toUpperCase());
 
   factory Order.fromJson(Map<String, dynamic> json) {
     final id = (json['_id'] ?? json['id'])?.toString() ?? '';
@@ -75,6 +92,7 @@ class Order {
       status: json['status']?.toString() ?? '',
       totalFils: (json['totalFils'] as num?)?.toInt() ?? 0,
       currency: json['currency'] as String? ?? 'SAR',
+      paymentStatus: json['paymentStatus']?.toString() ?? '',
       items: (json['items'] as List? ?? const [])
           .map((v) => OrderLineItem.fromJson(v as Map<String, dynamic>))
           .toList(),
@@ -170,6 +188,7 @@ class OrderDetail {
   final int totalFils;
   final String currency;
   final String deliveryMethod;
+  final String paymentStatus;
   final OrderShippingAddress? shippingAddress;
 
   const OrderDetail({
@@ -185,10 +204,16 @@ class OrderDetail {
     required this.totalFils,
     this.currency = 'SAR',
     this.deliveryMethod = 'DELIVERY',
+    this.paymentStatus = '',
     this.shippingAddress,
   });
 
   bool get isActive => !_terminalOrderStatuses.contains(status.toUpperCase());
+
+  bool get isDelivered => status.toUpperCase() == 'DELIVERED';
+
+  bool get isAwaitingPayment =>
+      _isUnpaidPaymentStatus(paymentStatus) && !_terminalOrderStatuses.contains(status.toUpperCase());
 
   factory OrderDetail.fromJson(Map<String, dynamic> json) {
     final id = (json['_id'] ?? json['id'])?.toString() ?? '';
@@ -213,6 +238,7 @@ class OrderDetail {
       totalFils: (json['totalFils'] as num?)?.toInt() ?? 0,
       currency: json['currency'] as String? ?? 'SAR',
       deliveryMethod: json['deliveryMethod'] as String? ?? 'DELIVERY',
+      paymentStatus: json['paymentStatus']?.toString() ?? '',
       shippingAddress: rawAddress is Map<String, dynamic>
           ? OrderShippingAddress.fromJson(rawAddress)
           : null,

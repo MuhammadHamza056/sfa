@@ -20,6 +20,15 @@ class SecureStorage {
   static const String languageSelected = "LANGUAGE_SELECTED";
   static const String savedLocale = "SAVED_LOCALE";
 
+  /// Apple only hands over the user's name and email on the *first*
+  /// authorization ever granted to this App ID — every later sign-in
+  /// returns nulls. These two keys keep that one-shot payload so repeat
+  /// Apple logins can still identify the user to our backend. They
+  /// deliberately survive [clearSession]: re-installing or logging out
+  /// doesn't make Apple hand the name over again.
+  static const String appleName = "APPLE_NAME";
+  static const String appleEmail = "APPLE_EMAIL";
+
   static const FlutterSecureStorage _storage = FlutterSecureStorage(
     aOptions: AndroidOptions(encryptedSharedPreferences: true),
   );
@@ -47,6 +56,8 @@ class SecureStorage {
       currentUser,
       languageSelected,
       savedLocale,
+      appleName,
+      appleEmail,
     ];
 
     for (String key in keys) {
@@ -206,6 +217,19 @@ class SecureStorage {
 
   static String? getCurrentUser() {
     return _cache[currentUser];
+  }
+
+  static Future<void> putAppleIdentity({String? name, String? email}) async {
+    if (name != null && name.isNotEmpty) await _write(appleName, name);
+    if (email != null && email.isNotEmpty) await _write(appleEmail, email);
+  }
+
+  static String? getAppleName() {
+    return _cache[appleName];
+  }
+
+  static String? getAppleEmail() {
+    return _cache[appleEmail];
   }
 
   static bool get isAuthenticated => getAccessToken() != null;

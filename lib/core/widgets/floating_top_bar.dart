@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:sfa/core/navigation/nav_guard.dart';
 import 'package:sfa/core/providers/nav_providers.dart';
 import 'package:sfa/core/widgets/cart_icon_button.dart';
 import 'package:sfa/utils/assets_constants.dart';
@@ -94,7 +95,11 @@ class FloatingTopBar extends ConsumerWidget {
                         ),
                         _IconBtn(
                           icon: heartIcon,
-                          onTap: onHeartTap ?? () => context.push('/favorites'),
+                          onTap: () => handleAppBarNavTap(
+                            context,
+                            '/favorites',
+                            onHeartTap,
+                          ),
                         ),
                       ],
                     ),

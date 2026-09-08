@@ -1,0 +1,54 @@
+{
+  "project_info": {
+    "project_number": "326611070556",
+    "project_id": "sfaa-a5982",
+    "storage_bucket": "sfaa-a5982.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:326611070556:android:c58cd00d4ac4a453b00099",
+        "android_client_info": {
+          "package_name": "com.vga.sfa"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "326611070556-tqqfsldqs1nvravuq55mnojj8kh7lgv8.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.vga.sfa",
+            "certificate_hash": "07c840b3208a21ce3b7c90185e724221a5fbee76"
+          }
+        },
+        {
+          "client_id": "326611070556-r6339utsp8pp0j0qioci4hb0mlla5qpv.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDxn79xt5bsBKKrTa0AVrgHwMPC3PM-J-M"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "326611070556-r6339utsp8pp0j0qioci4hb0mlla5qpv.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "326611070556-vjke9jujohpt54poud5115nnvmcedilt.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.vga.sfa"
+              }
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

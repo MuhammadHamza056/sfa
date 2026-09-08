@@ -86,12 +86,20 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
     return productAsync.when(
       loading: () => Scaffold(
         backgroundColor: context.palette.background,
-        appBar: PrimaryAppBar(title: appbarTitle, fontSize: 18, showBackButton: true),
+        appBar: PrimaryAppBar(
+          title: appbarTitle,
+          fontSize: 18,
+          showBackButton: true,
+        ),
         body: const Center(child: CircularProgressIndicator()),
       ),
       error: (error, _) => Scaffold(
         backgroundColor: context.palette.background,
-        appBar: PrimaryAppBar(title: appbarTitle, fontSize: 18, showBackButton: true),
+        appBar: PrimaryAppBar(
+          title: appbarTitle,
+          fontSize: 18,
+          showBackButton: true,
+        ),
         body: Center(
           child: Text(
             error.toString(),
@@ -118,7 +126,8 @@ class _ProductDetailBody extends ConsumerWidget {
   final CatalogProductOption? Function(
     List<CatalogProductOption>,
     bool Function(CatalogProductOption),
-  ) findOption;
+  )
+  findOption;
 
   const _ProductDetailBody({
     required this.product,
@@ -151,13 +160,17 @@ class _ProductDetailBody extends ConsumerWidget {
     // come from `variants` instead (each a full SKU with its own price/
     // stock). Prefer `sizeOption` when a backend does send it, otherwise
     // fall back to variant names so size selection still shows real data.
-    final variantLabels = product.variants.map((v) => v.name.resolve(isAr)).toList();
-    final sizeLabels = sizeOption?.values ?? (variantLabels.isNotEmpty ? variantLabels : null);
+    final variantLabels = product.variants
+        .map((v) => v.name.resolve(isAr))
+        .toList();
+    final sizeLabels =
+        sizeOption?.values ?? (variantLabels.isNotEmpty ? variantLabels : null);
 
     final detailState = ref.watch(productDetailProvider(product.id));
     final detailNotifier = ref.read(productDetailProvider(product.id).notifier);
 
-    final selectedColorIndex = colorOption != null && colorOption.values.isNotEmpty
+    final selectedColorIndex =
+        colorOption != null && colorOption.values.isNotEmpty
         ? detailState.selectedColorIndex.clamp(0, colorOption.values.length - 1)
         : 0;
     final selectedSizeIndex = sizeLabels != null && sizeLabels.isNotEmpty
@@ -182,7 +195,8 @@ class _ProductDetailBody extends ConsumerWidget {
         fontSize: 18,
         letterSpacing: 0,
         showBackButton: true,
-        heartIcon: ref.watch(favoritesProvider).favorites.contains(favoriteEntry)
+        heartIcon:
+            ref.watch(favoritesProvider).favorites.contains(favoriteEntry)
             ? AssetsConstants.heartFilled
             : AssetsConstants.heart2,
         onHeartTap: () =>
@@ -201,8 +215,10 @@ class _ProductDetailBody extends ConsumerWidget {
                   height: 520,
                   width: double.infinity,
                   fit: BoxFit.cover,
-                  placeholder: (_, __) => Container(color: context.palette.surfaceMuted),
-                  errorWidget: (_, __, ___) => Container(color: context.palette.surfaceMuted),
+                  placeholder: (_, __) =>
+                      Container(color: context.palette.surfaceMuted),
+                  errorWidget: (_, __, ___) =>
+                      Container(color: context.palette.surfaceMuted),
                 ),
                 if (product.images.length > 1)
                   Positioned(
@@ -218,7 +234,9 @@ class _ProductDetailBody extends ConsumerWidget {
                           margin: const EdgeInsets.symmetric(horizontal: 3),
                           decoration: BoxDecoration(
                             borderRadius: BorderRadius.circular(3),
-                            color: i == 0 ? Colors.white : Colors.white.withValues(alpha: 0.5),
+                            color: i == 0
+                                ? Colors.white
+                                : Colors.white.withValues(alpha: 0.5),
                           ),
                         );
                       }),
@@ -269,14 +287,24 @@ class _ProductDetailBody extends ConsumerWidget {
                   decoration: BoxDecoration(
                     color: context.palette.background,
                     borderRadius: BorderRadius.circular(20),
-                    border: Border.all(color: const Color(0xFFE57373), width: 1),
+                    border: Border.all(
+                      color: const Color(0xFFE57373),
+                      width: 1,
+                    ),
                   ),
-                  padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
+                  padding: const EdgeInsets.symmetric(
+                    vertical: 8,
+                    horizontal: 16,
+                  ),
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      const Icon(Icons.access_time_filled, size: 15, color: Color(0xFFE57373)),
+                      const Icon(
+                        Icons.access_time_filled,
+                        size: 15,
+                        color: Color(0xFFE57373),
+                      ),
                       const SizedBox(width: 6),
                       Text(
                         isAr
@@ -308,14 +336,20 @@ class _ProductDetailBody extends ConsumerWidget {
                         decoration: BoxDecoration(
                           color: context.palette.surfaceAlt,
                           borderRadius: BorderRadius.circular(6),
-                          border: Border.all(color: const Color(0xFFD49E4B), width: 1),
+                          border: Border.all(
+                            color: const Color(0xFFD49E4B),
+                            width: 1,
+                          ),
                         ),
                         padding: const EdgeInsets.all(8),
                         child: SvgPicture.asset(
                           AssetsConstants.store3,
                           width: 16,
                           height: 16,
-                          colorFilter: const ColorFilter.mode(Color(0xFFD49E4B), BlendMode.srcIn),
+                          colorFilter: const ColorFilter.mode(
+                            Color(0xFFD49E4B),
+                            BlendMode.srcIn,
+                          ),
                         ),
                       ),
                       const SizedBox(width: 8),
@@ -356,17 +390,28 @@ class _ProductDetailBody extends ConsumerWidget {
             ),
 
             const SizedBox(height: 16),
-            Divider(indent: 16, endIndent: 16, height: 1, thickness: 0.5, color: context.palette.divider),
+            Divider(
+              indent: 16,
+              endIndent: 16,
+              height: 1,
+              thickness: 0.5,
+              color: context.palette.divider,
+            ),
 
             // 5. Color Selection
             if (colorOption != null) ...[
               Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 8,
+                ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      colorOption.name.resolve(isAr).isEmpty ? colorLabel : colorOption.name.resolve(isAr),
+                      colorOption.name.resolve(isAr).isEmpty
+                          ? colorLabel
+                          : colorOption.name.resolve(isAr),
                       style: AppStyle.bodyText.copyWith(
                         fontWeight: FontWeight.bold,
                         fontSize: 14,
@@ -379,7 +424,8 @@ class _ProductDetailBody extends ConsumerWidget {
                       children: List.generate(colorOption.values.length, (i) {
                         final isSelected = selectedColorIndex == i;
                         final swatchColor =
-                            _parseHexColor(colorOption.values[i]) ?? context.palette.surfaceMuted;
+                            _parseHexColor(colorOption.values[i]) ??
+                            context.palette.surfaceMuted;
                         return GestureDetector(
                           onTap: () => detailNotifier.selectColor(i),
                           child: Container(
@@ -390,8 +436,14 @@ class _ProductDetailBody extends ConsumerWidget {
                               shape: BoxShape.circle,
                               color: swatchColor,
                               border: isSelected
-                                  ? Border.all(color: const Color(0xFFC19E68), width: 2)
-                                  : Border.all(color: Colors.transparent, width: 0),
+                                  ? Border.all(
+                                      color: const Color(0xFFC19E68),
+                                      width: 2,
+                                    )
+                                  : Border.all(
+                                      color: Colors.transparent,
+                                      width: 0,
+                                    ),
                             ),
                           ),
                         );
@@ -401,7 +453,13 @@ class _ProductDetailBody extends ConsumerWidget {
                 ),
               ),
               const SizedBox(height: 8),
-              Divider(indent: 16, endIndent: 16, height: 1, thickness: 0.5, color: context.palette.divider),
+              Divider(
+                indent: 16,
+                endIndent: 16,
+                height: 1,
+                thickness: 0.5,
+                color: context.palette.divider,
+              ),
             ],
 
             // Shipping details widget
@@ -414,14 +472,20 @@ class _ProductDetailBody extends ConsumerWidget {
                     height: 40,
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
-                      border: Border.all(color: const Color(0xFFD49E4B), width: 1),
+                      border: Border.all(
+                        color: const Color(0xFFD49E4B),
+                        width: 1,
+                      ),
                     ),
                     child: Center(
                       child: SvgPicture.asset(
                         AssetsConstants.truck,
                         width: 20,
                         height: 20,
-                        colorFilter: const ColorFilter.mode(Color(0xFFD49E4B), BlendMode.srcIn),
+                        colorFilter: const ColorFilter.mode(
+                          Color(0xFFD49E4B),
+                          BlendMode.srcIn,
+                        ),
                       ),
                     ),
                   ),
@@ -446,7 +510,9 @@ class _ProductDetailBody extends ConsumerWidget {
                           style: AppStyle.bodyText.copyWith(
                             fontSize: 13,
                             fontWeight: FontWeight.w300,
-                            color: context.palette.textPrimary.withValues(alpha: 0.60),
+                            color: context.palette.textPrimary.withValues(
+                              alpha: 0.60,
+                            ),
                           ),
                         ),
                       ],
@@ -457,20 +523,29 @@ class _ProductDetailBody extends ConsumerWidget {
             ),
 
             const SizedBox(height: 8),
-            Divider(indent: 16, endIndent: 16, height: 1, thickness: 0.5, color: context.palette.divider),
+            Divider(
+              indent: 16,
+              endIndent: 16,
+              height: 1,
+              thickness: 0.5,
+              color: context.palette.divider,
+            ),
 
             // 6. Size Selection
             if (sizeLabels != null) ...[
               Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 8,
+                ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
                       sizeOption != null
                           ? (sizeOption.name.resolve(isAr).isEmpty
-                              ? sizeLabel
-                              : sizeOption.name.resolve(isAr))
+                                ? sizeLabel
+                                : sizeOption.name.resolve(isAr))
                           : sizeLabel,
                       style: AppStyle.bodyText.copyWith(
                         fontWeight: FontWeight.bold,
@@ -484,21 +559,33 @@ class _ProductDetailBody extends ConsumerWidget {
                         final isSelected = selectedSizeIndex == i;
                         return GestureDetector(
                           onTap: () => detailNotifier.selectSize(i),
-                          child: Container(
-                            margin: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
-                            width: 44,
-                            height: 32,
-                            decoration: BoxDecoration(
-                              color: isSelected ? AppColors.primary : context.palette.surfaceMuted,
-                              borderRadius: BorderRadius.circular(10),
-                            ),
-                            child: Center(
-                              child: Text(
-                                sizeLabels[i],
-                                style: AppStyle.bodyText.copyWith(
-                                  fontSize: 12,
-                                  fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                                  color: isSelected ? Colors.white : context.palette.textPrimary,
+                          child: IntrinsicWidth(
+                            stepWidth: 44,
+                            child: Container(
+                              margin: const EdgeInsets.symmetric(
+                                horizontal: 4,
+                                vertical: 4,
+                              ),
+                              // width: 44,
+                              height: 32,
+                              decoration: BoxDecoration(
+                                color: isSelected
+                                    ? AppColors.primary
+                                    : context.palette.surfaceMuted,
+                                borderRadius: BorderRadius.circular(10),
+                              ),
+                              child: Center(
+                                child: Text(
+                                  sizeLabels[i],
+                                  style: AppStyle.bodyText.copyWith(
+                                    fontSize: 12,
+                                    fontWeight: isSelected
+                                        ? FontWeight.bold
+                                        : FontWeight.normal,
+                                    color: isSelected
+                                        ? Colors.white
+                                        : context.palette.textPrimary,
+                                  ),
                                 ),
                               ),
                             ),
@@ -510,13 +597,22 @@ class _ProductDetailBody extends ConsumerWidget {
                 ),
               ),
               const SizedBox(height: 8),
-              Divider(indent: 16, endIndent: 16, height: 1, thickness: 0.5, color: context.palette.divider),
+              Divider(
+                indent: 16,
+                endIndent: 16,
+                height: 1,
+                thickness: 0.5,
+                color: context.palette.divider,
+              ),
             ],
 
             // 7. Product Description
             if (product.description != null) ...[
               Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 8,
+                ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -534,7 +630,9 @@ class _ProductDetailBody extends ConsumerWidget {
                       textAlign: TextAlign.start,
                       style: AppStyle.bodyText.copyWith(
                         fontSize: 13,
-                        color: context.palette.textPrimary.withValues(alpha: 0.70),
+                        color: context.palette.textPrimary.withValues(
+                          alpha: 0.70,
+                        ),
                         height: 1.5,
                       ),
                     ),
@@ -542,7 +640,13 @@ class _ProductDetailBody extends ConsumerWidget {
                 ),
               ),
               const SizedBox(height: 8),
-              Divider(indent: 16, endIndent: 16, height: 1, thickness: 0.5, color: context.palette.divider),
+              Divider(
+                indent: 16,
+                endIndent: 16,
+                height: 1,
+                thickness: 0.5,
+                color: context.palette.divider,
+              ),
             ],
 
             // 8. Care Instructions
@@ -577,7 +681,9 @@ class _ProductDetailBody extends ConsumerWidget {
                         careText,
                         style: AppStyle.bodyText.copyWith(
                           fontSize: 12,
-                          color: context.palette.textPrimary.withValues(alpha: 0.70),
+                          color: context.palette.textPrimary.withValues(
+                            alpha: 0.70,
+                          ),
                         ),
                       ),
                     ],
@@ -587,7 +693,13 @@ class _ProductDetailBody extends ConsumerWidget {
             ),
 
             const SizedBox(height: 8),
-            Divider(indent: 16, endIndent: 16, height: 1, thickness: 0.5, color: context.palette.divider),
+            Divider(
+              indent: 16,
+              endIndent: 16,
+              height: 1,
+              thickness: 0.5,
+              color: context.palette.divider,
+            ),
 
             // Free Delivery & Return widget
             Padding(
@@ -626,11 +738,15 @@ class _ProductDetailBody extends ConsumerWidget {
                                 text: loc.translate('viewDeliveryTermsPrefix'),
                                 style: AppStyle.bodyText.copyWith(
                                   fontSize: 12,
-                                  color: context.palette.textPrimary.withValues(alpha: 0.70),
+                                  color: context.palette.textPrimary.withValues(
+                                    alpha: 0.70,
+                                  ),
                                 ),
                               ),
                               TextSpan(
-                                text: loc.translate('viewDeliveryTermsHighlight'),
+                                text: loc.translate(
+                                  'viewDeliveryTermsHighlight',
+                                ),
                                 style: AppStyle.bodyText.copyWith(
                                   fontSize: 12,
                                   fontWeight: FontWeight.bold,
@@ -644,7 +760,9 @@ class _ProductDetailBody extends ConsumerWidget {
                                 text: loc.translate('viewDeliveryTermsSuffix'),
                                 style: AppStyle.bodyText.copyWith(
                                   fontSize: 12,
-                                  color: context.palette.textPrimary.withValues(alpha: 0.70),
+                                  color: context.palette.textPrimary.withValues(
+                                    alpha: 0.70,
+                                  ),
                                 ),
                               ),
                             ],
@@ -665,7 +783,8 @@ class _ProductDetailBody extends ConsumerWidget {
               enabled: product.isAvailable,
               buyNowText: buyNowText,
               productId: product.id,
-              selectedColor: colorOption != null && colorOption.values.isNotEmpty
+              selectedColor:
+                  colorOption != null && colorOption.values.isNotEmpty
                   ? colorOption.values[selectedColorIndex]
                   : null,
               selectedSize: sizeLabels != null && sizeLabels.isNotEmpty
@@ -703,19 +822,23 @@ class _ProductDetailBody extends ConsumerWidget {
                             shrinkWrap: true,
                             physics: const NeverScrollableScrollPhysics(),
                             itemCount: related.length,
-                            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                              crossAxisCount: 2,
-                              crossAxisSpacing: 12,
-                              mainAxisSpacing: 16,
-                              childAspectRatio: 0.65,
-                            ),
+                            gridDelegate:
+                                const SliverGridDelegateWithFixedCrossAxisCount(
+                                  crossAxisCount: 2,
+                                  crossAxisSpacing: 12,
+                                  mainAxisSpacing: 16,
+                                  childAspectRatio: 0.65,
+                                ),
                             itemBuilder: (context, index) {
                               final item = related[index].toProduct(isAr);
                               return ProductCard(
                                 product: item,
                                 isAr: isAr,
                                 onTap: () {
-                                  context.push('/product-detail', extra: item.toDetailArgs());
+                                  context.push(
+                                    '/product-detail',
+                                    extra: item.toDetailArgs(),
+                                  );
                                   scrollController.animateTo(
                                     0,
                                     duration: const Duration(milliseconds: 300),
@@ -774,7 +897,9 @@ class _AddToCartButtonState extends ConsumerState<_AddToCartButton> {
   Future<void> _onPressed() async {
     final loc = AppLocalizations.of(context);
     setState(() => _addingToCart = true);
-    final added = await ref.read(cartProvider.notifier).addItem(
+    final added = await ref
+        .read(cartProvider.notifier)
+        .addItem(
           productId: widget.productId,
           selectedColor: widget.selectedColor,
           selectedSize: widget.selectedSize,
@@ -803,7 +928,9 @@ class _AddToCartButtonState extends ConsumerState<_AddToCartButton> {
           backgroundColor: AppColors.primary,
           disabledBackgroundColor: AppColors.primary.withValues(alpha: 0.6),
           padding: const EdgeInsets.symmetric(vertical: 14),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(30),
+          ),
           elevation: 0,
         ),
         child: Padding(
@@ -832,7 +959,10 @@ class _AddToCartButtonState extends ConsumerState<_AddToCartButton> {
                       AssetsConstants.shoppingBag2,
                       width: 18,
                       height: 18,
-                      colorFilter: const ColorFilter.mode(Colors.white, BlendMode.srcIn),
+                      colorFilter: const ColorFilter.mode(
+                        Colors.white,
+                        BlendMode.srcIn,
+                      ),
                     ),
                   ],
                 ),

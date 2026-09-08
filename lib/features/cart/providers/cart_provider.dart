@@ -25,13 +25,30 @@ class CartNotifier extends AsyncNotifier<CartData> {
   /// Runs a mutation while keeping the last-known cart visible (as
   /// `state.value`) so the screen can show a spinner over existing content
   /// instead of blanking out; a failure keeps that same previous data.
-  Future<void> _mutate(Future<ApiResult<CartData>> Function() call) async {
+  ///
+  /// [optimistic] paints the expected result before the request goes out —
+  /// needed for the toggles, whose checkbox is driven off the cart rather
+  /// than local widget state and so would otherwise sit unchanged until the
+  /// round trip finished. [reconcile] then folds that local intent back into
+  /// whatever the server returned, since these endpoints don't reliably echo
+  /// the flag they just set. Both are skipped on failure, which reverts to
+  /// the pre-tap cart so a rejected toggle doesn't stay visually applied.
+  Future<void> _mutate(
+    Future<ApiResult<CartData>> Function() call, {
+    CartData Function(CartData previous)? optimistic,
+    CartData Function(CartData fromServer)? reconcile,
+  }) async {
+    final before = state;
+    final previous = state.valueOrNull;
+    if (optimistic != null && previous != null) {
+      state = AsyncData(optimistic(previous));
+    }
     state = const AsyncLoading<CartData>().copyWithPrevious(state);
     final result = await call();
     result.when(
-      success: (data) => state = AsyncData(data),
+      success: (data) => state = AsyncData(reconcile == null ? data : reconcile(data)),
       failure: (error) =>
-          state = AsyncError<CartData>(error, StackTrace.current).copyWithPrevious(state),
+          state = AsyncError<CartData>(error, StackTrace.current).copyWithPrevious(before),
     );
   }
 
@@ -85,15 +102,39 @@ class CartNotifier extends AsyncNotifier<CartData> {
     required bool giftWrap,
     String? giftMessage,
   }) {
-    return _mutate(() => _repository.setGiftWrap(
-          giftWrap: giftWrap,
-          giftMessage: giftMessage,
-        ));
+    return _mutate(
+      () => _repository.setGiftWrap(
+        giftWrap: giftWrap,
+        giftMessage: giftMessage,
+      ),
+      optimistic: (previous) => previous.copyWith(
+        giftWrap: giftWrap,
+        giftMessage: giftMessage,
+      ),
+      // `GET /cart` doesn't carry `giftWrap`, so a null there means "server
+      // said nothing" and the flag we just sent stands; an explicit value
+      // from the server always wins.
+      reconcile: (fromServer) => fromServer.giftWrapRaw != null
+          ? fromServer
+          : fromServer.copyWith(giftWrap: giftWrap, giftMessage: giftMessage),
+    );
   }
 
   /// M35
   Future<void> redeemPoints(int points) {
-    return _mutate(() => _repository.redeemPoints(points));
+    return _mutate(
+      () => _repository.redeemPoints(points),
+      // Clearing the redemption also clears the "discount applied" line
+      // straight away; the discount for a *new* redemption is the server's
+      // to compute, so that direction waits for the response.
+      optimistic: (previous) => previous.copyWith(
+        pointsRedeemed: points,
+        pointsDiscountFils: points == 0 ? 0 : null,
+      ),
+      reconcile: (fromServer) => fromServer.pointsRedeemedRaw != null
+          ? fromServer
+          : fromServer.copyWith(pointsRedeemed: points),
+    );
   }
 }
 

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:sfa/core/navigation/nav_guard.dart';
 import 'package:sfa/core/theme/app_palette.dart';
 import 'package:sfa/core/widgets/cart_icon_button.dart';
 import 'package:sfa/utils/assets_constants.dart';
@@ -58,7 +59,8 @@ class SubPageAppBar extends StatelessWidget implements PreferredSizeWidget {
                           padding: const EdgeInsets.all(8.0),
                         ),
                         GestureDetector(
-                          onTap: () => context.push('/favorites'),
+                          onTap: () =>
+                              handleAppBarNavTap(context, '/favorites', null),
                           child: Padding(
                             padding: const EdgeInsets.all(8.0),
                             child: SvgPicture.asset(

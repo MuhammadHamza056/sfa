@@ -73,7 +73,9 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
           ),
           error: (error, _) => Text(
             error.toString(),
-            style: AppStyle.subtitleDesc.copyWith(color: context.palette.textMuted),
+            style: AppStyle.subtitleDesc.copyWith(
+              color: context.palette.textMuted,
+            ),
           ),
           data: (profile) => Column(
             children: [
@@ -82,7 +84,9 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                 const SizedBox(height: 4),
                 Text(
                   profile.email!,
-                  style: AppStyle.subtitleDesc.copyWith(color: context.palette.textMuted),
+                  style: AppStyle.subtitleDesc.copyWith(
+                    color: context.palette.textMuted,
+                  ),
                 ),
               ],
             ],
@@ -95,7 +99,9 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     Widget buildPointsProgressCard(MembershipData? membership) {
       final tierLabel = membership?.tierName.resolve(isAr) ?? '';
       final pointsLabel = membership != null
-          ? (isAr ? '${membership.pointsBalance} نقطة' : '${membership.pointsBalance} Points')
+          ? (isAr
+                ? '${membership.pointsBalance} نقطة'
+                : '${membership.pointsBalance} Points')
           : '';
 
       return Container(
@@ -105,7 +111,11 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
           borderRadius: BorderRadius.circular(20),
           border: Border.all(color: context.palette.border, width: 1),
           boxShadow: [
-            BoxShadow(color: context.palette.shadow, blurRadius: 10, offset: const Offset(0, 4)),
+            BoxShadow(
+              color: context.palette.shadow,
+              blurRadius: 10,
+              offset: const Offset(0, 4),
+            ),
           ],
         ),
         child: Column(
@@ -120,16 +130,28 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                     SvgPicture.asset(
                       AssetsConstants.frame2,
                       width: 18,
-                      colorFilter: ColorFilter.mode(AppColors.primary, BlendMode.srcIn),
+                      colorFilter: ColorFilter.mode(
+                        AppColors.primary,
+                        BlendMode.srcIn,
+                      ),
                     ),
                     const SizedBox(width: 6),
                     Text(
                       tierLabel,
-                      style: AppStyle.fieldLabel.copyWith(color: context.palette.textPrimary, fontSize: 15),
+                      style: AppStyle.fieldLabel.copyWith(
+                        color: context.palette.textPrimary,
+                        fontSize: 15,
+                      ),
                     ),
                   ],
                 ),
-                Text(pointsLabel, style: AppStyle.fieldLabel.copyWith(color: AppColors.primary, fontSize: 15)),
+                Text(
+                  pointsLabel,
+                  style: AppStyle.fieldLabel.copyWith(
+                    color: AppColors.primary,
+                    fontSize: 15,
+                  ),
+                ),
               ],
             ),
             const SizedBox(height: 12),
@@ -154,7 +176,10 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                         height: 8,
                         decoration: BoxDecoration(
                           gradient: LinearGradient(
-                            colors: [AppColors.primary.withValues(alpha: 0.6), AppColors.primary],
+                            colors: [
+                              AppColors.primary.withValues(alpha: 0.6),
+                              AppColors.primary,
+                            ],
                           ),
                           borderRadius: BorderRadius.circular(4),
                         ),
@@ -177,7 +202,11 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
           color: AppColors.primary,
           borderRadius: BorderRadius.circular(24),
           boxShadow: [
-            BoxShadow(color: AppColors.primary.withValues(alpha: 0.2), blurRadius: 12, offset: const Offset(0, 6)),
+            BoxShadow(
+              color: AppColors.primary.withValues(alpha: 0.2),
+              blurRadius: 12,
+              offset: const Offset(0, 6),
+            ),
           ],
         ),
         child: Column(
@@ -187,7 +216,11 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
               alignment: isAr ? Alignment.centerRight : Alignment.centerLeft,
               child: Text(
                 isAr ? 'الرصيد المتاح' : 'Available Balance',
-                style: GoogleFonts.cairo(color: Colors.white.withValues(alpha: 0.9), fontSize: 15, fontWeight: FontWeight.w500),
+                style: GoogleFonts.cairo(
+                  color: Colors.white.withValues(alpha: 0.9),
+                  fontSize: 15,
+                  fontWeight: FontWeight.w500,
+                ),
               ),
             ),
             const SizedBox(height: 4),
@@ -196,19 +229,32 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
               child: balanceAsync.when(
                 loading: () => const SizedBox(
                   height: 32,
-                  child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
+                  child: CircularProgressIndicator(strokeWidth: 2),
                 ),
-                error: (error, _) => Text(error.toString(), style: GoogleFonts.cairo(color: Colors.white)),
+                error: (error, _) => Text(
+                  error.toString(),
+                  style: GoogleFonts.cairo(color: Colors.white),
+                ),
                 data: (balance) => Text(
-                  CurrencyFormatter.fromHalalas(balance.balanceFils, isAr: isAr),
-                  style: GoogleFonts.cairo(color: Colors.white, fontSize: 32, fontWeight: FontWeight.bold),
+                  CurrencyFormatter.fromHalalas(
+                    balance.balanceFils,
+                    isAr: isAr,
+                  ),
+                  style: GoogleFonts.cairo(
+                    color: Colors.white,
+                    fontSize: 32,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
               ),
             ),
             const SizedBox(height: 20),
             Container(
               height: 54,
-              decoration: BoxDecoration(color: AppColors.textcolor, borderRadius: BorderRadius.circular(27)),
+              decoration: BoxDecoration(
+                color: AppColors.textcolor,
+                borderRadius: BorderRadius.circular(27),
+              ),
               child: Material(
                 color: Colors.transparent,
                 child: InkWell(
@@ -220,14 +266,19 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         Text(
-                          isAr ? 'سحب إلى الحساب البنكي' : 'Withdraw to bank account',
+                          isAr
+                              ? 'سحب إلى الحساب البنكي'
+                              : 'Withdraw to bank account',
                           style: AppStyle.walletTransferButton,
                         ),
                         SvgPicture.asset(
                           AssetsConstants.landmark,
                           width: 18,
                           height: 18,
-                          colorFilter: const ColorFilter.mode(Colors.white, BlendMode.srcIn),
+                          colorFilter: const ColorFilter.mode(
+                            Colors.white,
+                            BlendMode.srcIn,
+                          ),
                         ),
                       ],
                     ),
@@ -243,7 +294,10 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     // AI Agent button
     final Widget aiAgentBtn = Container(
       height: 52,
-      decoration: BoxDecoration(gradient: AppColors.primaryGradient, borderRadius: BorderRadius.circular(30)),
+      decoration: BoxDecoration(
+        gradient: AppColors.primaryGradient,
+        borderRadius: BorderRadius.circular(30),
+      ),
       child: Material(
         color: Colors.transparent,
         child: InkWell(
@@ -257,12 +311,17 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                 SvgPicture.asset(
                   AssetsConstants.astroid,
                   width: 18,
-                  colorFilter: ColorFilter.mode(AppColors.textcolor, BlendMode.srcIn),
+                  colorFilter: ColorFilter.mode(
+                    AppColors.textcolor,
+                    BlendMode.srcIn,
+                  ),
                 ),
                 const SizedBox(width: 8),
                 Text(
                   loc.translate('aiAgent'),
-                  style: AppStyle.buttonTextSecondary.copyWith(color: AppColors.textcolor),
+                  style: AppStyle.buttonTextSecondary.copyWith(
+                    color: AppColors.textcolor,
+                  ),
                 ),
               ],
             ),
@@ -285,7 +344,12 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text(loc.translate('logout'), style: AppStyle.buttonTextSecondary.copyWith(color: AppColors.redcolor)),
+          Text(
+            loc.translate('logout'),
+            style: AppStyle.buttonTextSecondary.copyWith(
+              color: AppColors.redcolor,
+            ),
+          ),
           SvgPicture.asset(
             AssetsConstants.logOut,
             width: 18,
@@ -300,7 +364,10 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
       backgroundColor: context.palette.backgroundSubtle,
       body: SafeArea(
         child: SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(horizontal: Values.horizontalPadding, vertical: 20),
+          padding: const EdgeInsets.symmetric(
+            horizontal: Values.horizontalPadding,
+            vertical: 20,
+          ),
           child: Directionality(
             textDirection: loc.isArabic ? TextDirection.rtl : TextDirection.ltr,
             child: Column(
@@ -319,9 +386,12 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                           loading: () => buildPointsProgressCard(null),
                           error: (error, _) => Text(
                             error.toString(),
-                            style: AppStyle.bodyText.copyWith(color: context.palette.textMuted),
+                            style: AppStyle.bodyText.copyWith(
+                              color: context.palette.textMuted,
+                            ),
                           ),
-                          data: (membership) => buildPointsProgressCard(membership),
+                          data: (membership) =>
+                              buildPointsProgressCard(membership),
                         ),
                         const SizedBox(height: 16),
                         buildBalanceCard(),
@@ -348,34 +418,56 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                                   decoration: BoxDecoration(
                                     color: context.palette.surface,
                                     border: Border(
-                                      top: BorderSide(color: context.palette.divider, width: 0.8),
-                                      left: BorderSide(color: context.palette.divider, width: 0.8),
+                                      top: BorderSide(
+                                        color: context.palette.divider,
+                                        width: 0.8,
+                                      ),
+                                      left: BorderSide(
+                                        color: context.palette.divider,
+                                        width: 0.8,
+                                      ),
                                     ),
                                   ),
                                 ),
                               ),
                             ),
                             Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 14,
+                                vertical: 8,
+                              ),
                               decoration: BoxDecoration(
                                 color: context.palette.surface,
                                 borderRadius: BorderRadius.circular(12),
                                 boxShadow: [
-                                  BoxShadow(color: context.palette.shadow, blurRadius: 8, offset: const Offset(0, 4)),
+                                  BoxShadow(
+                                    color: context.palette.shadow,
+                                    blurRadius: 8,
+                                    offset: const Offset(0, 4),
+                                  ),
                                 ],
-                                border: Border.all(color: context.palette.divider, width: 0.8),
+                                border: Border.all(
+                                  color: context.palette.divider,
+                                  width: 0.8,
+                                ),
                               ),
                               child: Column(
                                 mainAxisSize: MainAxisSize.min,
-                                crossAxisAlignment: loc.isArabic ? CrossAxisAlignment.end : CrossAxisAlignment.start,
+                                crossAxisAlignment: loc.isArabic
+                                    ? CrossAxisAlignment.end
+                                    : CrossAxisAlignment.start,
                                 children: [
                                   Text(
                                     membershipAsync.valueOrNull != null
                                         ? (isAr
-                                            ? '${membershipAsync.value!.nextTierPoints} نقطة للترقية'
-                                            : '${membershipAsync.value!.nextTierPoints} points to next tier')
+                                              ? '${membershipAsync.value!.nextTierPoints} نقطة للترقية'
+                                              : '${membershipAsync.value!.nextTierPoints} points to next tier')
                                         : '',
-                                    style: GoogleFonts.cairo(color: AppColors.primary, fontSize: 12, fontWeight: FontWeight.bold),
+                                    style: GoogleFonts.cairo(
+                                      color: AppColors.primary,
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.bold,
+                                    ),
                                   ),
                                 ],
                               ),
@@ -414,8 +506,11 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                     activeColor: Colors.white,
                     inactiveThumbColor: Colors.white,
                     inactiveTrackColor: Colors.grey.shade200,
-                    trackOutlineColor: const WidgetStatePropertyAll(Colors.transparent),
-                    onChanged: (val) => ref.read(profileProvider.notifier).toggleDarkMode(val),
+                    trackOutlineColor: const WidgetStatePropertyAll(
+                      Colors.transparent,
+                    ),
+                    onChanged: (val) =>
+                        ref.read(profileProvider.notifier).toggleDarkMode(val),
                   ),
                   onTap: () {},
                 ),
@@ -446,7 +541,10 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
           leading: SvgPicture.asset(
             icon,
             width: 22,
-            colorFilter: ColorFilter.mode(context.palette.icon, BlendMode.srcIn),
+            colorFilter: ColorFilter.mode(
+              context.palette.icon,
+              BlendMode.srcIn,
+            ),
           ),
           title: Text(title, style: AppStyle.fieldLabel.copyWith(fontSize: 15)),
           trailing: trailing,

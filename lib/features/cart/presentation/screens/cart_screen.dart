@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import 'package:sfa/core/localization/app_localizations.dart';
 import 'package:sfa/features/cart/data/cart_models.dart';
 import 'package:sfa/features/cart/providers/cart_provider.dart';
+import 'package:sfa/features/profile/providers/profile_data_provider.dart';
 import 'package:sfa/utils/assets_constants.dart';
 import 'package:sfa/utils/color_constants.dart';
 import 'package:sfa/utils/currency_formatter.dart';
@@ -34,7 +35,9 @@ class _CartScreenState extends ConsumerState<CartScreen> {
 
   void _showError(String message) {
     if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(message)));
   }
 
   @override
@@ -70,7 +73,9 @@ class _CartScreenState extends ConsumerState<CartScreen> {
                   Center(
                     child: Text(
                       error.toString(),
-                      style: AppStyle.labelText.copyWith(color: context.palette.textMuted),
+                      style: AppStyle.labelText.copyWith(
+                        color: context.palette.textMuted,
+                      ),
                     ),
                   ),
                 ],
@@ -109,12 +114,55 @@ class _CartBody extends ConsumerStatefulWidget {
 class _CartBodyState extends ConsumerState<_CartBody> {
   final Set<String> _deletingIds = {};
   final Set<String> _favoritingIds = {};
+  final FocusNode _giftMessageFocus = FocusNode();
+
+  /// Last message the server has been told about, so blurring the field
+  /// without having typed anything doesn't fire a pointless PATCH.
+  String _sentGiftMessage = '';
+
+  @override
+  void initState() {
+    super.initState();
+    _sentGiftMessage = widget.cart.giftMessage ?? '';
+    if (widget.giftCardController.text.isEmpty) {
+      widget.giftCardController.text = _sentGiftMessage;
+    }
+    _giftMessageFocus.addListener(_syncGiftMessageOnBlur);
+  }
+
+  @override
+  void dispose() {
+    _giftMessageFocus.removeListener(_syncGiftMessageOnBlur);
+    _giftMessageFocus.dispose();
+    super.dispose();
+  }
+
+  /// The message box is multi-line, so `onSubmitted` never fires — Enter
+  /// inserts a newline. Without this the text would only ever reach M34 if
+  /// the user happened to re-toggle the checkbox afterwards.
+  void _syncGiftMessageOnBlur() {
+    if (_giftMessageFocus.hasFocus) return;
+    final message = widget.giftCardController.text.trim();
+    if (message == _sentGiftMessage) return;
+    _sentGiftMessage = message;
+    ref
+        .read(cartProvider.notifier)
+        .setGiftWrap(giftWrap: true, giftMessage: message);
+  }
 
   Future<void> _handleDelete(String cartItemId) async {
     setState(() => _deletingIds.add(cartItemId));
     await ref.read(cartProvider.notifier).removeItem(cartItemId);
     if (!mounted) return;
     setState(() => _deletingIds.remove(cartItemId));
+  }
+
+  /// Redeeming changes the balance, so the membership record the label and
+  /// the profile screen both read has to be refetched afterwards.
+  Future<void> _handleRedeem(int points) async {
+    await ref.read(cartProvider.notifier).redeemPoints(points);
+    if (!mounted) return;
+    ref.invalidate(membershipProvider);
   }
 
   Future<void> _handleFavorite(String cartItemId) async {
@@ -130,6 +178,15 @@ class _CartBodyState extends ConsumerState<_CartBody> {
     final cart = widget.cart;
     final isAr = loc.isArabic;
 
+    // M74 — the same membership record the profile screen reads, so the
+    // balance here can't drift from the one shown on the account screen.
+    // A signed-out session or a failed load falls back to zero rather than
+    // to a placeholder the user can't actually redeem.
+    final pointsBalance =
+        ref.watch(membershipProvider).valueOrNull?.pointsBalance ?? 0;
+    final redeemedPoints = cart.pointsRedeemed;
+    final canRedeem = pointsBalance > 0 || redeemedPoints > 0;
+
     return SingleChildScrollView(
       physics: const AlwaysScrollableScrollPhysics(),
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
@@ -142,7 +199,9 @@ class _CartBodyState extends ConsumerState<_CartBody> {
                   child: Center(
                     child: Text(
                       loc.translate('cartEmpty'),
-                      style: AppStyle.labelText.copyWith(color: context.palette.textMuted),
+                      style: AppStyle.labelText.copyWith(
+                        color: context.palette.textMuted,
+                      ),
                     ),
                   ),
                 ),
@@ -158,7 +217,10 @@ class _CartBodyState extends ConsumerState<_CartBody> {
                         imageUrl: item.imageUrl,
                         brand: item.brandName ?? '',
                         title: item.name.resolve(isAr),
-                        price: CurrencyFormatter.fromHalalas(item.priceFils, isAr: isAr),
+                        price: CurrencyFormatter.fromHalalas(
+                          item.priceFils,
+                          isAr: isAr,
+                        ),
                         itemColor: item.colorValue,
                         size: item.selectedSize,
                         quantity: item.quantity,
@@ -167,11 +229,16 @@ class _CartBodyState extends ConsumerState<_CartBody> {
                         isFavoriting: _favoritingIds.contains(item.id),
                         onDelete: () => _handleDelete(item.id),
                         onFavorite: () => _handleFavorite(item.id),
-                        onQuantityChanged: (q) =>
-                            ref.read(cartProvider.notifier).updateQuantity(item.id, q),
+                        onQuantityChanged: (q) => ref
+                            .read(cartProvider.notifier)
+                            .updateQuantity(item.id, q),
                       ),
                       if (index < cart.items.length - 1)
-                        Divider(height: 24, thickness: 0.5, color: context.palette.divider),
+                        Divider(
+                          height: 24,
+                          thickness: 0.5,
+                          color: context.palette.divider,
+                        ),
                     ],
                   );
                 }),
@@ -180,22 +247,25 @@ class _CartBodyState extends ConsumerState<_CartBody> {
                 // ── Free Gift Wrap ────────────────────────────────────────
                 _CartCheckboxRow(
                   value: cart.giftWrap,
-                  onChanged: (v) => ref
-                      .read(cartProvider.notifier)
-                      .setGiftWrap(
-                        giftWrap: v ?? false,
-                        giftMessage: widget.giftCardController.text.isEmpty
-                            ? null
-                            : widget.giftCardController.text,
-                      ),
+                  onChanged: (v) {
+                    final message = widget.giftCardController.text.trim();
+                    _sentGiftMessage = message;
+                    ref
+                        .read(cartProvider.notifier)
+                        .setGiftWrap(
+                          giftWrap: v ?? false,
+                          giftMessage: message.isEmpty ? null : message,
+                        );
+                  },
                   svgPath: AssetsConstants.gift,
                   label: loc.translate('freeGiftWrap'),
                 ),
                 // Expandable gift-wrap detail
                 AnimatedCrossFade(
                   duration: const Duration(milliseconds: 250),
-                  crossFadeState:
-                      cart.giftWrap ? CrossFadeState.showFirst : CrossFadeState.showSecond,
+                  crossFadeState: cart.giftWrap
+                      ? CrossFadeState.showFirst
+                      : CrossFadeState.showSecond,
                   firstChild: Padding(
                     padding: const EdgeInsets.only(bottom: 16),
                     child: Column(
@@ -207,32 +277,35 @@ class _CartBodyState extends ConsumerState<_CartBody> {
                         const SizedBox(height: 16),
                         Text(
                           loc.translate('giftCardMessageLabel'),
-                          style: AppStyle.labelText.copyWith(fontWeight: FontWeight.w600),
+                          style: AppStyle.labelText.copyWith(
+                            fontWeight: FontWeight.w600,
+                          ),
                           textAlign: isAr ? TextAlign.right : TextAlign.left,
                         ),
                         const SizedBox(height: 8),
                         TextField(
                           controller: widget.giftCardController,
+                          focusNode: _giftMessageFocus,
                           minLines: 4,
                           maxLines: 6,
                           textAlign: isAr ? TextAlign.right : TextAlign.left,
-                          textDirection: isAr ? TextDirection.rtl : TextDirection.ltr,
-                          onSubmitted: (value) => ref
-                              .read(cartProvider.notifier)
-                              .setGiftWrap(
-                                giftWrap: true,
-                                giftMessage: value,
-                              ),
+                          textDirection: isAr
+                              ? TextDirection.rtl
+                              : TextDirection.ltr,
                           decoration: InputDecoration(
                             hintText: loc.translate('giftCardMessageHint'),
                             contentPadding: const EdgeInsets.all(12),
                             border: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(8),
-                              borderSide: BorderSide(color: context.palette.divider),
+                              borderSide: BorderSide(
+                                color: context.palette.divider,
+                              ),
                             ),
                             enabledBorder: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(8),
-                              borderSide: BorderSide(color: context.palette.divider),
+                              borderSide: BorderSide(
+                                color: context.palette.divider,
+                              ),
                             ),
                             focusedBorder: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(8),
@@ -246,20 +319,34 @@ class _CartBodyState extends ConsumerState<_CartBody> {
                   ),
                   secondChild: const SizedBox.shrink(),
                 ),
-                Divider(height: 1, thickness: 0.5, color: context.palette.divider),
+                Divider(
+                  height: 1,
+                  thickness: 0.5,
+                  color: context.palette.divider,
+                ),
                 const SizedBox(height: 12),
 
                 // ── Earn & Redeem ─────────────────────────────────────────
                 _CartCheckboxRow(
-                  value: cart.pointsRedeemed > 0,
-                  onChanged: (v) => ref
-                      .read(cartProvider.notifier)
-                      .redeemPoints(v == true ? 500 : 0),
+                  value: redeemedPoints > 0,
+                  // There's no amount picker in this design, so checking the
+                  // box redeems the whole balance. Disabled outright when
+                  // there is nothing to redeem.
+                  onChanged: canRedeem
+                      ? (v) => _handleRedeem(v == true ? pointsBalance : 0)
+                      : null,
                   svgPath: AssetsConstants.ticketCheck,
                   label: loc.translate('earnAndRedeem'),
-                  trailingLabel: loc.translate('earnAndRedeemPoints'),
+                  trailingLabel: loc.translate(
+                    'earnAndRedeemPoints',
+                    params: {
+                      'points': redeemedPoints > 0
+                          ? redeemedPoints
+                          : pointsBalance,
+                    },
+                  ),
                 ),
-                if (cart.pointsRedeemed > 0) ...[
+                if (redeemedPoints > 0) ...[
                   Padding(
                     padding: const EdgeInsets.only(bottom: 16),
                     child: _PointsDiscountText(
@@ -270,7 +357,11 @@ class _CartBodyState extends ConsumerState<_CartBody> {
                     ),
                   ),
                 ],
-                Divider(height: 1, thickness: 0.5, color: context.palette.divider),
+                Divider(
+                  height: 1,
+                  thickness: 0.5,
+                  color: context.palette.divider,
+                ),
                 const SizedBox(height: 16),
 
                 // Coupon Code Box
@@ -291,7 +382,9 @@ class _CartBodyState extends ConsumerState<_CartBody> {
                           isAr
                               ? 'تم تطبيق الكود: ${cart.couponCode}'
                               : 'Applied: ${cart.couponCode}',
-                          style: AppStyle.labelText.copyWith(color: AppColors.greencolor),
+                          style: AppStyle.labelText.copyWith(
+                            color: AppColors.greencolor,
+                          ),
                         ),
                       ),
                       TextButton(
@@ -306,8 +399,14 @@ class _CartBodyState extends ConsumerState<_CartBody> {
 
                 // Pricing Summary
                 PricingSummary(
-                  subtotal: CurrencyFormatter.fromHalalas(cart.subtotalFils, isAr: isAr),
-                  total: CurrencyFormatter.fromHalalas(cart.totalFils, isAr: isAr),
+                  subtotal: CurrencyFormatter.fromHalalas(
+                    cart.subtotalFils,
+                    isAr: isAr,
+                  ),
+                  total: CurrencyFormatter.fromHalalas(
+                    cart.totalFils,
+                    isAr: isAr,
+                  ),
                   pointsDiscount: cart.pointsDiscountFils > 0
                       ? '-${CurrencyFormatter.fromHalalas(cart.pointsDiscountFils, isAr: isAr)}'
                       : null,
@@ -320,7 +419,9 @@ class _CartBodyState extends ConsumerState<_CartBody> {
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppColors.primary,
                     minimumSize: const Size(double.infinity, 54),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(30),
+                    ),
                     elevation: 0,
                   ),
                   child: Row(
@@ -331,7 +432,10 @@ class _CartBodyState extends ConsumerState<_CartBody> {
                         AssetsConstants.shoppingBag,
                         width: 18,
                         height: 18,
-                        colorFilter: const ColorFilter.mode(Colors.white, BlendMode.srcIn),
+                        colorFilter: const ColorFilter.mode(
+                          Colors.white,
+                          BlendMode.srcIn,
+                        ),
                       ),
                       Expanded(
                         child: Padding(
@@ -368,7 +472,10 @@ class _CartCheckboxRow extends StatelessWidget {
   });
 
   final bool value;
-  final ValueChanged<bool?> onChanged;
+
+  /// `null` renders the row disabled — used when there are no points to
+  /// redeem.
+  final ValueChanged<bool?>? onChanged;
   final String svgPath;
   final String label;
   final String? trailingLabel;
@@ -430,7 +537,7 @@ class _CartCheckboxRow extends StatelessWidget {
     );
 
     return InkWell(
-      onTap: () => onChanged(!value),
+      onTap: onChanged == null ? null : () => onChanged!(!value),
       child: Padding(
         padding: const EdgeInsets.symmetric(vertical: 20),
         // Force LTR on the Row so our explicit child order is always

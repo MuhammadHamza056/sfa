@@ -10,6 +10,7 @@ import 'package:sfa/utils/assets_constants.dart';
 import 'package:sfa/utils/color_constants.dart';
 import 'package:sfa/utils/app_style.dart';
 import 'package:sfa/features/auth/providers/auth_provider.dart';
+import 'package:sfa/features/auth/presentation/widgets/social_sign_in_row.dart';
 import 'package:sfa/features/auth/presentation/widgets/phone_input_field.dart';
 import 'package:sfa/core/theme/app_palette.dart';
 
@@ -70,7 +71,7 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
                 width: 22,
                 child: CircularProgressIndicator(
                   strokeWidth: 2,
-                  color: Colors.white,
+                  // color: Colors.white,
                 ),
               ),
             )
@@ -169,6 +170,15 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
           textColor: Colors.white,
         );
         context.go('/otp');
+      } else if (next.status == AuthStatus.authenticated) {
+        // Only the social buttons land here — Google and Apple return a
+        // live session straight away, with no OTP step to pass through.
+        Fluttertoast.showToast(
+          msg: loc.isArabic ? "تسجيل الدخول بنجاح!" : "Login Successful!",
+          backgroundColor: AppColors.greencolor,
+          textColor: Colors.white,
+        );
+        context.go('/dashboard');
       } else if (next.status == AuthStatus.failure &&
           next.errorMessage != null) {
         Fluttertoast.showToast(
@@ -216,74 +226,7 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
                 const SizedBox(height: 28),
 
                 // Social Login Pill Buttons
-                Row(
-                  children: [
-                    // Apple Login Button
-                    Expanded(
-                      child: OutlinedButton(
-                        onPressed: () {},
-                        style: OutlinedButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(vertical: 14),
-                          side: BorderSide(
-                            color: context.palette.outlineStrong,
-                            width: 1.2,
-                          ),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(30),
-                          ),
-                        ),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Image.asset(
-                              AssetsConstants.applePng,
-                              width: 18,
-                              height: 18,
-                            ),
-                            const SizedBox(width: 8),
-                            Text(
-                              loc.translate('apple'),
-                              style: AppStyle.buttonTextSocial,
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 14),
-
-                    // Google Login Button
-                    Expanded(
-                      child: OutlinedButton(
-                        onPressed: () {},
-                        style: OutlinedButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(vertical: 14),
-                          side: BorderSide(
-                            color: context.palette.outlineStrong,
-                            width: 1.2,
-                          ),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(30),
-                          ),
-                        ),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Image.asset(
-                              AssetsConstants.googlePng,
-                              width: 18,
-                              height: 18,
-                            ),
-                            const SizedBox(width: 8),
-                            Text(
-                              loc.translate('google'),
-                              style: AppStyle.buttonTextSocial,
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
+                const SocialSignInRow(),
                 const SizedBox(height: 28),
 
                 // Sub-label Or Phone Login

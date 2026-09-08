@@ -1,16 +1,25 @@
+import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'core/hive_services.dart';
 import 'core/localization/app_localizations.dart';
+import 'core/notifications/push_notifications_service.dart';
 import 'core/routes.dart';
 import 'core/theme/app_theme.dart';
 import 'core/theme/theme_notifier.dart';
+import 'firebase_options.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+  FirebaseMessaging.onBackgroundMessage(firebaseMessagingBackgroundHandler);
+
   await SecureStorage.init();
+  await PushNotificationsService.instance.initialize();
   themeNotifier.loadFromStorage();
   localeNotifier.loadFromStorage();
   runApp(const ProviderScope(child: MyApp()));
@@ -49,3 +58,8 @@ class MyApp extends StatelessWidget {
     );
   }
 }
+
+// customer@safa.sa
+
+// +966500000001
+// Test@1234

@@ -10,6 +10,20 @@ Color? colorFromHex(String? hex) {
   return parsed == null ? null : Color(parsed);
 }
 
+/// Backends in this project have shipped booleans as `true`, `"true"` and
+/// `1` depending on the endpoint. Returns `null` — meaning "not present" —
+/// for anything unrecognised, which callers treat differently from `false`.
+bool? _readBool(Object? value) {
+  if (value is bool) return value;
+  if (value is num) return value != 0;
+  if (value is String) {
+    final normalized = value.toLowerCase();
+    if (normalized == 'true' || normalized == '1') return true;
+    if (normalized == 'false' || normalized == '0') return false;
+  }
+  return null;
+}
+
 class CartAddon {
   final String addonId;
   final LocalizedText? name;
@@ -107,11 +121,20 @@ class CartData {
   final int itemsCount;
   final int subtotalFils;
   final String currency;
-  final bool giftWrap;
+
+  /// `null` means the response carried no gift-wrap field at all — which is
+  /// what the real `GET /cart` and the mutation acks do — as opposed to an
+  /// explicit `false`. [CartNotifier] needs that distinction so a silent
+  /// response doesn't wipe the choice the user just made; read [giftWrap]
+  /// for display.
+  final bool? giftWrapRaw;
   final String? giftMessage;
   final String? couponCode;
   final int discountFils;
-  final int pointsRedeemed;
+
+  /// `null` when the response omitted the field — see [giftWrapRaw]. Read
+  /// [pointsRedeemed] for display.
+  final int? pointsRedeemedRaw;
   final int pointsDiscountFils;
   final int totalFils;
 
@@ -120,16 +143,49 @@ class CartData {
     this.itemsCount = 0,
     this.subtotalFils = 0,
     this.currency = 'SAR',
-    this.giftWrap = false,
+    bool? giftWrap,
     this.giftMessage,
     this.couponCode,
     this.discountFils = 0,
-    this.pointsRedeemed = 0,
+    int? pointsRedeemed,
     this.pointsDiscountFils = 0,
     this.totalFils = 0,
-  });
+  })  : giftWrapRaw = giftWrap,
+        pointsRedeemedRaw = pointsRedeemed;
 
   bool get isEmpty => items.isEmpty;
+
+  bool get giftWrap => giftWrapRaw ?? false;
+
+  int get pointsRedeemed => pointsRedeemedRaw ?? 0;
+
+  CartData copyWith({
+    List<CartLineItem>? items,
+    int? itemsCount,
+    int? subtotalFils,
+    String? currency,
+    bool? giftWrap,
+    String? giftMessage,
+    String? couponCode,
+    int? discountFils,
+    int? pointsRedeemed,
+    int? pointsDiscountFils,
+    int? totalFils,
+  }) {
+    return CartData(
+      items: items ?? this.items,
+      itemsCount: itemsCount ?? this.itemsCount,
+      subtotalFils: subtotalFils ?? this.subtotalFils,
+      currency: currency ?? this.currency,
+      giftWrap: giftWrap ?? giftWrapRaw,
+      giftMessage: giftMessage ?? this.giftMessage,
+      couponCode: couponCode ?? this.couponCode,
+      discountFils: discountFils ?? this.discountFils,
+      pointsRedeemed: pointsRedeemed ?? pointsRedeemedRaw,
+      pointsDiscountFils: pointsDiscountFils ?? this.pointsDiscountFils,
+      totalFils: totalFils ?? this.totalFils,
+    );
+  }
 
   factory CartData.fromJson(Map<String, dynamic> json) {
     // The real API groups lines by vendor/branch: `data.vendors[].items[]`,
@@ -166,11 +222,12 @@ class CartData {
           items.fold<int>(0, (sum, i) => sum + i.quantity),
       subtotalFils: subtotalFils,
       currency: json['currency'] as String? ?? 'SAR',
-      giftWrap: json['giftWrap'] as bool? ?? false,
+      giftWrap: _readBool(json['giftWrap'] ?? json['isGiftWrap']),
       giftMessage: json['giftMessage'] as String?,
       couponCode: json['couponCode'] as String?,
       discountFils: discountFils,
-      pointsRedeemed: (json['pointsRedeemed'] as num?)?.toInt() ?? 0,
+      pointsRedeemed: (json['pointsRedeemed'] as num?)?.toInt() ??
+          (json['redeemedPoints'] as num?)?.toInt(),
       pointsDiscountFils: pointsDiscountFils,
       totalFils: (json['grandTotalFils'] as num?)?.toInt() ??
           (json['totalFils'] as num?)?.toInt() ??

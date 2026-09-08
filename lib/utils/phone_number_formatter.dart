@@ -11,13 +11,15 @@ class PhoneInputValidator {
     final cleanDigits = value.replaceAll(RegExp(r'\D'), '');
 
     if (countryCode == '+965' || countryCode == '965' || countryCode == 'KW') {
-      if (cleanDigits.length != 8) {
-        return 'Kuwait phone number must be exactly 8 digits';
-      }
-    } else if (countryCode == '+966' || countryCode == '966' || countryCode == 'SA') {
-      if (cleanDigits.length != 9) {
-        return 'Saudi phone number must be exactly 9 digits';
-      }
+      // if (cleanDigits.length != 8) {
+      //   return 'Kuwait phone number must be exactly 8 digits';
+      // }
+    } else if (countryCode == '+966' ||
+        countryCode == '966' ||
+        countryCode == 'SA') {
+      // if (cleanDigits.length != 9) {
+      //   return 'Saudi phone number must be exactly 9 digits';
+      // }
     } else {
       if (cleanDigits.length < 7 || cleanDigits.length > 12) {
         return 'Please enter a valid phone number';

@@ -57,7 +57,7 @@ class PhoneInputField extends ConsumerWidget {
                         .changeCountryCode(
                           countryCode: country.code ?? 'KW',
                           dialCode: code,
-                          phoneLength: isKuwait ? 8 : 9,
+                          // phoneLength: isKuwait ? 8 : 9,
                         );
                   },
                   initialSelection: 'KW',
@@ -77,14 +77,14 @@ class PhoneInputField extends ConsumerWidget {
                     controller: controller,
                     keyboardType: TextInputType.phone,
                     inputFormatters: [
-                      ...?TextFormatter.roundNumberOnly,
-                      PhoneInputFormatter(maxLength: state.maxPhoneLength),
+                      // ...?TextFormatter.roundNumberOnly,
+                      // PhoneInputFormatter(maxLength: state.maxPhoneLength),
                     ],
                     onChanged: (val) {
                       ref.read(authProvider.notifier).changePhone(val);
                     },
                     decoration: InputDecoration(
-                      hintText: '${state.maxPhoneLength} digits e.g. 91234567',
+                      hintText: 'Phone number',
                       hintStyle: TextStyle(
                         color: context.palette.textMuted,
                         fontSize: 14,

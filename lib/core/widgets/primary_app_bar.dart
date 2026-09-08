@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 import 'package:sfa/core/localization/app_localizations.dart';
+import 'package:sfa/core/navigation/nav_guard.dart';
 import 'package:sfa/core/theme/app_palette.dart';
 import 'package:sfa/core/widgets/cart_icon_button.dart';
 import 'package:sfa/features/dashboard/presentation/screens/app_shell.dart';
@@ -106,7 +107,8 @@ class PrimaryAppBar extends StatelessWidget implements PreferredSizeWidget {
             ),
             const SizedBox(width: 16),
             GestureDetector(
-              onTap: onHeartTap ?? () => context.push('/favorites'),
+              onTap: () =>
+                  handleAppBarNavTap(context, '/favorites', onHeartTap),
               child: SvgPicture.asset(
                 heartIcon,
                 width: 22,

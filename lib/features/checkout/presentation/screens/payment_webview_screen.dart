@@ -10,7 +10,7 @@ import '../../data/checkout_models.dart';
 /// `/payments/methods/initiate`. The gateway is configured to redirect to
 /// this placeholder scheme once the user finishes paying — swap it for the
 /// real success/failure callback URL(s) once the backend documents them.
-const String paymentCallbackUrlPrefix = 'sfa://payment-callback';
+const String paymentCallbackUrlPrefix = 'safa://payment';
 
 class PaymentWebviewArgs {
   final String paymentUrl;
@@ -23,7 +23,11 @@ class PaymentWebviewScreen extends StatefulWidget {
   final String paymentUrl;
   final CheckoutConfirmResult order;
 
-  const PaymentWebviewScreen({super.key, required this.paymentUrl, required this.order});
+  const PaymentWebviewScreen({
+    super.key,
+    required this.paymentUrl,
+    required this.order,
+  });
 
   @override
   State<PaymentWebviewScreen> createState() => _PaymentWebviewScreenState();

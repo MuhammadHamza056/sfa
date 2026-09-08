@@ -126,17 +126,17 @@ class AuthRepository {
   /// M06: Google OAuth Sign-In
   Future<ApiResult<AuthSession>> googleSignIn({
     required String idToken,
-    required String email,
-    required String name,
+    String? email,
+    String? name,
   }) {
     return _client.post<AuthSession>(
       ApiEndpoints.googleSignIn,
-      data: {
-        'email': email,
-        'name': name,
-        'providerType': 'google',
-        'idToken': idToken,
-      },
+      data: _oauthPayload(
+        providerType: 'google',
+        idToken: idToken,
+        email: email,
+        name: name,
+      ),
       fromJson: (data) => AuthSession.fromJson(data as Map<String, dynamic>),
     );
   }
@@ -144,19 +144,37 @@ class AuthRepository {
   /// M07: Apple OAuth Sign-In
   Future<ApiResult<AuthSession>> appleSignIn({
     required String idToken,
-    required String email,
-    required String name,
+    String? email,
+    String? name,
   }) {
     return _client.post<AuthSession>(
       ApiEndpoints.appleSignIn,
-      data: {
-        'email': email,
-        'name': name,
-        'providerType': 'apple',
-        'idToken': idToken,
-      },
+      data: _oauthPayload(
+        providerType: 'apple',
+        idToken: idToken,
+        email: email,
+        name: name,
+      ),
       fromJson: (data) => AuthSession.fromJson(data as Map<String, dynamic>),
     );
+  }
+
+  /// `idToken` is the only field either provider guarantees. Apple omits
+  /// the name and email on every sign-in after the first, so those keys
+  /// are left out of the body entirely rather than sent as empty strings —
+  /// the backend identifies the account from the token's `sub` claim.
+  Map<String, dynamic> _oauthPayload({
+    required String providerType,
+    required String idToken,
+    String? email,
+    String? name,
+  }) {
+    return {
+      'providerType': providerType,
+      'idToken': idToken,
+      if (email != null && email.isNotEmpty) 'email': email,
+      if (name != null && name.isNotEmpty) 'name': name,
+    };
   }
 
   /// M08: Revoke active session tokens

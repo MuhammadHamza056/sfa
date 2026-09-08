@@ -35,7 +35,7 @@ class BrandCard extends StatelessWidget {
                   height: 20,
                   child: CircularProgressIndicator(
                     strokeWidth: 1.5,
-                    color: Colors.white38,
+                    // color: Colors.white38,
                   ),
                 ),
               ),

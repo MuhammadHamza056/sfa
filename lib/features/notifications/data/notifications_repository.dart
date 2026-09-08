@@ -40,9 +40,8 @@ class NotificationsRepository {
     );
   }
 
-  /// M96: Register FCM push device token. No push package (e.g.
-  /// `firebase_messaging`) is wired into the app yet, so nothing calls this
-  /// automatically — it's here for whenever push notifications are added.
+  /// M96: Register FCM push device token. Called by
+  /// `PushNotificationsService` on login and token refresh.
   Future<ApiResult<void>> registerDeviceToken({
     required String token,
     required String platform,

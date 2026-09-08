@@ -1,11 +1,15 @@
+import 'dart:async';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/hive_services.dart';
 import '../../../core/network/api_client.dart';
+import '../../../core/notifications/push_notifications_service.dart';
 import '../../../core/network/api_result.dart';
 import '../../../utils/phone_number_formatter.dart';
 import '../data/auth_models.dart';
 import '../data/auth_repository.dart';
+import '../data/social_auth_service.dart';
 
 final authRepositoryProvider = Provider<AuthRepository>((ref) {
   return AuthRepository(ApiClient.instance);
@@ -27,7 +31,7 @@ class AuthState {
   final String phoneNumber;
   final String dialCode;
   final String countryCode;
-  final int maxPhoneLength;
+  // final int maxPhoneLength;
   final bool isEmailMode;
   final AuthStatus status;
   final String? errorMessage;
@@ -53,7 +57,7 @@ class AuthState {
     this.phoneNumber = '',
     this.dialCode = '+965',
     this.countryCode = 'KW',
-    this.maxPhoneLength = 8,
+    // this.maxPhoneLength = 8,
     this.isEmailMode = false,
     this.status = AuthStatus.initial,
     this.registerAsMerchant = false,
@@ -69,7 +73,7 @@ class AuthState {
     String? phoneNumber,
     String? dialCode,
     String? countryCode,
-    int? maxPhoneLength,
+    // int? maxPhoneLength,
     bool? isEmailMode,
     AuthStatus? status,
     bool? registerAsMerchant,
@@ -84,7 +88,7 @@ class AuthState {
       phoneNumber: phoneNumber ?? this.phoneNumber,
       dialCode: dialCode ?? this.dialCode,
       countryCode: countryCode ?? this.countryCode,
-      maxPhoneLength: maxPhoneLength ?? this.maxPhoneLength,
+      // maxPhoneLength: maxPhoneLength ?? this.maxPhoneLength,
       isEmailMode: isEmailMode ?? this.isEmailMode,
       status: status ?? this.status,
       registerAsMerchant: registerAsMerchant ?? this.registerAsMerchant,
@@ -122,7 +126,7 @@ class AuthNotifier extends AutoDisposeNotifier<AuthState> {
   void changeCountryCode({
     required String countryCode,
     required String dialCode,
-    required int phoneLength,
+    // required int phoneLength,
   }) {
     final validationError = PhoneInputValidator.validatePhoneNumber(
       state.phoneNumber,
@@ -131,7 +135,7 @@ class AuthNotifier extends AutoDisposeNotifier<AuthState> {
     state = state.copyWith(
       countryCode: countryCode,
       dialCode: dialCode,
-      maxPhoneLength: phoneLength,
+      // maxPhoneLength: phoneLength,
       phoneValidationError: validationError,
     );
   }
@@ -276,9 +280,70 @@ class AuthNotifier extends AutoDisposeNotifier<AuthState> {
     );
     result.when(
       success: (_) {},
-      failure: (error) =>
-          state = state.copyWith(status: AuthStatus.failure, errorMessage: error.message),
+      failure: (error) => state = state.copyWith(
+        status: AuthStatus.failure,
+        errorMessage: error.message,
+      ),
     );
+  }
+
+  /// M06 — Google. The provider SDK does the account picking; all we
+  /// exchange with our backend is the resulting ID token.
+  Future<void> signInWithGoogle() {
+    return _signInWithProvider(
+      credential: SocialAuthService.signInWithGoogle,
+      exchange: (cred) => _repository.googleSignIn(
+        idToken: cred.idToken,
+        email: cred.email,
+        name: cred.name,
+      ),
+    );
+  }
+
+  /// M07 — Apple.
+  Future<void> signInWithApple() {
+    return _signInWithProvider(
+      credential: SocialAuthService.signInWithApple,
+      exchange: (cred) => _repository.appleSignIn(
+        idToken: cred.idToken,
+        email: cred.email,
+        name: cred.name,
+      ),
+    );
+  }
+
+  /// Both social flows are the same three steps — native sheet, token
+  /// exchange, session — differing only in which SDK and endpoint they
+  /// use. Backing out of the sheet drops back to [AuthStatus.initial]
+  /// rather than [AuthStatus.failure], so the screen doesn't toast an
+  /// error at a user who simply changed their mind.
+  Future<void> _signInWithProvider({
+    required Future<SocialCredential> Function() credential,
+    required Future<ApiResult<AuthSession>> Function(SocialCredential) exchange,
+  }) async {
+    state = state.copyWith(status: AuthStatus.loading);
+    final SocialCredential cred;
+    try {
+      cred = await credential();
+    } on SocialAuthCancelled {
+      state = state.copyWith(status: AuthStatus.initial);
+      return;
+    } on SocialAuthFailure catch (e) {
+      state = state.copyWith(
+        status: AuthStatus.failure,
+        errorMessage: e.message,
+      );
+      return;
+    } catch (_) {
+      // Anything the service didn't recognize still has to clear the
+      // loading state, or the buttons stay disabled for good.
+      state = state.copyWith(
+        status: AuthStatus.failure,
+        errorMessage: 'Sign-in failed. Please try again.',
+      );
+      return;
+    }
+    await _handleSessionResult(await exchange(cred));
   }
 
   Future<void> _handleSessionResult(ApiResult<AuthSession> result) async {
@@ -292,12 +357,19 @@ class AuthNotifier extends AutoDisposeNotifier<AuthState> {
     }
     await SecureStorage.putAccessToken(session.tokens.accessToken);
     await SecureStorage.putRefreshToken(session.tokens.refreshToken);
-    state = state.copyWith(status: AuthStatus.authenticated, user: session.user);
+    state = state.copyWith(
+      status: AuthStatus.authenticated,
+      user: session.user,
+    );
+    unawaited(PushNotificationsService.instance.registerCurrentToken());
   }
 
   /// M08
   Future<void> logout() async {
     await _repository.logout();
+    // Without this the next Google sign-in reuses the cached account
+    // instead of showing the picker.
+    await SocialAuthService.signOut();
     await SecureStorage.clearSession();
     state = const AuthState();
   }

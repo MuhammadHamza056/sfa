@@ -119,7 +119,7 @@ class _OtpScreenState extends ConsumerState<OtpScreen> {
                 width: 22,
                 child: CircularProgressIndicator(
                   strokeWidth: 2,
-                  color: Colors.white,
+                  // color: Colors.white,
                 ),
               ),
             )

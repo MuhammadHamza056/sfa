@@ -36,8 +36,17 @@ class AppLocalizations {
     }
   }
 
-  String translate(String key) {
-    return _localizedStrings[key] ?? key;
+  /// [params] fills `{name}` placeholders in the .arb value, so strings
+  /// carrying a runtime number stay in the .arb files instead of being
+  /// rebuilt per-language at the call site.
+  String translate(String key, {Map<String, Object?>? params}) {
+    var value = _localizedStrings[key] ?? key;
+    if (params != null) {
+      params.forEach((name, replacement) {
+        value = value.replaceAll('{$name}', '$replacement');
+      });
+    }
+    return value;
   }
 }
 

@@ -42,7 +42,9 @@ class _WriteReviewScreenState extends ConsumerState<WriteReviewScreen> {
     }
 
     setState(() => _submitting = true);
-    final result = await ref.read(reviewsRepositoryProvider).submitReview(
+    final result = await ref
+        .read(reviewsRepositoryProvider)
+        .submitReview(
           productId,
           rating: _selectedRating,
           comment: _commentController.text.trim(),
@@ -54,7 +56,9 @@ class _WriteReviewScreenState extends ConsumerState<WriteReviewScreen> {
       success: (_) {
         ref.invalidate(productReviewsProvider(productId));
         ref.invalidate(reviewsSummaryProvider(productId));
-        Loader.showSuccess(loc.isArabic ? 'تم إرسال التقييم' : 'Review submitted');
+        Loader.showSuccess(
+          loc.isArabic ? 'تم إرسال التقييم' : 'Review submitted',
+        );
         context.pop();
       },
       failure: (error) => Loader.showError(error.message),
@@ -67,11 +71,15 @@ class _WriteReviewScreenState extends ConsumerState<WriteReviewScreen> {
     final isAr = loc.isArabic;
 
     final productName =
-        widget.args?.name ?? (isAr ? 'وردة الصحراء المطرزة' : 'Embroidered Desert Rose');
-    final productImage = widget.args?.imageUrl ??
+        widget.args?.name ??
+        (isAr ? 'وردة الصحراء المطرزة' : 'Embroidered Desert Rose');
+    final productImage =
+        widget.args?.imageUrl ??
         'https://images.unsplash.com/photo-1509631179647-0177331693ae?w=800&q=80';
-    final productPrice = widget.args?.price ?? (isAr ? '1,250 ر.س.' : '1,250 SAR');
-    final productRating = widget.args?.rating ?? (isAr ? '4.9 · 85 تقييماً' : '4.9 · 85 reviews');
+    final productPrice =
+        widget.args?.price ?? (isAr ? '1,250 ر.س.' : '1,250 SAR');
+    final productRating =
+        widget.args?.rating ?? (isAr ? '4.9 · 85 تقييماً' : '4.9 · 85 reviews');
     final brandNameKey = widget.args?.brandNameKey ?? 'brandJuba';
     final resolvedBrandName = loc.translate(brandNameKey);
 
@@ -80,17 +88,28 @@ class _WriteReviewScreenState extends ConsumerState<WriteReviewScreen> {
       children: [
         Text(
           resolvedBrandName,
-          style: AppStyle.bodyText.copyWith(fontSize: 24, color: context.palette.textPrimary, height: 1.1),
+          style: AppStyle.bodyText.copyWith(
+            fontSize: 24,
+            color: context.palette.textPrimary,
+            height: 1.1,
+          ),
         ),
         const SizedBox(height: 6),
         Text(
           productName,
-          style: AppStyle.bodyText.copyWith(fontSize: 20, fontWeight: FontWeight.bold, color: context.palette.textPrimary),
+          style: AppStyle.bodyText.copyWith(
+            fontSize: 20,
+            fontWeight: FontWeight.bold,
+            color: context.palette.textPrimary,
+          ),
         ),
         const SizedBox(height: 6),
         Text(
           productPrice,
-          style: AppStyle.bodyText.copyWith(fontSize: 18, color: context.palette.textPrimary.withValues(alpha: 0.8)),
+          style: AppStyle.bodyText.copyWith(
+            fontSize: 18,
+            color: context.palette.textPrimary.withValues(alpha: 0.8),
+          ),
         ),
         const SizedBox(height: 10),
         Row(
@@ -99,7 +118,10 @@ class _WriteReviewScreenState extends ConsumerState<WriteReviewScreen> {
             const SizedBox(width: 4),
             Text(
               productRating,
-              style: AppStyle.bodyText.copyWith(fontSize: 13.5, color: context.palette.textMuted),
+              style: AppStyle.bodyText.copyWith(
+                fontSize: 13.5,
+                color: context.palette.textMuted,
+              ),
             ),
           ],
         ),
@@ -116,8 +138,12 @@ class _WriteReviewScreenState extends ConsumerState<WriteReviewScreen> {
             width: 140,
             height: 140,
             fit: BoxFit.cover,
-            errorWidget: (context, url, error) =>
-                Image.network(productImage, width: 140, height: 140, fit: BoxFit.cover),
+            errorWidget: (context, url, error) => Image.network(
+              productImage,
+              width: 140,
+              height: 140,
+              fit: BoxFit.cover,
+            ),
           ),
         ),
         Positioned(
@@ -132,7 +158,10 @@ class _WriteReviewScreenState extends ConsumerState<WriteReviewScreen> {
                 price: productPrice,
                 rating: productRating,
               );
-              final isFav = ref.watch(favoritesProvider).favorites.contains(favProduct);
+              final isFav = ref
+                  .watch(favoritesProvider)
+                  .favorites
+                  .contains(favProduct);
               return Container(
                 width: 36,
                 height: 36,
@@ -144,7 +173,9 @@ class _WriteReviewScreenState extends ConsumerState<WriteReviewScreen> {
                   constraints: const BoxConstraints(),
                   padding: EdgeInsets.zero,
                   icon: SvgPicture.asset(
-                    isFav ? AssetsConstants.heartFilled : AssetsConstants.heart2,
+                    isFav
+                        ? AssetsConstants.heartFilled
+                        : AssetsConstants.heart2,
                     width: 18,
                     height: 18,
                     colorFilter: ColorFilter.mode(
@@ -152,7 +183,8 @@ class _WriteReviewScreenState extends ConsumerState<WriteReviewScreen> {
                       BlendMode.srcIn,
                     ),
                   ),
-                  onPressed: () => ref.read(favoritesProvider.notifier).toggle(favProduct),
+                  onPressed: () =>
+                      ref.read(favoritesProvider.notifier).toggle(favProduct),
                 ),
               );
             },
@@ -184,13 +216,20 @@ class _WriteReviewScreenState extends ConsumerState<WriteReviewScreen> {
               Text(
                 loc.translate('addReviewOnProduct'),
                 textAlign: TextAlign.start,
-                style: AppStyle.bodyText.copyWith(fontSize: 16, color: context.palette.textPrimary.withValues(alpha: 0.7)),
+                style: AppStyle.bodyText.copyWith(
+                  fontSize: 16,
+                  color: context.palette.textPrimary.withValues(alpha: 0.7),
+                ),
               ),
               const SizedBox(height: 24),
               Text(
                 loc.translate('ratingLabel'),
                 textAlign: TextAlign.start,
-                style: AppStyle.bodyText.copyWith(fontSize: 16, fontWeight: FontWeight.bold, color: context.palette.textPrimary),
+                style: AppStyle.bodyText.copyWith(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  color: context.palette.textPrimary,
+                ),
               ),
               const SizedBox(height: 12),
               Row(
@@ -202,7 +241,11 @@ class _WriteReviewScreenState extends ConsumerState<WriteReviewScreen> {
                     onTap: () => setState(() => _selectedRating = starNum),
                     child: Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 6),
-                      child: Icon(isSelected ? Icons.star : Icons.star_border, color: Colors.amber, size: 40),
+                      child: Icon(
+                        isSelected ? Icons.star : Icons.star_border,
+                        color: Colors.amber,
+                        size: 40,
+                      ),
                     ),
                   );
                 }),
@@ -211,7 +254,11 @@ class _WriteReviewScreenState extends ConsumerState<WriteReviewScreen> {
               Text(
                 loc.translate('noteLabel'),
                 textAlign: TextAlign.start,
-                style: AppStyle.bodyText.copyWith(fontSize: 16, fontWeight: FontWeight.bold, color: context.palette.textPrimary),
+                style: AppStyle.bodyText.copyWith(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  color: context.palette.textPrimary,
+                ),
               ),
               const SizedBox(height: 12),
               TextField(
@@ -228,7 +275,9 @@ class _WriteReviewScreenState extends ConsumerState<WriteReviewScreen> {
                     borderRadius: BorderRadius.circular(12),
                     borderSide: BorderSide(color: AppColors.primary),
                   ),
-                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
                 ),
               ),
               const SizedBox(height: 36),
@@ -238,8 +287,13 @@ class _WriteReviewScreenState extends ConsumerState<WriteReviewScreen> {
                   onPressed: _submitting ? null : () => _onSubmit(loc),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xFFCA9A4E),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
-                    padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 24),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(30),
+                    ),
+                    padding: const EdgeInsets.symmetric(
+                      vertical: 14,
+                      horizontal: 24,
+                    ),
                     elevation: 0,
                   ),
                   child: _submitting
@@ -247,7 +301,7 @@ class _WriteReviewScreenState extends ConsumerState<WriteReviewScreen> {
                           child: SizedBox(
                             height: 22,
                             width: 22,
-                            child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                            child: CircularProgressIndicator(strokeWidth: 2),
                           ),
                         )
                       : Row(
@@ -255,13 +309,20 @@ class _WriteReviewScreenState extends ConsumerState<WriteReviewScreen> {
                           children: [
                             Text(
                               loc.translate('writeYourReview'),
-                              style: AppStyle.bodyText.copyWith(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 15.5),
+                              style: AppStyle.bodyText.copyWith(
+                                color: Colors.white,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 15.5,
+                              ),
                             ),
                             RotatedBox(
                               quarterTurns: isAr ? 2 : 0,
                               child: SvgPicture.asset(
                                 AssetsConstants.moveLeft,
-                                colorFilter: const ColorFilter.mode(Colors.white, BlendMode.srcIn),
+                                colorFilter: const ColorFilter.mode(
+                                  Colors.white,
+                                  BlendMode.srcIn,
+                                ),
                                 width: 18,
                                 height: 18,
                               ),

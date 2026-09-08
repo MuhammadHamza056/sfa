@@ -1,4 +1,4 @@
-package com.example.sfa
+package com.vga.sfa
 
 import io.flutter.embedding.android.FlutterActivity
 

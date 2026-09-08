@@ -43,12 +43,18 @@ class _AddEditAddressScreenState extends ConsumerState<AddEditAddressScreen> {
     super.initState();
     final address = widget.address;
     _labelController = TextEditingController(text: address?.name ?? '');
-    _contactNumberController = TextEditingController(text: address?.contactNumber ?? '');
-    _governorateController = TextEditingController(text: address?.governorate ?? '');
+    _contactNumberController = TextEditingController(
+      text: address?.contactNumber ?? '',
+    );
+    _governorateController = TextEditingController(
+      text: address?.governorate ?? '',
+    );
     _areaController = TextEditingController(text: address?.area ?? '');
     _blockController = TextEditingController(text: address?.block ?? '');
     _streetController = TextEditingController(text: address?.street ?? '');
-    _houseNumberController = TextEditingController(text: address?.houseNumber ?? '');
+    _houseNumberController = TextEditingController(
+      text: address?.houseNumber ?? '',
+    );
   }
 
   @override
@@ -111,7 +117,9 @@ class _AddEditAddressScreenState extends ConsumerState<AddEditAddressScreen> {
       Loader.showSuccess(loc.translate('addressSavedSuccess'));
       context.pop();
     } else {
-      Loader.showError(loc.isArabic ? 'تعذر حفظ العنوان' : 'Could not save address');
+      Loader.showError(
+        loc.isArabic ? 'تعذر حفظ العنوان' : 'Could not save address',
+      );
     }
   }
 
@@ -169,7 +177,9 @@ class _AddEditAddressScreenState extends ConsumerState<AddEditAddressScreen> {
               const SizedBox(height: 20),
               _FormField(
                 label: isAr ? 'الشارع' : 'Street',
-                hint: isAr ? 'مثل: شارع سالم المبارك' : 'e.g. Salem Al Mubarak St.',
+                hint: isAr
+                    ? 'مثل: شارع سالم المبارك'
+                    : 'e.g. Salem Al Mubarak St.',
                 controller: _streetController,
                 textAlign: textAlign,
               ),
@@ -211,7 +221,6 @@ class _AddEditAddressScreenState extends ConsumerState<AddEditAddressScreen> {
                                 width: 20,
                                 child: CircularProgressIndicator(
                                   strokeWidth: 2,
-                                  color: Colors.white,
                                 ),
                               ),
                             )
@@ -228,7 +237,11 @@ class _AddEditAddressScreenState extends ConsumerState<AddEditAddressScreen> {
                                     fontWeight: FontWeight.bold,
                                   ),
                                 ),
-                                const Icon(Icons.check, color: Colors.white, size: 20),
+                                const Icon(
+                                  Icons.check,
+                                  color: Colors.white,
+                                  size: 20,
+                                ),
                               ],
                             ),
                     ),

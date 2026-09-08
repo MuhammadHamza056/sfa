@@ -9,6 +9,7 @@ import 'package:sfa/utils/color_constants.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:sfa/features/orders/data/order_models.dart';
 import 'package:sfa/features/orders/presentation/screens/delivery_otp_screen.dart';
+import 'package:sfa/features/orders/presentation/widgets/order_payment_flow.dart';
 import 'package:sfa/features/orders/providers/orders_data_provider.dart';
 import 'package:sfa/utils/currency_formatter.dart';
 import 'package:sfa/utils/order_id_formatter.dart';
@@ -102,6 +103,24 @@ class _OrderTrackingScreenState extends ConsumerState<OrderTrackingScreen> {
     _showMessage(loc.translate('confirmDelivery'));
   }
 
+  Future<void> _onPayOrder(OrderDetail order) async {
+    final paid = await startOrderPayment(
+      context: context,
+      ref: ref,
+      orderId: order.id,
+      orderNumber: order.orderNumber,
+      totalFils: order.totalFils,
+      currency: order.currency,
+      onBusyChanged: (busy) {
+        if (mounted) setState(() => _busy = busy);
+      },
+    );
+    if (!paid || !mounted) return;
+    ref.invalidate(orderDetailProvider(widget.orderId));
+    ref.invalidate(orderTrackingDataProvider(widget.orderId));
+    ref.invalidate(ordersDataProvider);
+  }
+
   @override
   Widget build(BuildContext context) {
     final loc = AppLocalizations.of(context);
@@ -115,6 +134,10 @@ class _OrderTrackingScreenState extends ConsumerState<OrderTrackingScreen> {
     // already in a terminal state (delivered/cancelled/... from a prior visit).
     final hideActionButtons =
         _confirmedDelivery || !(detailAsync.valueOrNull?.isActive ?? true);
+    // An unpaid order has nothing to track yet — the timeline and the
+    // delivery actions are replaced by a pay button until it's settled.
+    final order = detailAsync.valueOrNull;
+    final unpaidOrder = (order?.isAwaitingPayment ?? false) ? order : null;
     // A single page-level loader for the initial fetch instead of each
     // section (order info, timeline) showing its own spinner — only true
     // while neither request has produced a value yet.
@@ -259,35 +282,85 @@ class _OrderTrackingScreenState extends ConsumerState<OrderTrackingScreen> {
               ),
               const SizedBox(height: 20),
 
-              // ─── Order Status Header ───
-              Align(
-                alignment: isAr ? Alignment.centerRight : Alignment.centerLeft,
-                child: Text(
-                  loc.translate('orderStatus'),
-                  style: AppStyle.sectionHeader,
-                ),
-              ),
-              const SizedBox(height: 6),
-              Divider(color: context.palette.divider, thickness: 0.8),
-              const SizedBox(height: 24),
-
-              // ─── Vertical Timeline ───
-              trackingAsync.when(
-                // See detailAsync's loading branch above — the page-level
-                // loader already handles the initial fetch.
-                loading: () => const SizedBox.shrink(),
-                error: (error, _) => Text(
-                  error.toString(),
-                  style: AppStyle.bodyText.copyWith(
-                    color: context.palette.textMuted,
+              // ─── Order Status Header + Timeline ───
+              if (unpaidOrder == null) ...[
+                Align(
+                  alignment: isAr ? Alignment.centerRight : Alignment.centerLeft,
+                  child: Text(
+                    loc.translate('orderStatus'),
+                    style: AppStyle.sectionHeader,
                   ),
                 ),
-                data: (tracking) => _buildTrackerTimeline(tracking, isAr),
-              ),
-              const SizedBox(height: 32),
+                const SizedBox(height: 6),
+                Divider(color: context.palette.divider, thickness: 0.8),
+                const SizedBox(height: 24),
+
+                // ─── Vertical Timeline ───
+                trackingAsync.when(
+                  // See detailAsync's loading branch above — the page-level
+                  // loader already handles the initial fetch.
+                  loading: () => const SizedBox.shrink(),
+                  error: (error, _) => Text(
+                    error.toString(),
+                    style: AppStyle.bodyText.copyWith(
+                      color: context.palette.textMuted,
+                    ),
+                  ),
+                  data: (tracking) => _buildTrackerTimeline(tracking, isAr),
+                ),
+                const SizedBox(height: 32),
+              ],
+
+              // ─── Pay Button (unpaid order) ───
+              if (unpaidOrder != null) ...[
+                ElevatedButton(
+                  onPressed: _busy ? null : () => _onPayOrder(unpaidOrder),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.primary,
+                    minimumSize: const Size(double.infinity, 54),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(30),
+                    ),
+                    elevation: 0,
+                  ),
+                  child: Row(
+                    children: [
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Text(
+                          loc.translate('payNow'),
+                          textAlign: TextAlign.start,
+                          style: AppStyle.buttonTextPrimary,
+                        ),
+                      ),
+                      if (_busy)
+                        const SizedBox(
+                          width: 18,
+                          height: 18,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            valueColor: AlwaysStoppedAnimation(Colors.white),
+                          ),
+                        )
+                      else
+                        SvgPicture.asset(
+                          AssetsConstants.shoppingBag,
+                          width: 18,
+                          height: 18,
+                          colorFilter: const ColorFilter.mode(
+                            Colors.white,
+                            BlendMode.srcIn,
+                          ),
+                        ),
+                      const SizedBox(width: 12),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 12),
+              ],
 
               // ─── Confirm Delivery Button ───
-              if (!hideActionButtons) ...[
+              if (!hideActionButtons && unpaidOrder == null) ...[
                 ElevatedButton(
                   onPressed: _busy ? null : () => _onConfirmDelivery(loc),
                   style: ElevatedButton.styleFrom(

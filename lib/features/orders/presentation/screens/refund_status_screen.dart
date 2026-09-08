@@ -50,13 +50,19 @@ class _RefundStatusScreenState extends ConsumerState<RefundStatusScreen> {
         appBar: PrimaryAppBar(
           title: 'SFA',
           showBackButton: true,
+          onBackTap: () {
+            context.go('/previous-orders');
+          },
           onCartTap: () => context.go('/cart'),
           onHeartTap: () => context.go('/favorites'),
         ),
         body: detailAsync.when(
           loading: () => const Center(child: CircularProgressIndicator()),
           error: (error, _) => Center(
-            child: Text(error.toString(), style: TextStyle(color: context.palette.textMuted)),
+            child: Text(
+              error.toString(),
+              style: TextStyle(color: context.palette.textMuted),
+            ),
           ),
           data: (refund) {
             final titleText =
@@ -64,14 +70,20 @@ class _RefundStatusScreenState extends ConsumerState<RefundStatusScreen> {
             // Map the refund's real status onto the 3-milestone UI: doc
             // gives no per-refund timeline (unlike orders' M52), so this is
             // a best-faith reduction of `stageIndex` into 3 buckets.
-            final bucket = (refund.stageIndex * 3 / RefundDetail.stages.length).floor().clamp(0, 2);
+            final bucket = (refund.stageIndex * 3 / RefundDetail.stages.length)
+                .floor()
+                .clamp(0, 2);
 
             return ListView(
               padding: const EdgeInsets.all(24.0),
               children: [
                 Text(
                   titleText,
-                  style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: context.palette.textPrimary),
+                  style: TextStyle(
+                    fontSize: 22,
+                    fontWeight: FontWeight.bold,
+                    color: context.palette.textPrimary,
+                  ),
                   textAlign: isAr ? TextAlign.right : TextAlign.left,
                 ),
                 const SizedBox(height: 8),
@@ -83,9 +95,19 @@ class _RefundStatusScreenState extends ConsumerState<RefundStatusScreen> {
                   children: [
                     Text(
                       '#${refund.orderId}',
-                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: context.palette.textPrimary),
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                        color: context.palette.textPrimary,
+                      ),
                     ),
-                    Text(orderNumLabel, style: TextStyle(fontSize: 14, color: context.palette.textMuted)),
+                    Text(
+                      orderNumLabel,
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: context.palette.textMuted,
+                      ),
+                    ),
                   ],
                 ),
                 const SizedBox(height: 8),
@@ -96,9 +118,19 @@ class _RefundStatusScreenState extends ConsumerState<RefundStatusScreen> {
                       refund.createdAt != null
                           ? '${refund.createdAt!.year}/${refund.createdAt!.month}/${refund.createdAt!.day}'
                           : '—',
-                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: context.palette.textPrimary),
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                        color: context.palette.textPrimary,
+                      ),
                     ),
-                    Text(orderDateLabel, style: TextStyle(fontSize: 14, color: context.palette.textMuted)),
+                    Text(
+                      orderDateLabel,
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: context.palette.textMuted,
+                      ),
+                    ),
                   ],
                 ),
                 if (refund.refundAmountFils > 0) ...[
@@ -107,12 +139,22 @@ class _RefundStatusScreenState extends ConsumerState<RefundStatusScreen> {
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       Text(
-                        CurrencyFormatter.fromHalalas(refund.refundAmountFils, isAr: isAr),
-                        style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: context.palette.textPrimary),
+                        CurrencyFormatter.fromHalalas(
+                          refund.refundAmountFils,
+                          isAr: isAr,
+                        ),
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                          color: context.palette.textPrimary,
+                        ),
                       ),
                       Text(
                         isAr ? 'مبلغ الاسترجاع' : 'Refund Amount',
-                        style: TextStyle(fontSize: 14, color: context.palette.textMuted),
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: context.palette.textMuted,
+                        ),
                       ),
                     ],
                   ),
@@ -120,10 +162,16 @@ class _RefundStatusScreenState extends ConsumerState<RefundStatusScreen> {
                 const SizedBox(height: 24),
 
                 Align(
-                  alignment: isAr ? Alignment.centerRight : Alignment.centerLeft,
+                  alignment: isAr
+                      ? Alignment.centerRight
+                      : Alignment.centerLeft,
                   child: Text(
                     trackRefundStatusLabel,
-                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: context.palette.textPrimary),
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: context.palette.textPrimary,
+                    ),
                   ),
                 ),
                 const SizedBox(height: 16),
@@ -148,7 +196,9 @@ class _RefundStatusScreenState extends ConsumerState<RefundStatusScreen> {
                                 width: 14,
                                 height: 14,
                                 decoration: BoxDecoration(
-                                  color: isDone ? Colors.green : context.palette.textMuted,
+                                  color: isDone
+                                      ? Colors.green
+                                      : context.palette.textMuted,
                                   shape: BoxShape.circle,
                                 ),
                               ),
@@ -156,7 +206,9 @@ class _RefundStatusScreenState extends ConsumerState<RefundStatusScreen> {
                                 Container(
                                   width: 2,
                                   height: 48,
-                                  color: i < bucket ? Colors.green : context.palette.textMuted,
+                                  color: i < bucket
+                                      ? Colors.green
+                                      : context.palette.textMuted,
                                 ),
                             ],
                           ),
@@ -168,8 +220,12 @@ class _RefundStatusScreenState extends ConsumerState<RefundStatusScreen> {
                                 milestoneLabels[i],
                                 style: TextStyle(
                                   fontSize: 15,
-                                  fontWeight: isDone ? FontWeight.bold : FontWeight.w600,
-                                  color: isDone ? context.palette.textPrimary : context.palette.textMuted,
+                                  fontWeight: isDone
+                                      ? FontWeight.bold
+                                      : FontWeight.w600,
+                                  color: isDone
+                                      ? context.palette.textPrimary
+                                      : context.palette.textMuted,
                                 ),
                               ),
                             ),
@@ -182,16 +238,24 @@ class _RefundStatusScreenState extends ConsumerState<RefundStatusScreen> {
                 const SizedBox(height: 16),
 
                 GestureDetector(
-                  onTap: () => ref.read(ordersProvider.notifier).toggleProductsExpanded(),
+                  onTap: () => ref
+                      .read(ordersProvider.notifier)
+                      .toggleProductsExpanded(),
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       Text(
                         returnedProductsLabel,
-                        style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: context.palette.textPrimary),
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                          color: context.palette.textPrimary,
+                        ),
                       ),
                       Icon(
-                        state.isProductsExpanded ? Icons.keyboard_arrow_up : Icons.keyboard_arrow_down,
+                        state.isProductsExpanded
+                            ? Icons.keyboard_arrow_up
+                            : Icons.keyboard_arrow_down,
                         color: context.palette.textPrimary,
                       ),
                     ],
@@ -215,7 +279,12 @@ class _RefundStatusScreenState extends ConsumerState<RefundStatusScreen> {
                           margin: const EdgeInsets.only(bottom: 16),
                           padding: const EdgeInsets.symmetric(vertical: 8),
                           decoration: BoxDecoration(
-                            border: Border(bottom: BorderSide(color: context.palette.divider, width: 1)),
+                            border: Border(
+                              bottom: BorderSide(
+                                color: context.palette.divider,
+                                width: 1,
+                              ),
+                            ),
                           ),
                           child: Row(
                             crossAxisAlignment: CrossAxisAlignment.start,
@@ -227,8 +296,11 @@ class _RefundStatusScreenState extends ConsumerState<RefundStatusScreen> {
                                   width: 110,
                                   height: 110,
                                   fit: BoxFit.cover,
-                                  errorBuilder: (_, __, ___) =>
-                                      Container(width: 110, height: 110, color: context.palette.surfaceMuted),
+                                  errorBuilder: (_, __, ___) => Container(
+                                    width: 110,
+                                    height: 110,
+                                    color: context.palette.surfaceMuted,
+                                  ),
                                 ),
                               ),
                               const SizedBox(width: 16),
@@ -243,12 +315,19 @@ class _RefundStatusScreenState extends ConsumerState<RefundStatusScreen> {
                                         fontWeight: FontWeight.w600,
                                         color: context.palette.textPrimary,
                                       ),
-                                      textAlign: isAr ? TextAlign.right : TextAlign.left,
+                                      textAlign: isAr
+                                          ? TextAlign.right
+                                          : TextAlign.left,
                                     ),
                                     const SizedBox(height: 8),
                                     Text(
-                                      isAr ? 'الكمية: ${item.quantity}' : 'Qty: ${item.quantity}',
-                                      style: TextStyle(fontSize: 13, color: context.palette.textMuted),
+                                      isAr
+                                          ? 'الكمية: ${item.quantity}'
+                                          : 'Qty: ${item.quantity}',
+                                      style: TextStyle(
+                                        fontSize: 13,
+                                        color: context.palette.textMuted,
+                                      ),
                                     ),
                                   ],
                                 ),

@@ -12,6 +12,11 @@ import '../../data/checkout_models.dart';
 /// real success/failure callback URL(s) once the backend documents them.
 const String paymentCallbackUrlPrefix = 'safa://payment';
 
+/// How a redirect off the hosted page ended. Anything that isn't a
+/// confirmed payment is *not* a success: the customer must never be shown
+/// the green screen for a declined card or an abandoned session.
+enum PaymentOutcome { paid, failed, cancelled }
+
 class PaymentWebviewArgs {
   final String paymentUrl;
   final CheckoutConfirmResult order;
@@ -33,6 +38,40 @@ class PaymentWebviewScreen extends StatefulWidget {
   State<PaymentWebviewScreen> createState() => _PaymentWebviewScreenState();
 }
 
+/// Classifies a redirect URL. Returns `null` while the customer is still
+/// somewhere inside the gateway's own flow.
+///
+/// Both shapes the gateway can use are handled: a path segment
+/// (`.../payment/success`) and a status query parameter
+/// (`?status=PAID`). A callback on the app's own scheme that matches
+/// neither is reported as [PaymentOutcome.failed] rather than guessed at —
+/// the order stays unpaid and retryable, which is recoverable, whereas a
+/// false "paid" is not.
+@visibleForTesting
+PaymentOutcome? paymentOutcomeOf(String url) {
+  final lower = url.toLowerCase();
+  final status = Uri.tryParse(url)?.queryParameters['status']?.toUpperCase();
+
+  if (status == 'PAID' || status == 'SUCCESS' || status == 'SUCCESSFUL') {
+    return PaymentOutcome.paid;
+  }
+  if (status == 'CANCELLED' || status == 'CANCELED') {
+    return PaymentOutcome.cancelled;
+  }
+  if (status == 'FAILED' || status == 'FAILURE' || status == 'ERROR') {
+    return PaymentOutcome.failed;
+  }
+
+  if (lower.contains('/payment/success')) return PaymentOutcome.paid;
+  if (lower.contains('/payment/cancel')) return PaymentOutcome.cancelled;
+  if (lower.contains('/payment/failure') || lower.contains('/payment/failed')) {
+    return PaymentOutcome.failed;
+  }
+
+  if (lower.startsWith(paymentCallbackUrlPrefix)) return PaymentOutcome.failed;
+  return null;
+}
+
 class _PaymentWebviewScreenState extends State<PaymentWebviewScreen> {
   late final WebViewController _controller;
   bool _loading = true;
@@ -52,21 +91,40 @@ class _PaymentWebviewScreenState extends State<PaymentWebviewScreen> {
             if (mounted) setState(() => _loading = false);
           },
           onNavigationRequest: (request) {
-            if (request.url.startsWith(paymentCallbackUrlPrefix)) {
-              _onPaymentCallback();
-              return NavigationDecision.prevent;
-            }
-            return NavigationDecision.navigate;
+            final outcome = paymentOutcomeOf(request.url);
+            if (outcome == null) return NavigationDecision.navigate;
+            _onPaymentCallback(outcome);
+            return NavigationDecision.prevent;
           },
         ),
       )
       ..loadRequest(Uri.parse(widget.paymentUrl));
   }
 
-  void _onPaymentCallback() {
-    if (_handledCallback) return;
+  void _onPaymentCallback(PaymentOutcome outcome) {
+    if (_handledCallback || !mounted) return;
     _handledCallback = true;
-    context.pushReplacement('/payment-success', extra: widget.order);
+
+    if (outcome == PaymentOutcome.paid) {
+      context.pushReplacement('/payment-success', extra: widget.order);
+      return;
+    }
+
+    // Unpaid: the order was still created, so tracking is where the
+    // customer can see it and retry payment.
+    final loc = AppLocalizations.of(context);
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          loc.translate(
+            outcome == PaymentOutcome.cancelled
+                ? 'paymentCancelled'
+                : 'paymentFailed',
+          ),
+        ),
+      ),
+    );
+    context.pushReplacement('/order-tracking/${widget.order.orderId}');
   }
 
   @override

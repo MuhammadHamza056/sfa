@@ -21,7 +21,9 @@ class AppLocalizations {
 
   Future<bool> load() async {
     try {
-      String jsonString = await rootBundle.loadString('lib/l10n/app_${locale.languageCode}.arb');
+      String jsonString = await rootBundle.loadString(
+        'lib/l10n/app_${locale.languageCode}.arb',
+      );
       Map<String, dynamic> jsonMap = json.decode(jsonString);
 
       _localizedStrings = {};
@@ -74,7 +76,9 @@ class LocaleNotifier extends ValueNotifier<Locale> {
   LocaleNotifier(super.value);
 
   void toggleLanguage() {
-    setLocale(value.languageCode == 'ar' ? const Locale('en') : const Locale('ar'));
+    setLocale(
+      value.languageCode == 'ar' ? const Locale('en') : const Locale('ar'),
+    );
   }
 
   /// Reads the persisted locale. Safe to call before [SecureStorage.init]

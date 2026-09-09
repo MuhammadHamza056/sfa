@@ -6,7 +6,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'core/hive_services.dart';
 import 'core/localization/app_localizations.dart';
+import 'core/network/socket_service.dart';
 import 'core/notifications/push_notifications_service.dart';
+import 'core/notifications/realtime_listener.dart';
 import 'core/routes.dart';
 import 'core/theme/app_theme.dart';
 import 'core/theme/theme_notifier.dart';
@@ -20,6 +22,10 @@ void main() async {
 
   await SecureStorage.init();
   await PushNotificationsService.instance.initialize();
+  // Re-opens the real-time connection for a session that survived the last
+  // run; a no-op while signed out. Sign-in/sign-out are handled by
+  // `AuthNotifier`.
+  SocketService.instance.connect();
   themeNotifier.loadFromStorage();
   localeNotifier.loadFromStorage();
   runApp(const ProviderScope(child: MyApp()));
@@ -51,6 +57,11 @@ class MyApp extends StatelessWidget {
               darkTheme: AppTheme.dark,
               themeMode: themeMode,
               routerConfig: router,
+              // Sits under the router's Navigator (and under
+              // `ScaffoldMessenger`) so socket events can refresh providers
+              // and raise a snackbar from any screen.
+              builder: (context, child) =>
+                  RealtimeListener(child: child ?? const SizedBox.shrink()),
             );
           },
         );

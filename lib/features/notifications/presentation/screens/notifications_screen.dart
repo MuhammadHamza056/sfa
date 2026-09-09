@@ -213,14 +213,9 @@ class NotificationsScreen extends ConsumerWidget {
                         ),
                       ),
                       TextButton(
-                        onPressed: () async {
-                          final result = await ref
-                              .read(notificationsRepositoryProvider)
-                              .markAllRead();
-                          if (result.isSuccess) {
-                            ref.invalidate(notificationsListProvider);
-                          }
-                        },
+                        onPressed: () => ref
+                            .read(notificationsListProvider.notifier)
+                            .markAllRead(),
                         child: Text(
                           loc.isArabic ? 'تعليم الكل كمقروء' : 'Mark all read',
                           style: AppStyle.subtitleDesc.copyWith(
@@ -291,10 +286,15 @@ class NotificationsScreen extends ConsumerWidget {
 
   String _iconFor(String? type) {
     switch (type) {
+      // Lowercase spellings are the socket payload's `category`; the
+      // upper-case ones are the REST list's `type`.
       case 'DELIVERY':
       case 'SHIPPED':
+      case 'delivery':
+      case 'shipping':
         return AssetsConstants.truck;
       case 'PRICE_DROP':
+      case 'promotions':
         return AssetsConstants.frame;
       case 'COLLECTION':
         return AssetsConstants.frame2;

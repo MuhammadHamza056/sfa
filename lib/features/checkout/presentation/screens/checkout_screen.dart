@@ -35,13 +35,19 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
 
   void _showMessage(String message) {
     if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(message)));
   }
 
   Future<void> _onConfirmOrder(AppLocalizations loc) async {
     final addressId = _selectedAddressId;
     if (addressId == null) {
-      _showMessage(loc.isArabic ? 'الرجاء اختيار عنوان التوصيل' : 'Please choose a delivery address');
+      _showMessage(
+        loc.isArabic
+            ? 'الرجاء اختيار عنوان التوصيل'
+            : 'Please choose a delivery address',
+      );
       return;
     }
     final method = _selectedMethod;
@@ -54,15 +60,31 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
         ?.where((a) => a.id == addressId)
         .firstOrNullWithLocation();
     if (selectedAddress == null) {
-      _showMessage(loc.isArabic ? 'الرجاء اختيار عنوان التوصيل' : 'Please choose a delivery address');
+      _showMessage(
+        loc.isArabic
+            ? 'الرجاء اختيار عنوان التوصيل'
+            : 'Please choose a delivery address',
+      );
       return;
     }
 
+    // Gift wrap is chosen on the cart screen and persisted there (M34), so
+    // the order is created with whatever the cart currently carries.
+    final cart = ref.read(cartProvider).valueOrNull;
+
     setState(() => _confirming = true);
-    final result = await ref.read(checkoutRepositoryProvider).confirmCheckout(
+    final result = await ref
+        .read(checkoutRepositoryProvider)
+        .confirmCheckout(
           addressId: addressId,
           paymentMethod: method.code,
           shippingAddress: selectedAddress.toShippingAddressJson(),
+          // The coupon is applied on the cart screen (M33); without it the
+          // created order is priced at full price even though the customer
+          // was shown the discounted total.
+          promoCode: cart?.couponCode,
+          giftWrap: cart?.giftWrap,
+          giftMessage: cart?.giftWrap == true ? cart?.giftMessage : null,
         );
     if (!mounted) return;
 
@@ -70,7 +92,9 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
       success: (order) async {
         ref.read(cartProvider.notifier).refresh();
 
-        final initiateResult = await ref.read(paymentsRepositoryProvider).initiatePayment(
+        final initiateResult = await ref
+            .read(paymentsRepositoryProvider)
+            .initiatePayment(
               orderId: order.orderId,
               methodKey: method.code,
               methodMyfatoorahId: method.id,
@@ -84,12 +108,19 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
             }
             context.push(
               '/payment-webview',
-              extra: PaymentWebviewArgs(paymentUrl: payment.paymentUrl, order: order),
+              extra: PaymentWebviewArgs(
+                paymentUrl: payment.paymentUrl,
+                order: order,
+              ),
             );
           },
           failure: (error) {
+            // The order exists but is unpaid — showing the success screen
+            // here would tell the customer they've paid when they haven't.
+            // Send them to tracking, where the order reads as unpaid and
+            // payment can be retried.
             _showMessage(error.message);
-            context.push('/payment-success', extra: order);
+            context.pushReplacement('/order-tracking/${order.orderId}');
           },
         );
       },
@@ -121,18 +152,32 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
       }
     });
 
-    final previewAsync = ref.watch(checkoutPreviewProvider(_selectedAddressId ?? ''));
+    // Coupon and gift wrap live on the cart (M33/M34); the summary has to
+    // be priced with them or the totals here won't match what the customer
+    // saw on the cart screen — or what the order is created with.
+    final cart = ref.watch(cartProvider).valueOrNull;
+    final previewAsync = ref.watch(
+      checkoutPreviewProvider((
+        addressId: _selectedAddressId ?? '',
+        couponCode: cart?.couponCode,
+        giftWrap: cart?.giftWrap,
+      )),
+    );
     final preview = previewAsync.valueOrNull;
 
     final paymentMethodsAsync = ref.watch(
-      myFatoorahPaymentMethodsProvider(
-        (amount: (preview?.totalFils ?? 0) / 100.0, currency: preview?.currency ?? 'SAR'),
-      ),
+      myFatoorahPaymentMethodsProvider((
+        amount: (preview?.totalFils ?? 0) / 100.0,
+        currency: preview?.currency ?? 'SAR',
+      )),
     );
-    final paymentMethods = paymentMethodsAsync.valueOrNull ?? const <MyFatoorahPaymentMethod>[];
-    if (paymentMethods.isNotEmpty && !paymentMethods.any((m) => m.code == _selectedMethod?.code)) {
+    final paymentMethods =
+        paymentMethodsAsync.valueOrNull ?? const <MyFatoorahPaymentMethod>[];
+    if (paymentMethods.isNotEmpty &&
+        !paymentMethods.any((m) => m.code == _selectedMethod?.code)) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (mounted && !paymentMethods.any((m) => m.code == _selectedMethod?.code)) {
+        if (mounted &&
+            !paymentMethods.any((m) => m.code == _selectedMethod?.code)) {
           setState(() => _selectedMethod = paymentMethods.first);
         }
       });
@@ -163,8 +208,13 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
               children: [
                 // ─── Shipping Address Section Header ──────────────────
                 Align(
-                  alignment: isAr ? Alignment.centerRight : Alignment.centerLeft,
-                  child: Text(loc.translate('shippingAddress'), style: AppStyle.sectionHeader),
+                  alignment: isAr
+                      ? Alignment.centerRight
+                      : Alignment.centerLeft,
+                  child: Text(
+                    loc.translate('shippingAddress'),
+                    style: AppStyle.sectionHeader,
+                  ),
                 ),
                 const SizedBox(height: 6),
                 Divider(color: context.palette.divider, thickness: 0.8),
@@ -177,7 +227,9 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                   ),
                   error: (error, _) => Text(
                     error.toString(),
-                    style: AppStyle.bodyText.copyWith(color: context.palette.textMuted),
+                    style: AppStyle.bodyText.copyWith(
+                      color: context.palette.textMuted,
+                    ),
                   ),
                   data: (addresses) {
                     if (addresses.isEmpty) {
@@ -186,7 +238,9 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                         children: [
                           Text(
                             loc.translate('noAddressesYet'),
-                            style: AppStyle.bodyText.copyWith(color: context.palette.textMuted),
+                            style: AppStyle.bodyText.copyWith(
+                              color: context.palette.textMuted,
+                            ),
                           ),
                           const SizedBox(height: 12),
                           OutlinedButton(
@@ -203,12 +257,15 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                           _AddressOption(
                             address: address,
                             selected: _selectedAddressId == address.id,
-                            onTap: () => setState(() => _selectedAddressId = address.id),
+                            onTap: () =>
+                                setState(() => _selectedAddressId = address.id),
                           ),
                           const SizedBox(height: 8),
                         ],
                         Align(
-                          alignment: isAr ? Alignment.centerRight : Alignment.centerLeft,
+                          alignment: isAr
+                              ? Alignment.centerRight
+                              : Alignment.centerLeft,
                           child: TextButton(
                             onPressed: () => context.push('/addresses/add'),
                             child: Text(loc.translate('addAddress')),
@@ -222,8 +279,13 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
 
                 if (selectedAddress != null && selectedAddress.hasLocation) ...[
                   Align(
-                    alignment: isAr ? Alignment.centerRight : Alignment.centerLeft,
-                    child: Text(loc.translate('addressByMap'), style: AppStyle.fieldLabel),
+                    alignment: isAr
+                        ? Alignment.centerRight
+                        : Alignment.centerLeft,
+                    child: Text(
+                      loc.translate('addressByMap'),
+                      style: AppStyle.fieldLabel,
+                    ),
                   ),
                   const SizedBox(height: 8),
                   _CheckoutMap(location: selectedAddress),
@@ -231,7 +293,10 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                 ],
 
                 // ─── Payment Method Section Header ────────────────────
-                Text(loc.translate('paymentMethod'), style: AppStyle.sectionHeader),
+                Text(
+                  loc.translate('paymentMethod'),
+                  style: AppStyle.sectionHeader,
+                ),
                 const SizedBox(height: 16),
                 Divider(color: context.palette.divider, thickness: 0.8),
                 const SizedBox(height: 16),
@@ -244,27 +309,57 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                   ),
                   error: (error, _) => Text(
                     error.toString(),
-                    style: AppStyle.bodyText.copyWith(color: context.palette.textMuted),
+                    style: AppStyle.bodyText.copyWith(
+                      color: context.palette.textMuted,
+                    ),
                   ),
                   data: (preview) {
                     if (preview == null) {
                       return Text(
-                        isAr ? 'اختر عنوانًا لعرض الإجمالي' : 'Choose an address to see the total',
-                        style: AppStyle.bodyText.copyWith(color: context.palette.textMuted),
+                        isAr
+                            ? 'اختر عنوانًا لعرض الإجمالي'
+                            : 'Choose an address to see the total',
+                        style: AppStyle.bodyText.copyWith(
+                          color: context.palette.textMuted,
+                        ),
                       );
                     }
                     return Column(
                       children: [
                         _buildPricingRow(
                           label: loc.translate('subtotal'),
-                          amount: CurrencyFormatter.fromHalalas(preview.subtotalFils, isAr: isAr),
+                          amount: CurrencyFormatter.fromHalalas(
+                            preview.subtotalFils,
+                            isAr: isAr,
+                          ),
                           isPrimary: false,
                         ),
                         const SizedBox(height: 8),
+                        if (preview.discountFils > 0) ...[
+                          _buildPricingRow(
+                            label: isAr ? 'الخصم' : 'Discount',
+                            amount:
+                                '-${CurrencyFormatter.fromHalalas(preview.discountFils, isAr: isAr)}',
+                            isPrimary: false,
+                          ),
+                          const SizedBox(height: 8),
+                        ],
+                        if (preview.pointsDiscountFils > 0) ...[
+                          _buildPricingRow(
+                            label: isAr ? 'خصم النقاط' : 'Points Discount',
+                            amount:
+                                '-${CurrencyFormatter.fromHalalas(preview.pointsDiscountFils, isAr: isAr)}',
+                            isPrimary: false,
+                          ),
+                          const SizedBox(height: 8),
+                        ],
                         if (preview.deliveryFeeFils > 0) ...[
                           _buildPricingRow(
                             label: isAr ? 'رسوم التوصيل' : 'Delivery Fee',
-                            amount: CurrencyFormatter.fromHalalas(preview.deliveryFeeFils, isAr: isAr),
+                            amount: CurrencyFormatter.fromHalalas(
+                              preview.deliveryFeeFils,
+                              isAr: isAr,
+                            ),
                             isPrimary: false,
                           ),
                           const SizedBox(height: 8),
@@ -272,7 +367,10 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                         if (preview.taxFils > 0) ...[
                           _buildPricingRow(
                             label: isAr ? 'الضريبة' : 'Tax',
-                            amount: CurrencyFormatter.fromHalalas(preview.taxFils, isAr: isAr),
+                            amount: CurrencyFormatter.fromHalalas(
+                              preview.taxFils,
+                              isAr: isAr,
+                            ),
                             isPrimary: false,
                           ),
                           const SizedBox(height: 8),
@@ -280,14 +378,20 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                         if (preview.giftWrapFeeFils > 0) ...[
                           _buildPricingRow(
                             label: isAr ? 'رسوم التغليف' : 'Gift Wrap Fee',
-                            amount: CurrencyFormatter.fromHalalas(preview.giftWrapFeeFils, isAr: isAr),
+                            amount: CurrencyFormatter.fromHalalas(
+                              preview.giftWrapFeeFils,
+                              isAr: isAr,
+                            ),
                             isPrimary: false,
                           ),
                           const SizedBox(height: 8),
                         ],
                         _buildPricingRow(
                           label: loc.translate('totalAmount'),
-                          amount: CurrencyFormatter.fromHalalas(preview.totalFils, isAr: isAr),
+                          amount: CurrencyFormatter.fromHalalas(
+                            preview.totalFils,
+                            isAr: isAr,
+                          ),
                           isPrimary: true,
                         ),
                       ],
@@ -303,7 +407,9 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                   ),
                   error: (error, _) => Text(
                     error.toString(),
-                    style: AppStyle.bodyText.copyWith(color: context.palette.textMuted),
+                    style: AppStyle.bodyText.copyWith(
+                      color: context.palette.textMuted,
+                    ),
                   ),
                   data: (methods) {
                     if (methods.isEmpty) return const SizedBox.shrink();
@@ -313,7 +419,9 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                         Text(
                           loc.translate('choosePayment'),
                           style: AppStyle.inputHint.copyWith(
-                            color: context.palette.textPrimary.withValues(alpha: 0.4),
+                            color: context.palette.textPrimary.withValues(
+                              alpha: 0.4,
+                            ),
                           ),
                         ),
                         const SizedBox(height: 12),
@@ -329,11 +437,15 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
 
                         // ─── Confirm Order Button ───────────────────
                         ElevatedButton(
-                          onPressed: _confirming ? null : () => _onConfirmOrder(loc),
+                          onPressed: _confirming
+                              ? null
+                              : () => _onConfirmOrder(loc),
                           style: ElevatedButton.styleFrom(
                             backgroundColor: AppColors.primary,
                             minimumSize: const Size(double.infinity, 54),
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(30),
+                            ),
                             elevation: 0,
                           ),
                           child: _confirming
@@ -382,7 +494,9 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                   style: OutlinedButton.styleFrom(
                     minimumSize: const Size(double.infinity, 54),
                     side: BorderSide(color: context.palette.divider),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(30),
+                    ),
                   ),
                   child: Row(
                     children: [
@@ -455,7 +569,11 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
     );
   }
 
-  Widget _buildPaymentOption(BuildContext context, MyFatoorahPaymentMethod method, bool isAr) {
+  Widget _buildPaymentOption(
+    BuildContext context,
+    MyFatoorahPaymentMethod method,
+    bool isAr,
+  ) {
     final isSelected = _selectedMethod?.code == method.code;
     return GestureDetector(
       onTap: () => setState(() => _selectedMethod = method),
@@ -469,7 +587,10 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
         ),
         child: Row(
           children: [
-            Text(isAr ? method.nameAr : method.nameEn, style: AppStyle.paymentOption),
+            Text(
+              isAr ? method.nameAr : method.nameEn,
+              style: AppStyle.paymentOption,
+            ),
             const Spacer(),
             AnimatedContainer(
               duration: const Duration(milliseconds: 200),
@@ -477,11 +598,21 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
               height: 26,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: isSelected ? Colors.transparent : context.palette.surfaceMuted,
-                border: isSelected ? Border.all(color: AppColors.primary, width: 1.5) : null,
+                color: isSelected
+                    ? Colors.transparent
+                    : context.palette.surfaceMuted,
+                border: isSelected
+                    ? Border.all(color: AppColors.primary, width: 1.5)
+                    : null,
               ),
               child: isSelected
-                  ? Center(child: Icon(Icons.check, color: AppColors.primary, size: 15))
+                  ? Center(
+                      child: Icon(
+                        Icons.check,
+                        color: AppColors.primary,
+                        size: 15,
+                      ),
+                    )
                   : null,
             ),
           ],
@@ -496,7 +627,11 @@ class _AddressOption extends StatelessWidget {
   final bool selected;
   final VoidCallback onTap;
 
-  const _AddressOption({required this.address, required this.selected, required this.onTap});
+  const _AddressOption({
+    required this.address,
+    required this.selected,
+    required this.onTap,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -505,9 +640,14 @@ class _AddressOption extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
-          color: selected ? AppColors.primary.withValues(alpha: 0.08) : context.palette.surfaceMuted,
+          color: selected
+              ? AppColors.primary.withValues(alpha: 0.08)
+              : context.palette.surfaceMuted,
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: selected ? AppColors.primary : Colors.transparent, width: 1.5),
+          border: Border.all(
+            color: selected ? AppColors.primary : Colors.transparent,
+            width: 1.5,
+          ),
         ),
         child: Row(
           children: [
@@ -523,7 +663,9 @@ class _AddressOption extends StatelessWidget {
                 children: [
                   Text(
                     address.name,
-                    style: AppStyle.fieldLabel.copyWith(fontWeight: FontWeight.bold),
+                    style: AppStyle.fieldLabel.copyWith(
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                   Text(
                     '${address.line1}, ${address.line2}',
@@ -559,7 +701,7 @@ class _CheckoutMap extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final point = location?.latitude != null && location?.longitude != null
-        ? LatLng(location!.latitude!, location!.longitude!)
+        ? LatLng(location!.latitude, location!.longitude)
         : _fallback;
 
     return ClipRRect(
@@ -585,7 +727,11 @@ class _CheckoutMap extends StatelessWidget {
                   point: point,
                   width: 40,
                   height: 40,
-                  child: Icon(Icons.location_pin, color: AppColors.primary, size: 40),
+                  child: Icon(
+                    Icons.location_pin,
+                    color: AppColors.primary,
+                    size: 40,
+                  ),
                 ),
               ],
             ),

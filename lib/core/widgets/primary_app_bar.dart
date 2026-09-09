@@ -25,8 +25,13 @@ class PrimaryAppBar extends StatelessWidget implements PreferredSizeWidget {
   final bool showBackButton;
   final String cartIcon;
   final String heartIcon;
+  final String bookmarkIcon;
   final VoidCallback? onCartTap;
   final VoidCallback? onHeartTap;
+
+  /// Opt-in third leading icon. Null (the default) leaves the leading row as
+  /// cart + heart, so screens that don't set it are unchanged.
+  final VoidCallback? onBookmarkTap;
   final VoidCallback? onSearchTap;
   final VoidCallback? onBackTap;
   final VoidCallback? onMenuTap;
@@ -39,8 +44,10 @@ class PrimaryAppBar extends StatelessWidget implements PreferredSizeWidget {
     this.showBackButton = false,
     this.cartIcon = AssetsConstants.shoppingBag2,
     this.heartIcon = AssetsConstants.heart,
+    this.bookmarkIcon = AssetsConstants.heartPlus,
     this.onCartTap,
     this.onHeartTap,
+    this.onBookmarkTap,
     this.onSearchTap,
     this.onBackTap,
     this.onMenuTap,
@@ -94,7 +101,8 @@ class PrimaryAppBar extends StatelessWidget implements PreferredSizeWidget {
       elevation: 0,
       scrolledUnderElevation: 0,
       automaticallyImplyLeading: false,
-      leadingWidth: 108,
+      // Three icons plus their gaps don't fit the two-icon default width.
+      leadingWidth: onBookmarkTap != null ? 146 : 108,
       leading: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 16.0),
         child: Row(
@@ -115,6 +123,17 @@ class PrimaryAppBar extends StatelessWidget implements PreferredSizeWidget {
                 colorFilter: iconColor,
               ),
             ),
+            if (onBookmarkTap != null) ...[
+              const SizedBox(width: 16),
+              GestureDetector(
+                onTap: onBookmarkTap,
+                child: SvgPicture.asset(
+                  bookmarkIcon,
+                  width: 22,
+                  colorFilter: iconColor,
+                ),
+              ),
+            ],
           ],
         ),
       ),

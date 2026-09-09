@@ -1,5 +1,6 @@
 import 'dart:ui';
 
+import '../../../core/models/json_bool.dart';
 import '../../../core/models/localized_text.dart';
 
 Color? colorFromHex(String? hex) {
@@ -8,20 +9,6 @@ Color? colorFromHex(String? hex) {
   if (value.length == 6) value = 'FF$value';
   final parsed = int.tryParse(value, radix: 16);
   return parsed == null ? null : Color(parsed);
-}
-
-/// Backends in this project have shipped booleans as `true`, `"true"` and
-/// `1` depending on the endpoint. Returns `null` — meaning "not present" —
-/// for anything unrecognised, which callers treat differently from `false`.
-bool? _readBool(Object? value) {
-  if (value is bool) return value;
-  if (value is num) return value != 0;
-  if (value is String) {
-    final normalized = value.toLowerCase();
-    if (normalized == 'true' || normalized == '1') return true;
-    if (normalized == 'false' || normalized == '0') return false;
-  }
-  return null;
 }
 
 class CartAddon {
@@ -222,7 +209,7 @@ class CartData {
           items.fold<int>(0, (sum, i) => sum + i.quantity),
       subtotalFils: subtotalFils,
       currency: json['currency'] as String? ?? 'SAR',
-      giftWrap: _readBool(json['giftWrap'] ?? json['isGiftWrap']),
+      giftWrap: readJsonBool(json['giftWrap'] ?? json['isGiftWrap']),
       giftMessage: json['giftMessage'] as String?,
       couponCode: json['couponCode'] as String?,
       discountFils: discountFils,

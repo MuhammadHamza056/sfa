@@ -14,7 +14,7 @@ class AppConfig {
   static const ApiEnvironment environment = ApiEnvironment.staging;
 
   static const String _stagingBaseUrl =
-      // 'https://df96-221-132-118-98.ngrok-free.app/api/v1';
+      // 'https://6dfb-221-132-118-98.ngrok-free.app/api/v1';
       'http://3.6.193.117/api/v1';
   static const String _localIos = 'http://localhost:3000/api/v1';
   static const String _localAndroid = 'http://10.0.2.2:3000/api/v1';
@@ -27,6 +27,18 @@ class AppConfig {
         return Platform.isAndroid ? _localAndroid : _localIos;
     }
   }
+
+  /// Origin the Socket.IO gateway listens on — the same host as [baseUrl]
+  /// minus the `/api/v1` prefix, since the gateway is mounted at the root
+  /// (`/socket.io`), not under the REST namespace.
+  static String get socketUrl {
+    final url = baseUrl;
+    return url.endsWith(_apiPrefix)
+        ? url.substring(0, url.length - _apiPrefix.length)
+        : url;
+  }
+
+  static const String _apiPrefix = '/api/v1';
 }
 
 /// Client identifiers for the Google / Apple sign-in flows.

@@ -67,10 +67,20 @@ class CartRepository {
         ));
   }
 
-  /// M31: Move cart item to favorites
-  Future<ApiResult<CartData>> moveToFavorite(String cartItemId) {
+  /// M31: Save a cart item to favorites. Despite the guide calling it
+  /// "move", the item now stays in the cart — the backend used to splice it
+  /// out, which emptied a single-item cart and made every follow-up call
+  /// 404 on an id that no longer existed. Pass [removeFromCart] to opt back
+  /// into the move-and-remove behaviour. The ack is
+  /// `{success,message,targetId,favorited}`, so `_mutateAndParse` refetches
+  /// the cart to pick up whatever actually changed.
+  Future<ApiResult<CartData>> saveToFavorites(
+    String productId, {
+    bool removeFromCart = false,
+  }) {
     return _mutateAndParse(() => _client.post<Map<String, dynamic>?>(
-          ApiEndpoints.cartItemFavorite(cartItemId),
+          ApiEndpoints.cartItemFavorite(productId),
+          data: {'removeFromCart': removeFromCart},
           fromJson: (data) => data is Map<String, dynamic> ? data : null,
         ));
   }

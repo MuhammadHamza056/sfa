@@ -259,10 +259,9 @@ final router = GoRouter(
       builder: (context, state) {
         final wishlistId = state.pathParameters['id'] ?? '';
         return Scaffold(
-          appBar: SubPageAppBar(
-            title: AppLocalizations.of(context).translate('collaborativeWishlists'),
-            fontSize: 19,
-          ),
+          // Figma 434:708 shows this screen under the main app bar (cart +
+          // heart, centred SFA wordmark) rather than a titled sub-page bar.
+          appBar: const PrimaryAppBar(title: 'SFA', showBackButton: true),
           body: WishlistDetailScreen(wishlistId: wishlistId),
           bottomNavigationBar: const AppBottomNavBar(),
         );

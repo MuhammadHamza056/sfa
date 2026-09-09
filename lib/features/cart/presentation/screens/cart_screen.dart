@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import 'package:sfa/core/localization/app_localizations.dart';
 import 'package:sfa/features/cart/data/cart_models.dart';
 import 'package:sfa/features/cart/providers/cart_provider.dart';
+import 'package:sfa/features/favorites/providers/favorites_provider.dart';
 import 'package:sfa/features/profile/providers/profile_data_provider.dart';
 import 'package:sfa/utils/assets_constants.dart';
 import 'package:sfa/utils/color_constants.dart';
@@ -165,11 +166,30 @@ class _CartBodyState extends ConsumerState<_CartBody> {
     ref.invalidate(membershipProvider);
   }
 
-  Future<void> _handleFavorite(String cartItemId) async {
+  /// The item stays in the cart now (it used to disappear, which was the
+  /// only feedback the tap gave), so confirm the save with a snackbar and
+  /// refetch the favorites list the favorites screen reads.
+  /// [cartItemId] only keys the per-row spinner; the API itself takes the
+  /// **product** id, so the two are deliberately different arguments.
+  Future<void> _handleFavorite(String cartItemId, String productId) async {
+    // Guard against a cart response that didn't carry a product id — firing
+    // anyway would POST to `/cart/items//favorite`.
+    if (productId.isEmpty) {
+      final loc = AppLocalizations.of(context);
+      widget.onError(
+        loc.isArabic ? 'تعذر حفظ المنتج' : 'Could not save this product',
+      );
+      return;
+    }
     setState(() => _favoritingIds.add(cartItemId));
-    await ref.read(cartProvider.notifier).moveToFavorite(cartItemId);
+    await ref.read(cartProvider.notifier).saveToFavorites(productId);
     if (!mounted) return;
     setState(() => _favoritingIds.remove(cartItemId));
+    ref.read(favoritesProvider.notifier).refresh();
+    final loc = AppLocalizations.of(context);
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(loc.translate('savedToFavorites'))),
+    );
   }
 
   @override
@@ -228,7 +248,8 @@ class _CartBodyState extends ConsumerState<_CartBody> {
                         isDeleting: _deletingIds.contains(item.id),
                         isFavoriting: _favoritingIds.contains(item.id),
                         onDelete: () => _handleDelete(item.id),
-                        onFavorite: () => _handleFavorite(item.id),
+                        onFavorite: () =>
+                            _handleFavorite(item.id, item.productId),
                         onQuantityChanged: (q) => ref
                             .read(cartProvider.notifier)
                             .updateQuantity(item.id, q),

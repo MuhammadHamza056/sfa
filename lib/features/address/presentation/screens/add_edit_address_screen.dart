@@ -1,7 +1,12 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_map/flutter_map.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:geolocator/geolocator.dart';
 import 'package:go_router/go_router.dart';
+import 'package:latlong2/latlong.dart';
 import 'package:sfa/core/localization/app_localizations.dart';
 import 'package:sfa/core/theme/app_palette.dart';
 import 'package:sfa/utils/color_constants.dart';
@@ -28,6 +33,12 @@ class AddEditAddressScreen extends ConsumerStatefulWidget {
       _AddEditAddressScreenState();
 }
 
+/// Signed decimal input for the latitude/longitude fields — the range check
+/// still happens on save.
+final _coordinateFormatters = [
+  FilteringTextInputFormatter.allow(RegExp(r'[0-9.\-]')),
+];
+
 class _AddEditAddressScreenState extends ConsumerState<AddEditAddressScreen> {
   late final TextEditingController _labelController;
   late final TextEditingController _contactNumberController;
@@ -36,7 +47,36 @@ class _AddEditAddressScreenState extends ConsumerState<AddEditAddressScreen> {
   late final TextEditingController _blockController;
   late final TextEditingController _streetController;
   late final TextEditingController _houseNumberController;
+  late final TextEditingController _latitudeController;
+  late final TextEditingController _longitudeController;
+
+  /// The numeric keyboard has no submit key on iOS, so a hand-typed
+  /// coordinate is committed when the pair loses focus rather than on
+  /// `onSubmitted` alone.
+  final FocusNode _latitudeFocus = FocusNode();
+  final FocusNode _longitudeFocus = FocusNode();
   bool _saving = false;
+
+  // ─── Map pin ────────────────────────────────────────────────────────
+  final MapController _mapController = MapController();
+
+  /// Where the courier is sent. `null` until the customer drops a pin —
+  /// the map starts on a generic city view, which must never be mistaken
+  /// for a real choice, so [_onSave] refuses to submit without one.
+  LatLng? _pin;
+
+  /// The camera can only be driven once [FlutterMap] has attached the
+  /// controller; the first position is placed with `initialCenter`.
+  bool _mapReady = false;
+  bool _locating = false;
+
+  /// Reverse geocoding runs on the pin the customer settles on, not on
+  /// every frame of a drag.
+  Timer? _geocodeDebounce;
+
+  /// Riyadh — only ever the starting view for a brand-new address, and the
+  /// same fallback the checkout map uses.
+  static const LatLng _fallbackCenter = LatLng(24.7136, 46.6753);
 
   @override
   void initState() {
@@ -55,10 +95,25 @@ class _AddEditAddressScreenState extends ConsumerState<AddEditAddressScreen> {
     _houseNumberController = TextEditingController(
       text: address?.houseNumber ?? '',
     );
+    if (address != null && address.hasLocation) {
+      _pin = LatLng(address.latitude, address.longitude);
+    }
+    // Left blank rather than showing "0" when the backend has no real pin —
+    // see Address.hasLocation.
+    _latitudeController = TextEditingController(
+      text: _pin == null ? '' : _formatCoordinate(_pin!.latitude),
+    );
+    _longitudeController = TextEditingController(
+      text: _pin == null ? '' : _formatCoordinate(_pin!.longitude),
+    );
+    _latitudeFocus.addListener(_onCoordinateFocusChange);
+    _longitudeFocus.addListener(_onCoordinateFocusChange);
   }
 
   @override
   void dispose() {
+    _geocodeDebounce?.cancel();
+    _mapController.dispose();
     _labelController.dispose();
     _contactNumberController.dispose();
     _governorateController.dispose();
@@ -66,8 +121,131 @@ class _AddEditAddressScreenState extends ConsumerState<AddEditAddressScreen> {
     _blockController.dispose();
     _streetController.dispose();
     _houseNumberController.dispose();
+    _latitudeController.dispose();
+    _longitudeController.dispose();
+    _latitudeFocus.dispose();
+    _longitudeFocus.dispose();
     super.dispose();
   }
+
+  /// ~11 cm of precision; enough for a doorstep and short enough to read
+  /// back in the latitude/longitude fields.
+  static String _formatCoordinate(double value) => value.toStringAsFixed(6);
+
+  /// Records the pin the order will be dispatched to. [moveCamera] is false
+  /// when the move *came from* the camera (a drag), so the controller isn't
+  /// driven back onto a position it already holds.
+  void _setPin(LatLng point, {bool moveCamera = true, double? zoom}) {
+    setState(() => _pin = point);
+    _latitudeController.text = _formatCoordinate(point.latitude);
+    _longitudeController.text = _formatCoordinate(point.longitude);
+    if (moveCamera && _mapReady) {
+      _mapController.move(point, zoom ?? _mapController.camera.zoom);
+    }
+    _scheduleGeocode(point);
+  }
+
+  /// Only gestures change the pin: a programmatic [MapController.move] also
+  /// fires this callback, and honouring it would fight the camera.
+  void _onPositionChanged(MapCamera camera, bool hasGesture) {
+    if (!hasGesture) return;
+    _setPin(camera.center, moveCamera: false);
+  }
+
+  void _scheduleGeocode(LatLng point) {
+    _geocodeDebounce?.cancel();
+    _geocodeDebounce = Timer(
+      const Duration(milliseconds: 800),
+      () => _geocode(point),
+    );
+  }
+
+  /// M43 — fills in whatever the customer hasn't typed yet. Fields they
+  /// already filled are never overwritten, and a failed lookup is silent:
+  /// the pin is what the backend actually dispatches on.
+  Future<void> _geocode(LatLng point) async {
+    final result = await ref
+        .read(addressRepositoryProvider)
+        .geocode(lat: point.latitude, lng: point.longitude);
+    if (!mounted) return;
+    final geocoded = result.dataOrNull;
+    if (geocoded == null) return;
+    if (_governorateController.text.trim().isEmpty && geocoded.city.isNotEmpty) {
+      _governorateController.text = geocoded.city;
+    }
+    if (_areaController.text.trim().isEmpty && geocoded.district.isNotEmpty) {
+      _areaController.text = geocoded.district;
+    }
+  }
+
+  /// Moves the pin onto the device's GPS fix. Every failure path is
+  /// reported — the customer can still drag the map instead.
+  Future<void> _useCurrentLocation(AppLocalizations loc) async {
+    if (_locating) return;
+    setState(() => _locating = true);
+    try {
+      if (!await Geolocator.isLocationServiceEnabled()) {
+        Loader.showError(loc.translate('locationServiceDisabled'));
+        return;
+      }
+      var permission = await Geolocator.checkPermission();
+      if (permission == LocationPermission.denied) {
+        permission = await Geolocator.requestPermission();
+      }
+      if (permission == LocationPermission.denied ||
+          permission == LocationPermission.deniedForever) {
+        Loader.showError(loc.translate('locationPermissionDenied'));
+        return;
+      }
+      final position = await Geolocator.getCurrentPosition(
+        locationSettings: const LocationSettings(
+          accuracy: LocationAccuracy.high,
+          timeLimit: Duration(seconds: 20),
+        ),
+      );
+      if (!mounted) return;
+      _setPin(LatLng(position.latitude, position.longitude), zoom: 17);
+    } catch (_) {
+      if (mounted) Loader.showError(loc.translate('locationUnavailable'));
+    } finally {
+      if (mounted) setState(() => _locating = false);
+    }
+  }
+
+  /// Commits the typed pair once the customer has left both fields.
+  void _onCoordinateFocusChange() {
+    if (_latitudeFocus.hasFocus || _longitudeFocus.hasFocus) return;
+    // Moving between the two fields unfocuses one before focusing the
+    // other, so the decision waits a frame — tabbing across shouldn't
+    // commit (and re-centre on) a half-typed pair.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      if (_latitudeFocus.hasFocus || _longitudeFocus.hasFocus) return;
+      _onCoordinateSubmitted();
+    });
+  }
+
+  /// Typed coordinates drive the camera too, so the map keeps showing the
+  /// point that will actually be saved.
+  void _onCoordinateSubmitted() {
+    final latitude = double.tryParse(_latitudeController.text.trim());
+    final longitude = double.tryParse(_longitudeController.text.trim());
+    if (latitude == null ||
+        longitude == null ||
+        !_isValidCoordinate(latitude, longitude)) {
+      return;
+    }
+    final point = LatLng(latitude, longitude);
+    // Re-pinning an unchanged point would fire a pointless geocode lookup.
+    if (point == _pin) return;
+    _setPin(point, zoom: 17);
+  }
+
+  static bool _isValidCoordinate(double latitude, double longitude) =>
+      latitude >= -90 &&
+      latitude <= 90 &&
+      longitude >= -180 &&
+      longitude <= 180;
 
   Future<void> _onSave(AppLocalizations loc) async {
     final label = _labelController.text.trim();
@@ -89,6 +267,24 @@ class _AddEditAddressScreenState extends ConsumerState<AddEditAddressScreen> {
       return;
     }
 
+    // The pin is not optional: dispatch, driver assignment, distance
+    // pricing and route optimisation all run off these coordinates, and a
+    // 0/0 address silently breaks every one of them.
+    final latitude = double.tryParse(_latitudeController.text.trim());
+    final longitude = double.tryParse(_longitudeController.text.trim());
+    if (latitude == null || longitude == null || (latitude == 0 && longitude == 0)) {
+      Loader.showError(loc.translate('pickOnMap'));
+      return;
+    }
+    if (!_isValidCoordinate(latitude, longitude)) {
+      Loader.showError(
+        loc.isArabic
+            ? 'إحداثيات غير صالحة'
+            : 'Enter valid latitude and longitude',
+      );
+      return;
+    }
+
     setState(() => _saving = true);
 
     final existing = widget.address;
@@ -101,8 +297,8 @@ class _AddEditAddressScreenState extends ConsumerState<AddEditAddressScreen> {
       block: block,
       street: street,
       houseNumber: houseNumber,
-      latitude: 0,
-      longitude: 0,
+      latitude: latitude,
+      longitude: longitude,
       isDefault: existing?.isDefault ?? false,
     );
 
@@ -138,6 +334,54 @@ class _AddEditAddressScreenState extends ConsumerState<AddEditAddressScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
+              // ─── Map pin picker ─────────────────────────────────────
+              // The pin, not the typed text, is what dispatch runs on, so
+              // it leads the form.
+              Text(
+                loc.translate('pickOnMap'),
+                textAlign: textAlign,
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                  color: context.palette.textPrimary,
+                ),
+              ),
+              const SizedBox(height: 8),
+              _buildMap(context),
+              const SizedBox(height: 8),
+              Text(
+                loc.translate('pickOnMapHint'),
+                textAlign: textAlign,
+                style: TextStyle(fontSize: 12, color: context.palette.textMuted),
+              ),
+              const SizedBox(height: 12),
+              OutlinedButton.icon(
+                onPressed: _locating ? null : () => _useCurrentLocation(loc),
+                style: OutlinedButton.styleFrom(
+                  minimumSize: const Size(double.infinity, 48),
+                  side: BorderSide(color: context.palette.divider, width: 1.5),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(24),
+                  ),
+                ),
+                icon: _locating
+                    ? const SizedBox(
+                        height: 18,
+                        width: 18,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : Icon(Icons.my_location, size: 18, color: AppColors.primary),
+                label: Text(
+                  loc.translate('useCurrentLocation'),
+                  style: TextStyle(
+                    color: context.palette.textPrimary,
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+              const SizedBox(height: 20),
+
               _FormField(
                 label: isAr ? 'اسم العنوان' : 'Address Label',
                 hint: isAr ? 'مثل: المنزل، العمل' : 'e.g. Home, Work',
@@ -189,6 +433,49 @@ class _AddEditAddressScreenState extends ConsumerState<AddEditAddressScreen> {
                 hint: isAr ? 'مثل: 12' : 'e.g. 12',
                 controller: _houseNumberController,
                 textAlign: textAlign,
+              ),
+              const SizedBox(height: 20),
+              // Map coordinates — posted as `latitude`/`longitude` by
+              // Address.toJson. Normally written by the map above; editing
+              // them by hand moves the pin. Always LTR: signed decimal
+              // numbers read left-to-right even in the Arabic layout.
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Expanded(
+                    child: _FormField(
+                      label: isAr ? 'خط العرض' : 'Latitude',
+                      hint: 'e.g. 29.3759',
+                      controller: _latitudeController,
+                      keyboardType: const TextInputType.numberWithOptions(
+                        decimal: true,
+                        signed: true,
+                      ),
+                      textDirection: TextDirection.ltr,
+                      textAlign: TextAlign.left,
+                      inputFormatters: _coordinateFormatters,
+                      focusNode: _latitudeFocus,
+                      onSubmitted: (_) => _onCoordinateSubmitted(),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: _FormField(
+                      label: isAr ? 'خط الطول' : 'Longitude',
+                      hint: 'e.g. 47.9774',
+                      controller: _longitudeController,
+                      keyboardType: const TextInputType.numberWithOptions(
+                        decimal: true,
+                        signed: true,
+                      ),
+                      textDirection: TextDirection.ltr,
+                      textAlign: TextAlign.left,
+                      inputFormatters: _coordinateFormatters,
+                      focusNode: _longitudeFocus,
+                      onSubmitted: (_) => _onCoordinateSubmitted(),
+                    ),
+                  ),
+                ],
               ),
               const SizedBox(height: 32),
 
@@ -281,6 +568,61 @@ class _AddEditAddressScreenState extends ConsumerState<AddEditAddressScreen> {
       ),
     );
   }
+
+  /// The pin is painted at the centre of the viewport rather than as a
+  /// marker: the customer moves the map under a fixed crosshair, which is
+  /// steadier than dragging a marker on a small screen.
+  Widget _buildMap(BuildContext context) {
+    final pin = _pin;
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(16),
+      child: SizedBox(
+        height: 220,
+        child: Stack(
+          children: [
+            FlutterMap(
+              mapController: _mapController,
+              options: MapOptions(
+                initialCenter: pin ?? _fallbackCenter,
+                // Zoomed out until there is a real pin, so a city-level view
+                // doesn't read as a chosen doorstep.
+                initialZoom: pin == null ? 11 : 16,
+                onMapReady: () => _mapReady = true,
+                onPositionChanged: _onPositionChanged,
+                interactionOptions: const InteractionOptions(
+                  flags: InteractiveFlag.pinchZoom |
+                      InteractiveFlag.drag |
+                      InteractiveFlag.doubleTapZoom,
+                ),
+              ),
+              children: [
+                TileLayer(
+                  urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+                  userAgentPackageName: 'com.sfa.app',
+                ),
+              ],
+            ),
+            // Nudged up by half its height so the tip — not the middle of
+            // the glyph — marks the centre coordinate.
+            IgnorePointer(
+              child: Center(
+                child: Transform.translate(
+                  offset: const Offset(0, -20),
+                  child: Icon(
+                    Icons.location_pin,
+                    size: 40,
+                    color: pin == null
+                        ? context.palette.textMuted
+                        : AppColors.primary,
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 }
 
 class _FormField extends StatelessWidget {
@@ -290,6 +632,9 @@ class _FormField extends StatelessWidget {
   final TextInputType? keyboardType;
   final TextDirection? textDirection;
   final TextAlign textAlign;
+  final List<TextInputFormatter>? inputFormatters;
+  final FocusNode? focusNode;
+  final ValueChanged<String>? onSubmitted;
 
   const _FormField({
     required this.label,
@@ -298,6 +643,9 @@ class _FormField extends StatelessWidget {
     required this.textAlign,
     this.keyboardType,
     this.textDirection,
+    this.inputFormatters,
+    this.focusNode,
+    this.onSubmitted,
   });
 
   @override
@@ -320,9 +668,13 @@ class _FormField extends StatelessWidget {
           keyboardType: keyboardType,
           textDirection: textDirection,
           textAlign: textAlign,
-          inputFormatters: keyboardType == TextInputType.phone
-              ? [FilteringTextInputFormatter.allow(RegExp(r'[0-9+\s]'))]
-              : null,
+          focusNode: focusNode,
+          onSubmitted: onSubmitted,
+          inputFormatters:
+              inputFormatters ??
+              (keyboardType == TextInputType.phone
+                  ? [FilteringTextInputFormatter.allow(RegExp(r'[0-9+\s]'))]
+                  : null),
           style: TextStyle(color: context.palette.textPrimary),
           decoration: InputDecoration(
             hintText: hint,

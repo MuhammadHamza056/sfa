@@ -82,9 +82,10 @@ class CartNotifier extends AsyncNotifier<CartData> {
     return _mutate(() => _repository.removeItem(cartItemId));
   }
 
-  /// M31
-  Future<void> moveToFavorite(String cartItemId) {
-    return _mutate(() => _repository.moveToFavorite(cartItemId));
+  /// M31 — the item is saved to favorites and stays in the cart. Takes the
+  /// product id (`CartLineItem.productId`), not the cart line id.
+  Future<void> saveToFavorites(String productId) {
+    return _mutate(() => _repository.saveToFavorites(productId));
   }
 
   /// M32
@@ -111,9 +112,10 @@ class CartNotifier extends AsyncNotifier<CartData> {
         giftWrap: giftWrap,
         giftMessage: giftMessage,
       ),
-      // `GET /cart` doesn't carry `giftWrap`, so a null there means "server
-      // said nothing" and the flag we just sent stands; an explicit value
-      // from the server always wins.
+      // `GET /cart` persists and echoes `giftWrap` now, and an explicit
+      // value from the server always wins; a null (an older backend, or an
+      // ack that omits it) means "server said nothing" and the flag we just
+      // sent stands.
       reconcile: (fromServer) => fromServer.giftWrapRaw != null
           ? fromServer
           : fromServer.copyWith(giftWrap: giftWrap, giftMessage: giftMessage),

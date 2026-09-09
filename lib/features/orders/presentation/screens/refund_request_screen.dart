@@ -52,7 +52,13 @@ class _RefundRequestScreenState extends ConsumerState<RefundRequestScreen> {
     setState(() => _submitting = false);
 
     result.when(
-      success: (refund) => context.go('/refund-status/${refund.refundId}'),
+      success: (refund) {
+        // The order now carries `refundStatus: requested`, which the list
+        // renders as a badge — drop the copy fetched before the request.
+        ref.invalidate(ordersDataProvider);
+        ref.invalidate(orderDetailProvider(widget.orderId));
+        context.go('/refund-status/${refund.refundId}');
+      },
       failure: (error) => Loader.showError(error.message),
     );
   }

@@ -2,11 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
+import 'package:sfa/core/hive_services.dart';
 import 'package:sfa/core/localization/app_localizations.dart';
 import 'package:sfa/core/providers/nav_providers.dart';
 import 'package:sfa/core/theme/app_palette.dart';
 import 'package:sfa/utils/app_style.dart';
+import 'package:sfa/features/notifications/providers/notifications_providers.dart';
 import 'package:sfa/utils/assets_constants.dart';
+import 'package:sfa/utils/color_constants.dart';
 
 const List<String> _shellBranchPaths = [
   '/home',
@@ -107,12 +110,62 @@ class AppBottomNavBar extends ConsumerWidget {
           label: loc.translate('myAccount'),
         ),
         BottomNavigationBarItem(
-          icon: SvgPicture.asset(
-            AssetsConstants.bell,
-            width: 22,
-            colorFilter: ColorFilter.mode(getTabIconColor(4), BlendMode.srcIn),
-          ),
+          icon: _NotificationsTabIcon(color: getTabIconColor(4)),
           label: loc.translate('notifications'),
+        ),
+      ],
+    );
+  }
+}
+
+/// The bell, with the unread count from [unreadNotificationsCountProvider]
+/// so a notification arriving over the socket is visible from any tab.
+///
+/// The count is only watched while signed in: the provider fetches M97 on
+/// first read, and that call needs a session.
+class _NotificationsTabIcon extends ConsumerWidget {
+  final Color color;
+
+  const _NotificationsTabIcon({required this.color});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final count = SecureStorage.isAuthenticated
+        ? ref.watch(unreadNotificationsCountProvider)
+        : 0;
+
+    final bell = SvgPicture.asset(
+      AssetsConstants.bell,
+      width: 22,
+      colorFilter: ColorFilter.mode(color, BlendMode.srcIn),
+    );
+    if (count == 0) return bell;
+
+    return Stack(
+      clipBehavior: Clip.none,
+      children: [
+        bell,
+        Positioned(
+          right: -6,
+          top: -4,
+          child: Container(
+            padding: const EdgeInsets.all(3),
+            decoration: BoxDecoration(
+              color: AppColors.primary,
+              shape: BoxShape.circle,
+            ),
+            constraints: const BoxConstraints(minWidth: 15, minHeight: 15),
+            child: Center(
+              child: Text(
+                count > 99 ? '99+' : '$count',
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 9,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+          ),
         ),
       ],
     );

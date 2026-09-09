@@ -9,6 +9,7 @@ import 'package:sfa/utils/color_constants.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:sfa/features/orders/data/order_models.dart';
 import 'package:sfa/features/orders/presentation/screens/delivery_otp_screen.dart';
+import 'package:sfa/features/orders/presentation/widgets/driver_live_map.dart';
 import 'package:sfa/features/orders/presentation/widgets/order_payment_flow.dart';
 import 'package:sfa/features/orders/providers/orders_data_provider.dart';
 import 'package:sfa/utils/currency_formatter.dart';
@@ -221,6 +222,28 @@ class _OrderTrackingScreenState extends ConsumerState<OrderTrackingScreen> {
                       ),
                       valueColor: AppColors.primary,
                     ),
+                    // Gift wrap and any active refund only appear once the
+                    // order actually carries them, so an ordinary order's
+                    // header is unchanged.
+                    if (order.giftWrap) ...[
+                      const SizedBox(height: 12),
+                      _buildInfoRow(
+                        loc.translate('giftWrapLabel'),
+                        loc.translate('giftWrappedBadge'),
+                      ),
+                    ],
+                    if (order.refund.badgeKey != null) ...[
+                      const SizedBox(height: 12),
+                      _buildInfoRow(
+                        loc.translate('refundStatusLabel'),
+                        loc.translate(order.refund.badgeKey!),
+                        valueColor: order.refund.status == 'rejected'
+                            ? context.palette.danger
+                            : order.refund.inProgress
+                                ? AppColors.goldAccent
+                                : context.palette.success,
+                      ),
+                    ],
                   ],
                 ),
               ),
@@ -306,7 +329,25 @@ class _OrderTrackingScreenState extends ConsumerState<OrderTrackingScreen> {
                       color: context.palette.textMuted,
                     ),
                   ),
-                  data: (tracking) => _buildTrackerTimeline(tracking, isAr),
+                  data: (tracking) {
+                    // The live map only makes sense while a courier is
+                    // actually out with the order: it needs a delivery to
+                    // subscribe to, and a delivered/cancelled order has no
+                    // more GPS pings coming.
+                    final deliveryId = tracking.deliveryId;
+                    final liveTracking = deliveryId != null &&
+                        (detailAsync.valueOrNull?.isActive ?? false);
+                    return Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        _buildTrackerTimeline(tracking, isAr),
+                        if (liveTracking) ...[
+                          const SizedBox(height: 28),
+                          DriverLiveMap(deliveryId: deliveryId),
+                        ],
+                      ],
+                    );
+                  },
                 ),
                 const SizedBox(height: 32),
               ],

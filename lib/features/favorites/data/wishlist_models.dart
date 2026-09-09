@@ -60,7 +60,10 @@ class WishlistSummary {
 
   factory WishlistSummary.fromJson(Map<String, dynamic> json) {
     return WishlistSummary(
-      id: json['id']?.toString() ?? '',
+      // Hedged across key spellings the way `WishlistItemEntry` already is —
+      // an empty id here both breaks the `/wishlist-detail/:id` push and
+      // makes `POST /wishlists//items` silently wrong.
+      id: (json['id'] ?? json['_id'] ?? json['wishlistId'])?.toString() ?? '',
       title: (json['title'] ?? json['name'])?.toString() ?? '',
       itemCount: (json['itemCount'] as num?)?.toInt() ?? (json['count'] as num?)?.toInt() ?? 0,
       coverImages: (json['coverImages'] as List? ?? json['images'] as List? ?? const [])

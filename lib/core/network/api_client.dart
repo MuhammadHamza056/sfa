@@ -8,6 +8,7 @@ import 'api_endpoints.dart';
 import 'api_exception.dart';
 import 'api_result.dart';
 import 'app_config.dart';
+import 'socket_service.dart';
 
 /// Single Dio-backed gateway for every API call in the app.
 ///
@@ -56,6 +57,7 @@ class ApiClient {
                 return handler.next(retryError);
               }
             }
+            SocketService.instance.disconnect();
             await SecureStorage.clearSession();
           }
           handler.next(error);
@@ -102,6 +104,9 @@ class ApiClient {
         if (newRefresh != null) {
           await SecureStorage.putRefreshToken(newRefresh);
         }
+        // The socket authenticated its handshake with the token that just
+        // expired; only a fresh connection picks the new one up.
+        SocketService.instance.reconnect();
         completer.complete(true);
       } catch (_) {
         completer.complete(false);

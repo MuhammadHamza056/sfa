@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/hive_services.dart';
 import '../../../core/network/api_client.dart';
+import '../../../core/network/socket_service.dart';
 import '../../../core/notifications/push_notifications_service.dart';
 import '../../../core/network/api_result.dart';
 import '../../../utils/phone_number_formatter.dart';
@@ -362,6 +363,9 @@ class AuthNotifier extends AutoDisposeNotifier<AuthState> {
       user: session.user,
     );
     unawaited(PushNotificationsService.instance.registerCurrentToken());
+    // The socket handshake carries the JWT, so it can only be opened once
+    // the new session's token is stored.
+    SocketService.instance.connect();
   }
 
   /// M08
@@ -370,6 +374,7 @@ class AuthNotifier extends AutoDisposeNotifier<AuthState> {
     // Without this the next Google sign-in reuses the cached account
     // instead of showing the picker.
     await SocialAuthService.signOut();
+    SocketService.instance.disconnect();
     await SecureStorage.clearSession();
     state = const AuthState();
   }

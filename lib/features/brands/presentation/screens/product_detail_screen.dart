@@ -17,6 +17,7 @@ import 'package:sfa/features/cart/providers/cart_provider.dart';
 import 'package:sfa/features/catalog/data/catalog_models.dart';
 import 'package:sfa/features/catalog/providers/catalog_providers.dart';
 import 'package:sfa/features/favorites/models/favorite_product.dart';
+import 'package:sfa/features/favorites/presentation/widgets/save_to_wishlist_sheet.dart';
 import 'package:sfa/features/favorites/providers/favorites_provider.dart';
 import 'package:sfa/core/theme/app_palette.dart';
 
@@ -177,6 +178,15 @@ class _ProductDetailBody extends ConsumerWidget {
         ? detailState.selectedSizeIndex.clamp(0, sizeLabels.length - 1)
         : 0;
 
+    // Hoisted so the app bar's save-to-wishlist action and the add-to-cart
+    // button below both write the same chosen variant.
+    final selectedColorValue = colorOption != null && colorOption.values.isNotEmpty
+        ? colorOption.values[selectedColorIndex]
+        : null;
+    final selectedSizeValue = sizeLabels != null && sizeLabels.isNotEmpty
+        ? sizeLabels[selectedSizeIndex]
+        : null;
+
     final favoriteEntry = FavoriteProduct(
       productId: product.id,
       title: displayProduct.title,
@@ -201,6 +211,27 @@ class _ProductDetailBody extends ConsumerWidget {
             : AssetsConstants.heart2,
         onHeartTap: () =>
             ref.read(favoritesProvider.notifier).toggle(favoriteEntry),
+        onBookmarkTap: () async {
+          final messenger = ScaffoldMessenger.of(context);
+          final result = await SaveToWishlistSheet.show(
+            context,
+            productId: product.id,
+            selectedSize: selectedSizeValue,
+            selectedColor: selectedColorValue,
+          );
+          // Null means the sheet was dismissed without choosing a list.
+          if (result == null) return;
+          messenger.showSnackBar(
+            SnackBar(
+              content: Text(
+                result.added
+                    ? loc.translate('addedToWishlist')
+                    : (result.errorMessage ??
+                          loc.translate('addToWishlistFailed')),
+              ),
+            ),
+          );
+        },
       ),
       body: SingleChildScrollView(
         controller: scrollController,
@@ -783,13 +814,8 @@ class _ProductDetailBody extends ConsumerWidget {
               enabled: product.isAvailable,
               buyNowText: buyNowText,
               productId: product.id,
-              selectedColor:
-                  colorOption != null && colorOption.values.isNotEmpty
-                  ? colorOption.values[selectedColorIndex]
-                  : null,
-              selectedSize: sizeLabels != null && sizeLabels.isNotEmpty
-                  ? sizeLabels[selectedSizeIndex]
-                  : null,
+              selectedColor: selectedColorValue,
+              selectedSize: selectedSizeValue,
             ),
 
             const SizedBox(height: 16),

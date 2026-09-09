@@ -323,6 +323,7 @@ class _PreviousOrdersScreenState extends ConsumerState<PreviousOrdersScreen>
     required bool isAr,
     required Order order,
   }) {
+    final refundBadge = _refundBadge(loc, order.refund);
     return Padding(
       padding: const EdgeInsets.all(16.0),
       child: Column(
@@ -359,21 +360,38 @@ class _PreviousOrdersScreenState extends ConsumerState<PreviousOrdersScreen>
           const Divider(height: 1),
           const SizedBox(height: 12),
           Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                decoration: BoxDecoration(
-                  color: AppColors.primary.withValues(alpha: 0.08),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Text(
-                  order.status,
-                  style: AppStyle.navLabel.copyWith(color: AppColors.primary),
+              // Status, refund and gift-wrap read as one badge strip — they
+              // wrap onto a second line rather than squeezing the action.
+              Expanded(
+                child: Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  crossAxisAlignment: WrapCrossAlignment.center,
+                  children: [
+                    _buildBadge(
+                      label: order.isCancelled
+                          ? loc.translate('orderCancelledBadge')
+                          : order.status,
+                      color: order.isCancelled
+                          ? context.palette.danger
+                          : AppColors.primary,
+                    ),
+                    if (refundBadge != null)
+                      _buildBadge(label: refundBadge.label, color: refundBadge.color),
+                    if (order.giftWrap)
+                      _buildBadge(
+                        label: loc.translate('giftWrappedBadge'),
+                        color: AppColors.goldAccent,
+                      ),
+                  ],
                 ),
               ),
-              // An unpaid order gets a pay button; the refund button only
-              // makes sense once the order has been delivered.
+              const SizedBox(width: 8),
+              // An unpaid order gets a pay button. Once a refund is under
+              // review the request button becomes a link to its status; the
+              // request itself is only offered on a delivered order that
+              // hasn't been sent to refund yet.
               if (order.isAwaitingPayment)
                 _buildCardAction(
                   label: loc.translate('payNow'),
@@ -381,7 +399,13 @@ class _PreviousOrdersScreenState extends ConsumerState<PreviousOrdersScreen>
                   busy: _payingOrderId == order.id,
                   onTap: () => _onPayOrder(order),
                 )
-              else if (order.isDelivered)
+              else if (order.refund.inProgress && order.refund.canTrack)
+                _buildCardAction(
+                  label: loc.translate('trackRefund'),
+                  isAr: isAr,
+                  onTap: () => context.push('/refund-status/${order.refund.refundId}'),
+                )
+              else if (order.canRequestRefund)
                 _buildCardAction(
                   label: loc.translate('requestRefund'),
                   isAr: isAr,
@@ -391,6 +415,30 @@ class _PreviousOrdersScreenState extends ConsumerState<PreviousOrdersScreen>
           ),
         ],
       ),
+    );
+  }
+
+  /// Pairs [OrderRefundInfo.badgeKey] with a colour: gold while the refund
+  /// is still under review, then green or red for the outcome.
+  ({String label, Color color})? _refundBadge(AppLocalizations loc, OrderRefundInfo refund) {
+    final key = refund.badgeKey;
+    if (key == null) return null;
+    final color = switch (refund.status) {
+      'requested' => AppColors.goldAccent,
+      'rejected' => context.palette.danger,
+      _ => context.palette.success,
+    };
+    return (label: loc.translate(key), color: color);
+  }
+
+  Widget _buildBadge({required String label, required Color color}) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.08),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Text(label, style: AppStyle.navLabel.copyWith(color: color)),
     );
   }
 

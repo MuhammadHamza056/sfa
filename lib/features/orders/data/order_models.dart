@@ -1,3 +1,4 @@
+import '../../../core/models/json_bool.dart';
 import '../../../core/models/localized_text.dart';
 
 /// The guide's statuses read as an active/completed split even though it
@@ -36,18 +37,100 @@ class DeliveryOtpRequestResult {
   }
 }
 
+/// The active-refund / cancellation indicators the backend attaches to
+/// every order (list and detail alike), so a card can say "refund in
+/// progress" without a per-order call to `GET /refunds/:id`.
+///
+/// [status] is the backend's `refundStatus`, lowercased:
+/// `none` (nothing requested), `requested` (pending review — the only
+/// in-progress state), `approved`, `refunded` (money back in the wallet,
+/// order also reports `isCancelled`) or `rejected`.
+class OrderRefundInfo {
+  final String status;
+  final bool inProgress;
+  final bool isRequested;
+  final String? refundId;
+  final String? reason;
+
+  const OrderRefundInfo({
+    this.status = 'none',
+    this.inProgress = false,
+    this.isRequested = false,
+    this.refundId,
+    this.reason,
+  });
+
+  static const none = OrderRefundInfo();
+
+  /// False only while the order has never been sent to refund at all —
+  /// which is exactly when the "Request Refund" action is still offered.
+  bool get hasRefund => status != 'none';
+
+  /// The l10n key describing [status] on a badge, or `null` when there is
+  /// nothing to show — `none`, and any status the backend adds later.
+  String? get badgeKey {
+    switch (status) {
+      case 'requested':
+        return 'refundInProgressBadge';
+      case 'approved':
+        return 'refundApprovedBadge';
+      case 'refunded':
+        return 'refundedBadge';
+      case 'rejected':
+        return 'refundRejectedBadge';
+      default:
+        return null;
+    }
+  }
+
+  /// `/refund-status/:refundId` needs the refund's own id; older orders
+  /// resolved before the backend started attaching it have none, so the
+  /// badge is shown without the "Track Refund" link.
+  bool get canTrack => refundId != null && refundId!.isNotEmpty;
+
+  /// Orders that predate the refund fields parse as [none]; a bare
+  /// `refundInProgress`/`isRefundRequested` without `refundStatus` still
+  /// resolves to `requested` so the badge doesn't silently disappear.
+  factory OrderRefundInfo.fromJson(Map<String, dynamic> json) {
+    final isRequested = readJsonBool(json['isRefundRequested']) ?? false;
+    final inProgress = readJsonBool(json['refundInProgress']) ?? false;
+    final rawStatus = json['refundStatus']?.toString().toLowerCase() ?? '';
+    final status = rawStatus.isNotEmpty
+        ? rawStatus
+        : (inProgress || isRequested ? 'requested' : 'none');
+    if (status == 'none') return none;
+    final refundId = json['refundId']?.toString();
+    return OrderRefundInfo(
+      status: status,
+      inProgress: inProgress || status == 'requested',
+      // Past the early return the order has been sent to refund, whether or
+      // not the backend also set the flag.
+      isRequested: true,
+      refundId: refundId == null || refundId.isEmpty ? null : refundId,
+      reason: json['refundReason'] as String?,
+    );
+  }
+}
+
 class OrderLineItem {
   final LocalizedText name;
   final int quantity;
   final String image;
+  final bool giftWrap;
 
-  const OrderLineItem({required this.name, required this.quantity, required this.image});
+  const OrderLineItem({
+    required this.name,
+    required this.quantity,
+    required this.image,
+    this.giftWrap = false,
+  });
 
   factory OrderLineItem.fromJson(Map<String, dynamic> json) {
     return OrderLineItem(
       name: LocalizedText.fromJson(json['name'] as Map<String, dynamic>? ?? const {}),
       quantity: (json['quantity'] as num?)?.toInt() ?? 1,
       image: (json['image'] ?? json['imageUrl'])?.toString() ?? '',
+      giftWrap: readJsonBool(json['giftWrap'] ?? json['giftWrapping']) ?? false,
     );
   }
 }
@@ -62,6 +145,10 @@ class Order {
   final String currency;
   final String paymentStatus;
   final List<OrderLineItem> items;
+  final bool isCancelled;
+  final OrderRefundInfo refund;
+  final bool giftWrap;
+  final String? giftMessage;
 
   const Order({
     required this.id,
@@ -72,16 +159,29 @@ class Order {
     this.currency = 'SAR',
     this.paymentStatus = '',
     this.items = const [],
+    this.isCancelled = false,
+    this.refund = OrderRefundInfo.none,
+    this.giftWrap = false,
+    this.giftMessage,
   });
 
-  bool get isActive => !_terminalOrderStatuses.contains(status.toUpperCase());
+  /// A cancelled order belongs in the "previous" tab even if its `status`
+  /// string hasn't caught up (a refunded order keeps `status: delivered`
+  /// and only flips `isCancelled`).
+  bool get isActive =>
+      !isCancelled && !_terminalOrderStatuses.contains(status.toUpperCase());
 
   /// Refunds are only offered once the order has actually reached the
-  /// customer — the backend rejects a request in any other state.
+  /// customer — the backend rejects a request in any other state — and
+  /// only while none has been raised yet.
   bool get isDelivered => status.toUpperCase() == 'DELIVERED';
 
+  bool get canRequestRefund => isDelivered && !refund.hasRefund && !isCancelled;
+
   bool get isAwaitingPayment =>
-      _isUnpaidPaymentStatus(paymentStatus) && !_terminalOrderStatuses.contains(status.toUpperCase());
+      _isUnpaidPaymentStatus(paymentStatus) &&
+      !isCancelled &&
+      !_terminalOrderStatuses.contains(status.toUpperCase());
 
   factory Order.fromJson(Map<String, dynamic> json) {
     final id = (json['_id'] ?? json['id'])?.toString() ?? '';
@@ -96,6 +196,10 @@ class Order {
       items: (json['items'] as List? ?? const [])
           .map((v) => OrderLineItem.fromJson(v as Map<String, dynamic>))
           .toList(),
+      isCancelled: readJsonBool(json['isCancelled']) ?? false,
+      refund: OrderRefundInfo.fromJson(json),
+      giftWrap: readJsonBool(json['giftWrap'] ?? json['giftWrapping']) ?? false,
+      giftMessage: json['giftMessage'] as String?,
     );
   }
 }
@@ -112,6 +216,7 @@ class OrderDetailItem {
   final String? selectedColor;
   final String image;
   final String? brandName;
+  final bool giftWrap;
 
   const OrderDetailItem({
     required this.itemId,
@@ -122,6 +227,7 @@ class OrderDetailItem {
     this.selectedColor,
     required this.image,
     this.brandName,
+    this.giftWrap = false,
   });
 
   factory OrderDetailItem.fromJson(Map<String, dynamic> json) {
@@ -134,6 +240,7 @@ class OrderDetailItem {
       selectedColor: json['selectedColor'] as String?,
       image: (json['image'] ?? json['imageUrl'])?.toString() ?? '',
       brandName: (json['brand'] as Map<String, dynamic>?)?['name'] as String?,
+      giftWrap: readJsonBool(json['giftWrap'] ?? json['giftWrapping']) ?? false,
     );
   }
 }
@@ -190,6 +297,10 @@ class OrderDetail {
   final String deliveryMethod;
   final String paymentStatus;
   final OrderShippingAddress? shippingAddress;
+  final bool isCancelled;
+  final OrderRefundInfo refund;
+  final bool giftWrap;
+  final String? giftMessage;
 
   const OrderDetail({
     required this.id,
@@ -206,14 +317,24 @@ class OrderDetail {
     this.deliveryMethod = 'DELIVERY',
     this.paymentStatus = '',
     this.shippingAddress,
+    this.isCancelled = false,
+    this.refund = OrderRefundInfo.none,
+    this.giftWrap = false,
+    this.giftMessage,
   });
 
-  bool get isActive => !_terminalOrderStatuses.contains(status.toUpperCase());
+  /// See [Order.isActive] — `isCancelled` can flip without `status` moving.
+  bool get isActive =>
+      !isCancelled && !_terminalOrderStatuses.contains(status.toUpperCase());
 
   bool get isDelivered => status.toUpperCase() == 'DELIVERED';
 
+  bool get canRequestRefund => isDelivered && !refund.hasRefund && !isCancelled;
+
   bool get isAwaitingPayment =>
-      _isUnpaidPaymentStatus(paymentStatus) && !_terminalOrderStatuses.contains(status.toUpperCase());
+      _isUnpaidPaymentStatus(paymentStatus) &&
+      !isCancelled &&
+      !_terminalOrderStatuses.contains(status.toUpperCase());
 
   factory OrderDetail.fromJson(Map<String, dynamic> json) {
     final id = (json['_id'] ?? json['id'])?.toString() ?? '';
@@ -242,6 +363,10 @@ class OrderDetail {
       shippingAddress: rawAddress is Map<String, dynamic>
           ? OrderShippingAddress.fromJson(rawAddress)
           : null,
+      isCancelled: readJsonBool(json['isCancelled']) ?? false,
+      refund: OrderRefundInfo.fromJson(json),
+      giftWrap: readJsonBool(json['giftWrap'] ?? json['giftWrapping']) ?? false,
+      giftMessage: json['giftMessage'] as String?,
     );
   }
 }
@@ -303,11 +428,17 @@ class OrderTracking {
   final List<OrderTrackingStep> timeline;
   final OrderDriver? driver;
 
+  /// The courier run behind this order, when one has been dispatched. It is
+  /// the room key the socket gateway wants for live GPS
+  /// (`tracking:subscribe`), so the live map only renders once it arrives.
+  final String? deliveryId;
+
   const OrderTracking({
     required this.orderNumber,
     required this.currentStatus,
     this.timeline = const [],
     this.driver,
+    this.deliveryId,
   });
 
   factory OrderTracking.fromJson(Map<String, dynamic> json) {
@@ -326,6 +457,13 @@ class OrderTracking {
       driver: rawDriver is Map<String, dynamic>
           ? OrderDriver.fromJson(rawDriver)
           : null,
+      // Only the `delivery` object's own id is a delivery id — `driver`
+      // carries the courier's id, which the tracking room would reject.
+      deliveryId: (json['deliveryId'] ??
+              (json['delivery'] is Map
+                  ? json['delivery']['_id'] ?? json['delivery']['id']
+                  : null))
+          ?.toString(),
     );
   }
 }

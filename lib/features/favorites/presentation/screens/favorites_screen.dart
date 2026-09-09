@@ -11,6 +11,7 @@ import 'package:sfa/core/widgets/product_card.dart';
 import 'package:sfa/utils/assets_constants.dart';
 import 'package:sfa/utils/color_constants.dart';
 import 'package:sfa/features/favorites/data/wishlist_models.dart';
+import 'package:sfa/features/favorites/presentation/widgets/wishlist_name_dialog.dart';
 import 'package:sfa/features/favorites/providers/favorites_provider.dart';
 import 'package:sfa/features/favorites/providers/wishlists_providers.dart';
 import 'package:sfa/core/theme/app_palette.dart';
@@ -19,26 +20,9 @@ import 'package:sfa/core/theme/always_light.dart';
 class FavoritesScreen extends ConsumerWidget {
   const FavoritesScreen({super.key});
 
-  Future<void> _onAddWishlist(BuildContext context, WidgetRef ref, AppLocalizations loc) async {
-    final controller = TextEditingController();
-    final title = await showDialog<String>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text(loc.translate('addWishlist')),
-        content: TextField(
-          controller: controller,
-          decoration: InputDecoration(hintText: loc.isArabic ? 'اسم القائمة' : 'Wishlist name'),
-        ),
-        actions: [
-          TextButton(onPressed: () => context.pop(), child: Text(loc.translate('cancel'))),
-          TextButton(
-            onPressed: () => context.pop(controller.text.trim()),
-            child: Text(loc.translate('addWishlist')),
-          ),
-        ],
-      ),
-    );
-    if (title == null || title.isEmpty) return;
+  Future<void> _onAddWishlist(BuildContext context, WidgetRef ref) async {
+    final title = await promptWishlistName(context);
+    if (title == null) return;
     final result = await ref.read(wishlistsRepositoryProvider).createWishlist(title);
     if (result.isSuccess) {
       ref.invalidate(wishlistsListProvider);
@@ -144,7 +128,7 @@ class FavoritesScreen extends ConsumerWidget {
               Padding(
                 padding: const EdgeInsets.all(16.0),
                 child: OutlinedButton(
-                  onPressed: () => _onAddWishlist(context, ref, loc),
+                  onPressed: () => _onAddWishlist(context, ref),
                   style: OutlinedButton.styleFrom(
                     side: BorderSide(color: context.palette.textPrimary.withValues(alpha: 0.3), width: 1),
                     shape: const StadiumBorder(),

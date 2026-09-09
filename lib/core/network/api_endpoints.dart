@@ -52,8 +52,10 @@ class ApiEndpoints {
   static const String cart = '/cart';
   static const String cartItems = '/cart/items';
   static String cartItem(String itemId) => '/cart/items/$itemId';
-  static String cartItemFavorite(String itemId) =>
-      '/cart/items/$itemId/favorite';
+  /// M31. The path segment is the **product** id, not the cart item id —
+  /// the endpoint favorites a product, so passing the line's `id` 404s.
+  static String cartItemFavorite(String productId) =>
+      '/cart/items/$productId/favorite';
   static const String cartCoupon = '/cart/coupon';
   static const String cartGiftWrap = '/cart/gift-wrap';
   static const String cartRedeemPoints = '/cart/redeem-points';
@@ -133,6 +135,10 @@ class ApiEndpoints {
 
   // Section 14: AI Stylist Fashion Advisor (M95)
   static const String aiChat = '/ai/chat';
+
+  /// Stored thread for one conversation, replayed when the chat reopens.
+  static String aiConversationMessages(String id) =>
+      '/ai/conversations/$id/messages';
 
   // Section 15: Push Notifications & Device Token Registration (M96-M99)
   static const String notificationDeviceToken = '/notifications/device-token';

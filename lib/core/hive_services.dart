@@ -20,6 +20,11 @@ class SecureStorage {
   static const String languageSelected = "LANGUAGE_SELECTED";
   static const String savedLocale = "SAVED_LOCALE";
 
+  /// Last AI assistant conversation the user was in, so reopening the chat
+  /// resumes the thread instead of starting a blank one. Cleared with the
+  /// session — a conversation belongs to the account that created it.
+  static const String aiConversationId = "AI_CONVERSATION_ID";
+
   /// Apple only hands over the user's name and email on the *first*
   /// authorization ever granted to this App ID — every later sign-in
   /// returns nulls. These two keys keep that one-shot payload so repeat
@@ -56,6 +61,7 @@ class SecureStorage {
       currentUser,
       languageSelected,
       savedLocale,
+      aiConversationId,
       appleName,
       appleEmail,
     ];
@@ -211,6 +217,14 @@ class SecureStorage {
     return _cache[refreshToken];
   }
 
+  static Future<void> putAiConversationId(String? value) async {
+    await _write(aiConversationId, value);
+  }
+
+  static String? getAiConversationId() {
+    return _cache[aiConversationId];
+  }
+
   static Future<void> putCurrentUser(String jsonValue) async {
     await _write(currentUser, jsonValue);
   }
@@ -238,6 +252,7 @@ class SecureStorage {
     await _write(accessToken, null);
     await _write(refreshToken, null);
     await _write(currentUser, null);
+    await _write(aiConversationId, null);
   }
 
   static Future<void> deleteHive() async {

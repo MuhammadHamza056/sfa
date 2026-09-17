@@ -13,23 +13,38 @@ class FavoritesRepository {
 
   static FavoriteProduct _fromJson(Map<String, dynamic> json) {
     final isAr = localeNotifier.value.languageCode == 'ar';
-    final name = json['name'];
+    
+    final productJson = json['target'] as Map<String, dynamic>? ?? 
+                        json['product'] as Map<String, dynamic>? ?? 
+                        json;
+                        
+    final name = productJson['name'];
     final title = name is Map<String, dynamic>
         ? (isAr ? name['ar'] : name['en'])?.toString() ?? ''
-        : (json['name']?.toString() ?? '');
-    final priceFils = (json['priceFils'] as num?)?.toInt();
+        : (productJson['name']?.toString() ?? '');
+    final priceFils = (productJson['priceFils'] as num?)?.toInt();
+    
+    final images = productJson['images'] as List?;
+    final imageUrl = productJson['image']?.toString() ?? 
+                     productJson['imageUrl']?.toString() ??
+                     (images != null && images.isNotEmpty ? images.first.toString() : '');
+
+    final brandName = (productJson['brand'] as Map<String, dynamic>?)?['name'] as String? ?? 
+                      (productJson['vendorId'] as Map<String, dynamic>?)?['name'] as String? ?? 
+                      productJson['brandName'] as String?;
+
     return FavoriteProduct(
       // The favorites list entry carries its own record id separately from
       // the product it points to (same shape as `WishlistItem` in
       // wishlist_models.dart) — `DELETE /favorites/{productId}` needs the
-      // latter, so prefer `productId` over the entry's `id`.
-      productId: (json['productId'] ?? json['itemId'] ?? json['id'])?.toString() ?? '',
+      // latter, so prefer `targetId` or `productId` over the entry's `id`.
+      productId: (json['targetId'] ?? json['productId'] ?? json['itemId'] ?? productJson['_id'] ?? productJson['id'])?.toString() ?? '',
       title: title,
-      imageUrl: json['image']?.toString() ?? '',
+      imageUrl: imageUrl,
       price: priceFils != null
           ? CurrencyFormatter.fromHalalas(priceFils, isAr: isAr)
-          : (json['price']?.toString() ?? ''),
-      brandName: json['brandName'] as String?,
+          : (productJson['price']?.toString() ?? ''),
+      brandName: brandName,
     );
   }
 

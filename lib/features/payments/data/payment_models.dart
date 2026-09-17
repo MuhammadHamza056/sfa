@@ -63,12 +63,37 @@ class MyFatoorahPaymentMethod {
   /// opened in the system browser instead of the in-app WebView.
   bool get requiresExternalBrowser => code == 'APPLE_PAY' || code == 'GOOGLE_PAY';
 
+  /// Maps MyFatoorah's raw PaymentMethodCode strings (e.g. "vm", "md", "kn")
+  /// to the backend's OrderPaymentMethod enum values that create-order accepts.
+  static String _toBackendCode(String? myfatoorahCode) {
+    switch (myfatoorahCode?.toLowerCase()) {
+      case 'vm': // Visa / Mastercard
+        return 'CARD';
+      case 'md': // Mada
+        return 'MADA';
+      case 'kn': // KNET
+        return 'KNET';
+      case 'ap': // Apple Pay
+        return 'APPLE_PAY';
+      case 'gp': // Google Pay
+        return 'GOOGLE_PAY';
+      case 'w': // Wallet (MyFatoorah wallet)
+        return 'WALLET';
+      case 'cod': // Cash on delivery
+        return 'COD';
+      default:
+        // If the backend already returned an enum string (e.g. CARD, MADA),
+        // pass it through unchanged so this stays safe against future updates.
+        return myfatoorahCode?.toUpperCase() ?? '';
+    }
+  }
+
   factory MyFatoorahPaymentMethod.fromJson(Map<String, dynamic> json) {
     return MyFatoorahPaymentMethod(
       id: (json['PaymentMethodId'] as num?)?.toInt() ?? 0,
       nameAr: json['PaymentMethodAr']?.toString() ?? '',
       nameEn: json['PaymentMethodEn']?.toString() ?? '',
-      code: json['PaymentMethodCode']?.toString() ?? '',
+      code: _toBackendCode(json['PaymentMethodCode']?.toString()),
       isDirectPayment: json['IsDirectPayment'] as bool? ?? false,
       serviceCharge: (json['ServiceCharge'] as num?)?.toDouble() ?? 0,
       totalAmount: (json['TotalAmount'] as num?)?.toDouble() ?? 0,

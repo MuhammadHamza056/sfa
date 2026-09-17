@@ -445,12 +445,13 @@ class _OrderTrackingScreenState extends ConsumerState<OrderTrackingScreen> {
 
               // ─── Delivery Info Header ───
               trackingAsync.maybeWhen(
-                data: (tracking) => tracking.driver == null
+                data: (tracking) => tracking.driver == null && tracking.courier == null
                     ? const SizedBox.shrink()
                     : Column(
                         crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: [
-                          Center(
+                          Align(
+                            alignment: isAr ? Alignment.centerRight : Alignment.centerLeft,
                             child: Text(
                               loc.translate('deliveryInfo'),
                               style: AppStyle.sectionHeader,
@@ -461,8 +462,30 @@ class _OrderTrackingScreenState extends ConsumerState<OrderTrackingScreen> {
                             color: context.palette.divider,
                             thickness: 0.8,
                           ),
-                          const SizedBox(height: 24),
-                          _buildDeliveryCard(tracking.driver!),
+                          const SizedBox(height: 16),
+                          if (tracking.trackingCode != null && tracking.trackingCode!.isNotEmpty) ...[
+                            _buildInfoRow(
+                              isAr ? 'رقم التتبع' : 'Tracking Code',
+                              tracking.trackingCode!,
+                            ),
+                            const SizedBox(height: 12),
+                          ],
+                          if (tracking.estimatedDelivery != null && tracking.estimatedDelivery!.isNotEmpty) ...[
+                            _buildInfoRow(
+                              isAr ? 'الوقت المتوقع' : 'Estimated Delivery',
+                              tracking.estimatedDelivery!,
+                            ),
+                            const SizedBox(height: 12),
+                          ],
+                          if (tracking.courier != null) ...[
+                            _buildInfoRow(
+                              isAr ? 'شركة التوصيل' : 'Courier',
+                              tracking.courier!.resolve(isAr),
+                            ),
+                            const SizedBox(height: 24),
+                          ],
+                          if (tracking.driver != null)
+                            _buildDeliveryCard(tracking.driver!),
                           const SizedBox(height: 24),
                         ],
                       ),
@@ -624,7 +647,7 @@ class _OrderTrackingScreenState extends ConsumerState<OrderTrackingScreen> {
           children: [
             _buildTimelineIndicatorColumn(step, isLast),
             const SizedBox(width: 16),
-            _buildStepText(step, alignRight: isAr),
+            _buildStepText(step, alignRight: isAr, isAr: isAr),
           ],
         );
       }),
@@ -666,17 +689,17 @@ class _OrderTrackingScreenState extends ConsumerState<OrderTrackingScreen> {
     );
   }
 
-  Widget _buildStepText(OrderTrackingStep step, {bool alignRight = false}) {
-    final time = step.timestamp;
+  Widget _buildStepText(OrderTrackingStep step, {bool alignRight = false, required bool isAr}) {
+    final time = step.time;
     return Column(
       crossAxisAlignment: alignRight
           ? CrossAxisAlignment.end
           : CrossAxisAlignment.start,
       children: [
-        Text(step.label, style: AppStyle.timelineTitle),
+        Text(step.label.resolve(isAr), style: AppStyle.timelineTitle),
         Text(
-          time != null
-              ? '${time.hour.toString().padLeft(2, '0')}:${time.minute.toString().padLeft(2, '0')}'
+          time != null && time.isNotEmpty
+              ? time
               : '--:--',
           style: AppStyle.timelineSubtitle.copyWith(
             color: context.palette.textPrimary.withValues(alpha: 0.5),

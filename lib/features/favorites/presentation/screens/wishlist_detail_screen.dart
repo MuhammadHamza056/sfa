@@ -4,10 +4,12 @@ import 'package:sfa/core/network/api_exception.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:sfa/core/localization/app_localizations.dart';
 import 'package:sfa/core/theme/app_palette.dart';
 import 'package:sfa/utils/assets_constants.dart';
+import 'package:sfa/core/models/product_detail_args.dart';
 import 'package:sfa/features/favorites/data/wishlist_models.dart';
 import 'package:sfa/features/favorites/providers/wishlists_providers.dart';
 
@@ -246,7 +248,20 @@ class _ProductRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final loc = AppLocalizations.of(context);
 
-    return IntrinsicHeight(
+    return GestureDetector(
+      onTap: () => context.push(
+        '/product-detail',
+        extra: ProductDetailArgs(
+          id: item.productId,
+          name: item.name,
+          imageUrl: item.imageUrl,
+          price: item.price,
+          rating: '',
+          brandNameKey: item.brandName,
+        ),
+      ),
+      behavior: HitTestBehavior.opaque,
+      child: IntrinsicHeight(
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
@@ -341,6 +356,7 @@ class _ProductRow extends StatelessWidget {
           ),
         ],
       ),
+      ),
     );
   }
 }
@@ -374,19 +390,26 @@ class _DetailRow extends StatelessWidget {
   }
 }
 
-class _Image extends ConsumerWidget {
+class _Image extends ConsumerStatefulWidget {
   final String wishlistId;
   final WishlistItemEntry item;
 
   const _Image({required this.wishlistId, required this.item});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<_Image> createState() => _ImageState();
+}
+
+class _ImageState extends ConsumerState<_Image> {
+  bool _isDeleting = false;
+
+  @override
+  Widget build(BuildContext context) {
     return Stack(
       fit: StackFit.expand,
       children: [
         Image.network(
-          item.imageUrl,
+          widget.item.imageUrl,
           fit: BoxFit.cover,
           errorBuilder: (context, error, stackTrace) =>
               Container(color: context.palette.surfaceMuted),
@@ -397,12 +420,18 @@ class _Image extends ConsumerWidget {
           top: 12,
           start: 10,
           child: GestureDetector(
-            onTap: () async {
+            onTap: _isDeleting ? null : () async {
+              setState(() => _isDeleting = true);
               final result = await ref
                   .read(wishlistsRepositoryProvider)
-                  .removeItem(wishlistId, item.productId);
+                  .removeItem(widget.wishlistId, widget.item.productId);
+                  
+              if (mounted) {
+                setState(() => _isDeleting = false);
+              }
+              
               if (result.isSuccess) {
-                ref.invalidate(wishlistDetailProvider(wishlistId));
+                ref.invalidate(wishlistDetailProvider(widget.wishlistId));
                 // The list screen's card (cover images + item count) is a
                 // separate cached provider — without this it stays stale
                 // after popping back to it.
@@ -420,11 +449,17 @@ class _Image extends ConsumerWidget {
                   color: Colors.white.withValues(alpha: 0.67),
                   // The asset already carries the designed #220D1D @ 50%
                   // stroke, so it renders untinted.
-                  child: SvgPicture.asset(
-                    AssetsConstants.trash,
-                    width: 18,
-                    height: 18,
-                  ),
+                  child: _isDeleting
+                      ? const SizedBox(
+                          width: 14,
+                          height: 14,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : SvgPicture.asset(
+                          AssetsConstants.trash,
+                          width: 18,
+                          height: 18,
+                        ),
                 ),
               ),
             ),

@@ -4,10 +4,12 @@ class AssetsConstants {
   static const String sfaWhite = "assets/logos/sfa_white.svg";
   static const String logoPng = "assets/logos/logo.png";
   static const String aiPng = "assets/logos/ai.png";
-  static const String homeBackground = "assets/logos/homebackground.png";
-  static const String homeBackgroundWomen = "assets/logos/homebackground.png";
-  static const String homeBackgroundMen = "assets/images/home_background_men.jpg";
-  static const String homeBackgroundKids = "assets/images/home_background_kids.jpg";
+  static const String homeBackgroundWomen =
+      "assets/images/home_background_women.png";
+  static const String homeBackgroundMen =
+      "assets/images/home_background_men.jpg";
+  static const String homeBackgroundKids =
+      "assets/images/home_background_kids.jpg";
   static const String unionPng = "assets/logos/Union.png";
   static const String vectorPng = "assets/logos/Vector.png";
   static const String groupPng = "assets/logos/Group.png";
@@ -78,5 +80,5 @@ class AssetsConstants {
   static const String frame53 = "assets/icons/Frame 53.svg";
   static const String ticketCheck = "assets/icons/ticket-check.svg";
   static const String nationalDayBanner =
-      "assets/images/national_day_banner.png";
+      "assets/images/home_background_women.png";
 }

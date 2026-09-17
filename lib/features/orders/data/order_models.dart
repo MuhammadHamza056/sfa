@@ -373,28 +373,29 @@ class OrderDetail {
 
 class OrderTrackingStep {
   final String status;
-  final String label;
+  final LocalizedText label;
   final bool completed;
-  final DateTime? timestamp;
+  final String? time;
 
   const OrderTrackingStep({
     required this.status,
     required this.label,
     required this.completed,
-    this.timestamp,
+    this.time,
   });
 
   factory OrderTrackingStep.fromJson(Map<String, dynamic> json) {
-    final status = json['status']?.toString() ?? '';
+    final status = (json['key'] ?? json['status'])?.toString() ?? '';
     return OrderTrackingStep(
       status: status,
-      // The real API sends only `status`/`completed`/`current` per step —
-      // no `label` — so humanize the status as a fallback display string.
-      label: json['label']?.toString() ?? _humanizeStatus(status),
+      label: json['label'] is Map<String, dynamic>
+          ? LocalizedText.fromJson(json['label'])
+          : LocalizedText(
+              en: json['label']?.toString() ?? _humanizeStatus(status),
+              ar: json['label']?.toString() ?? _humanizeStatus(status),
+            ),
       completed: json['completed'] as bool? ?? false,
-      timestamp: json['timestamp'] == null
-          ? null
-          : DateTime.tryParse(json['timestamp'].toString()),
+      time: json['time']?.toString().isNotEmpty == true ? json['time']?.toString() : null,
     );
   }
 }
@@ -433,12 +434,36 @@ class OrderTracking {
   /// (`tracking:subscribe`), so the live map only renders once it arrives.
   final String? deliveryId;
 
+  // New fields from updated tracking API
+  final LocalizedText? statusText;
+  final String? deliveryMethod;
+  final bool cancelled;
+  final DateTime? driverArrivedAt;
+  final String? pickupCode;
+  final LocalizedText? courier;
+  final String? trackingCode;
+  final String? estimatedDelivery;
+  final List<OrderDetailItem> items;
+  final OrderShippingAddress? deliveryAddress;
+  final int totalFils;
+
   const OrderTracking({
     required this.orderNumber,
     required this.currentStatus,
     this.timeline = const [],
     this.driver,
     this.deliveryId,
+    this.statusText,
+    this.deliveryMethod,
+    this.cancelled = false,
+    this.driverArrivedAt,
+    this.pickupCode,
+    this.courier,
+    this.trackingCode,
+    this.estimatedDelivery,
+    this.items = const [],
+    this.deliveryAddress,
+    this.totalFils = 0,
   });
 
   factory OrderTracking.fromJson(Map<String, dynamic> json) {
@@ -464,6 +489,27 @@ class OrderTracking {
                   ? json['delivery']['_id'] ?? json['delivery']['id']
                   : null))
           ?.toString(),
+      statusText: json['statusText'] is Map<String, dynamic>
+          ? LocalizedText.fromJson(json['statusText'])
+          : null,
+      deliveryMethod: json['deliveryMethod']?.toString(),
+      cancelled: json['cancelled'] as bool? ?? false,
+      driverArrivedAt: json['driverArrivedAt'] != null
+          ? DateTime.tryParse(json['driverArrivedAt'].toString())
+          : null,
+      pickupCode: json['pickupCode']?.toString(),
+      courier: json['courier'] is Map<String, dynamic>
+          ? LocalizedText.fromJson(json['courier'])
+          : null,
+      trackingCode: json['trackingCode']?.toString(),
+      estimatedDelivery: json['estimatedDelivery']?.toString(),
+      items: (json['items'] as List? ?? const [])
+          .map((v) => OrderDetailItem.fromJson(v as Map<String, dynamic>))
+          .toList(),
+      deliveryAddress: json['deliveryAddress'] is Map<String, dynamic>
+          ? OrderShippingAddress.fromJson(json['deliveryAddress'])
+          : null,
+      totalFils: (json['totalFils'] as num?)?.toInt() ?? 0,
     );
   }
 }

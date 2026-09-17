@@ -14,7 +14,7 @@ class AppConfig {
   static const ApiEnvironment environment = ApiEnvironment.staging;
 
   static const String _stagingBaseUrl =
-      // 'https://6dfb-221-132-118-98.ngrok-free.app/api/v1';
+      // 'https://0b8b-103-177-241-226.ngrok-free.app/api/v1';
       'http://3.6.193.117/api/v1';
   static const String _localIos = 'http://localhost:3000/api/v1';
   static const String _localAndroid = 'http://10.0.2.2:3000/api/v1';

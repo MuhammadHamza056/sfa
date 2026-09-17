@@ -79,6 +79,10 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
         .confirmCheckout(
           addressId: addressId,
           paymentMethod: method.code,
+          // paymentMethodId is only sent when paying with a saved user card
+          // (a MongoDB ObjectId). MyFatoorah's numeric gateway ID (method.id)
+          // is NOT a valid value here — it goes to initiatePayment instead.
+          deliveryMethod: "delivery",
           shippingAddress: selectedAddress.toShippingAddressJson(),
           // The coupon is applied on the cart screen (M33); without it the
           // created order is priced at full price even though the customer

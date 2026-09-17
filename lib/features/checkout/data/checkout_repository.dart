@@ -55,6 +55,8 @@ class CheckoutRepository {
     String? paymentMethodId,
     bool? giftWrap,
     String? giftMessage,
+    String? scheduledFor,
+    String? vendorId,
   }) {
     return _client.post<CheckoutConfirmResult>(
       ApiEndpoints.checkoutCreateOrder,
@@ -66,6 +68,8 @@ class CheckoutRepository {
         if (paymentMethodId != null) 'paymentMethodId': paymentMethodId,
         if (deliverySlot != null) 'deliverySlot': deliverySlot,
         if (promoCode != null) 'promoCode': promoCode,
+        if (scheduledFor != null) 'scheduledFor': scheduledFor,
+        if (vendorId != null) 'vendorId': vendorId,
         // The backend falls back to the gift wrap stored on the cart when
         // these are omitted, but sending them keeps the order matching what
         // the cart screen showed even if the two ever drift.

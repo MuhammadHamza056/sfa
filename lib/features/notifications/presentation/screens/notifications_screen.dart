@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:sfa/core/network/api_exception.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:sfa/core/localization/app_localizations.dart';
 import 'package:sfa/core/widgets/primary_app_bar.dart';
@@ -99,7 +100,7 @@ class NotificationsScreen extends ConsumerWidget {
                   statsAsync.when(
                     loading: () => const SizedBox.shrink(),
                     error: (error, _) => Text(
-                      error.toString(),
+                      error.errorMessage,
                       style: AppStyle.bodyText.copyWith(
                         color: context.palette.textMuted,
                       ),
@@ -161,7 +162,7 @@ class NotificationsScreen extends ConsumerWidget {
                   offersAsync.when(
                     loading: () => const SizedBox.shrink(),
                     error: (error, _) => Text(
-                      error.toString(),
+                      error.errorMessage,
                       style: AppStyle.bodyText.copyWith(
                         color: context.palette.textMuted,
                       ),
@@ -236,7 +237,7 @@ class NotificationsScreen extends ConsumerWidget {
                   notificationsAsync.when(
                     loading: () => const SizedBox.shrink(),
                     error: (error, _) => Text(
-                      error.toString(),
+                      error.errorMessage,
                       style: AppStyle.bodyText.copyWith(
                         color: context.palette.textMuted,
                       ),

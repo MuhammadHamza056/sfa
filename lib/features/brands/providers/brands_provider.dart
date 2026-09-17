@@ -7,12 +7,25 @@ class BrandsState {
   /// means the "All" chip, which lists brands via the unfiltered `/brands`.
   final String selectedCategoryId;
 
-  const BrandsState({this.selectedGender = 0, this.selectedCategoryId = ''});
+  /// Text typed into [BrandsSearchBar]; filters the brand grid client-side
+  /// by name, since brand lists are small and already fully fetched.
+  final String searchQuery;
 
-  BrandsState copyWith({int? selectedGender, String? selectedCategoryId}) {
+  const BrandsState({
+    this.selectedGender = 0,
+    this.selectedCategoryId = '',
+    this.searchQuery = '',
+  });
+
+  BrandsState copyWith({
+    int? selectedGender,
+    String? selectedCategoryId,
+    String? searchQuery,
+  }) {
     return BrandsState(
       selectedGender: selectedGender ?? this.selectedGender,
       selectedCategoryId: selectedCategoryId ?? this.selectedCategoryId,
+      searchQuery: searchQuery ?? this.searchQuery,
     );
   }
 }
@@ -31,6 +44,10 @@ class BrandsNotifier extends Notifier<BrandsState> {
 
   void changeCategory(String categoryId) {
     state = state.copyWith(selectedCategoryId: categoryId);
+  }
+
+  void updateSearchQuery(String query) {
+    state = state.copyWith(searchQuery: query);
   }
 }
 

@@ -57,6 +57,12 @@ class MyFatoorahPaymentMethod {
     this.isEmbeddedSupported = false,
   });
 
+  /// Apple Pay and Google Pay's web buttons need a real browser: Chrome
+  /// disables the PaymentRequest API inside Android WebView, and Apple
+  /// restricts ApplePaySession to Safari/system-browser contexts. Both are
+  /// opened in the system browser instead of the in-app WebView.
+  bool get requiresExternalBrowser => code == 'APPLE_PAY' || code == 'GOOGLE_PAY';
+
   factory MyFatoorahPaymentMethod.fromJson(Map<String, dynamic> json) {
     return MyFatoorahPaymentMethod(
       id: (json['PaymentMethodId'] as num?)?.toInt() ?? 0,

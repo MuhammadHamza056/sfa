@@ -1,4 +1,5 @@
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:sfa/core/network/api_exception.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
@@ -187,7 +188,7 @@ class ProductReviewsScreen extends ConsumerWidget {
                       error: (error, _) => Padding(
                         padding: const EdgeInsets.symmetric(horizontal: 16),
                         child: Text(
-                          error.toString(),
+                          error.errorMessage,
                           style: AppStyle.bodyText.copyWith(color: context.palette.textMuted),
                         ),
                       ),
@@ -330,7 +331,7 @@ class ProductReviewsScreen extends ConsumerWidget {
                       error: (error, _) => Padding(
                         padding: const EdgeInsets.all(16),
                         child: Text(
-                          error.toString(),
+                          error.errorMessage,
                           style: AppStyle.bodyText.copyWith(color: context.palette.textMuted),
                         ),
                       ),

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:sfa/core/network/api_exception.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -19,15 +20,53 @@ import 'package:sfa/utils/assets_constants.dart';
 //     'https://images.unsplash.com/photo-1490481651871-ab68de25d43d?w=800&q=80';
 
 const _kBrandsAppBarHeight = 64.0;
+const _kHeroImageHeight = 320.0;
 
-class BrandsScreen extends ConsumerWidget {
+/// Scroll offset (in the page's [CustomScrollView]) past which the hero
+/// image has fully scrolled behind the app bar — the app bar and the pinned
+/// category row switch from transparent to solid black at that point so
+/// they stay legible once there's no more image behind them.
+const _kHeroScrolledPastThreshold = _kHeroImageHeight - _kBrandsAppBarHeight;
+
+class BrandsScreen extends ConsumerStatefulWidget {
   const BrandsScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<BrandsScreen> createState() => _BrandsScreenState();
+}
+
+class _BrandsScreenState extends ConsumerState<BrandsScreen> {
+  final ScrollController _scrollController = ScrollController();
+  bool _scrolledPastHero = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _scrollController.addListener(_onScroll);
+  }
+
+  @override
+  void dispose() {
+    _scrollController.removeListener(_onScroll);
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  void _onScroll() {
+    final scrolledPastHero =
+        _scrollController.offset > _kHeroScrolledPastThreshold;
+    if (scrolledPastHero != _scrolledPastHero) {
+      setState(() => _scrolledPastHero = scrolledPastHero);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final loc = AppLocalizations.of(context);
     final isAr = loc.isArabic;
-    final selectedCategoryId = ref.watch(brandsProvider).selectedCategoryId;
+    final brandsState = ref.watch(brandsProvider);
+    final selectedCategoryId = brandsState.selectedCategoryId;
+    final searchQuery = brandsState.searchQuery.trim().toLowerCase();
     final categoriesAsync = ref.watch(brandCategoriesProvider);
     final brandsAsync = selectedCategoryId.isEmpty
         ? ref.watch(brandsListProvider)
@@ -46,29 +85,49 @@ class BrandsScreen extends ConsumerWidget {
         child: Scaffold(
           backgroundColor: Colors.transparent,
           extendBodyBehindAppBar: true,
-          appBar: const _BrandsAppBar(),
+          appBar: _BrandsAppBar(solidBackground: _scrolledPastHero),
           body: Stack(
             children: [
-              // Scaffold background image from assets
+              // Scaffold background image from assets, with a light
+              // blackish filter so the white app bar/header text stays
+              // legible over bright photos.
               SizedBox(
-                height: 600,
                 width: double.infinity,
-                child: Image.asset(
-                  'assets/images/brandbackground.png',
-                  fit: BoxFit.fill,
+                child: Stack(
+                  fit: StackFit.expand,
+                  children: [
+                    Image.asset(
+                      'assets/images/brandbackground.png',
+                      fit: BoxFit.fill,
+                    ),
+                    Container(color: Colors.black.withOpacity(0.4)),
+                  ],
                 ),
               ),
-              // ── Scrollable content: header + grid ──
+              // ── Scrollable content: whole page scrolls as one, with the
+              // category row pinned below the app bar once it reaches it ──
               SafeArea(
                 bottom: false,
-                child: SingleChildScrollView(
-                  child: Column(
-                    children: [
-                      const SizedBox(height: _kBrandsAppBarHeight),
-                      // ── Header: heading + tabs + categories + search ──
-                      const BrandsHeader(),
-                      const SizedBox(height: 15),
-                      Builder(
+                child: CustomScrollView(
+                  controller: _scrollController,
+                  slivers: [
+                    const SliverToBoxAdapter(
+                      child: SizedBox(height: _kBrandsAppBarHeight),
+                    ),
+                    const SliverToBoxAdapter(child: BrandsHeaderTop()),
+                    const SliverToBoxAdapter(child: SizedBox(height: 16)),
+                    SliverPersistentHeader(
+                      pinned: true,
+                      delegate: _CategoryChipsHeaderDelegate(
+                        solidBackground: _scrolledPastHero,
+                        scrollController: _scrollController,
+                      ),
+                    ),
+                    const SliverToBoxAdapter(child: SizedBox(height: 20)),
+                    const SliverToBoxAdapter(child: BrandsSearchBar()),
+                    const SliverToBoxAdapter(child: SizedBox(height: 17)),
+                    SliverToBoxAdapter(
+                      child: Builder(
                         builder: (context) {
                           if (isLoading) {
                             return const SizedBox(
@@ -81,7 +140,7 @@ class BrandsScreen extends ConsumerWidget {
                               height: 300,
                               child: Center(
                                 child: Text(
-                                  brandsAsync.error.toString(),
+                                  brandsAsync.error!.errorMessage,
                                   style: AppStyle.bodyText.copyWith(
                                     color: context.palette.textMuted,
                                   ),
@@ -89,15 +148,29 @@ class BrandsScreen extends ConsumerWidget {
                               ),
                             );
                           }
-                          final brands = brandsAsync.value ?? const [];
+                          final allBrands = brandsAsync.value ?? const [];
+                          final brands = searchQuery.isEmpty
+                              ? allBrands
+                              : allBrands
+                                    .where(
+                                      (b) => b.name
+                                          .resolve(isAr)
+                                          .toLowerCase()
+                                          .contains(searchQuery),
+                                    )
+                                    .toList();
                           if (brands.isEmpty) {
                             return SizedBox(
                               height: 300,
                               child: Center(
                                 child: Text(
-                                  isAr
-                                      ? 'لا توجد علامات تجارية'
-                                      : 'No brands yet',
+                                  searchQuery.isNotEmpty
+                                      ? (isAr
+                                            ? 'لا توجد نتائج مطابقة'
+                                            : 'No matching brands')
+                                      : (isAr
+                                            ? 'لا توجد علامات تجارية'
+                                            : 'No brands yet'),
                                   style: AppStyle.bodyText.copyWith(
                                     color: context.palette.textMuted,
                                   ),
@@ -124,9 +197,9 @@ class BrandsScreen extends ConsumerWidget {
                           // ),
                         },
                       ),
-                      const SizedBox(height: 24),
-                    ],
-                  ),
+                    ),
+                    const SliverToBoxAdapter(child: SizedBox(height: 24)),
+                  ],
                 ),
               ),
             ],
@@ -138,7 +211,9 @@ class BrandsScreen extends ConsumerWidget {
 }
 
 class _BrandsAppBar extends ConsumerWidget implements PreferredSizeWidget {
-  const _BrandsAppBar();
+  final bool solidBackground;
+
+  const _BrandsAppBar({required this.solidBackground});
 
   @override
   Size get preferredSize => const Size.fromHeight(_kBrandsAppBarHeight);
@@ -146,7 +221,7 @@ class _BrandsAppBar extends ConsumerWidget implements PreferredSizeWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     return AppBar(
-      backgroundColor: Colors.transparent,
+      backgroundColor: solidBackground ? Colors.black : Colors.transparent,
       elevation: 0,
       scrolledUnderElevation: 0,
       toolbarHeight: _kBrandsAppBarHeight,
@@ -173,8 +248,7 @@ class _BrandsAppBar extends ConsumerWidget implements PreferredSizeWidget {
                 width: 24,
                 height: 24,
               ),
-              onPressed: () =>
-                  handleAppBarNavTap(context, '/favorites', null),
+              onPressed: () => handleAppBarNavTap(context, '/favorites', null),
             ),
           ],
         ),
@@ -208,4 +282,43 @@ class _BrandsAppBar extends ConsumerWidget implements PreferredSizeWidget {
       ],
     );
   }
+}
+
+const _kCategoryChipsHeight = 32.0;
+
+/// Pins the category chip row directly below the app bar once the page
+/// scrolls past it, with a solid backdrop so it stays legible once the hero
+/// image has scrolled behind the app bar.
+class _CategoryChipsHeaderDelegate extends SliverPersistentHeaderDelegate {
+  final bool solidBackground;
+  final ScrollController scrollController;
+
+  const _CategoryChipsHeaderDelegate({
+    required this.solidBackground,
+    required this.scrollController,
+  });
+
+  @override
+  double get minExtent => _kCategoryChipsHeight;
+
+  @override
+  double get maxExtent => _kCategoryChipsHeight;
+
+  @override
+  Widget build(
+    BuildContext context,
+    double shrinkOffset,
+    bool overlapsContent,
+  ) {
+    return Container(
+      color: solidBackground ? Colors.black : Colors.transparent,
+      alignment: Alignment.center,
+      child: BrandsCategoryChips(scrollController: scrollController),
+    );
+  }
+
+  @override
+  bool shouldRebuild(covariant _CategoryChipsHeaderDelegate oldDelegate) =>
+      solidBackground != oldDelegate.solidBackground ||
+      scrollController != oldDelegate.scrollController;
 }

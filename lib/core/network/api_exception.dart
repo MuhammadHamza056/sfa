@@ -82,3 +82,14 @@ class ApiException implements Exception {
   @override
   String toString() => 'ApiException($statusCode, $message)';
 }
+
+/// User-facing text for any caught error — unwraps [ApiException.message]
+/// instead of letting widgets fall back to `toString()`, which would render
+/// the raw `ApiException(statusCode, message)` debug form on screen.
+extension AppErrorMessage on Object {
+  String get errorMessage {
+    final err = this;
+    if (err is ApiException) return err.message;
+    return 'Something went wrong. Please try again.';
+  }
+}

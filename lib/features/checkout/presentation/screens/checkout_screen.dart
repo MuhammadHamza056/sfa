@@ -1,4 +1,5 @@
 import 'dart:math' as math;
+import 'package:sfa/core/network/api_exception.dart';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
@@ -111,6 +112,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
               extra: PaymentWebviewArgs(
                 paymentUrl: payment.paymentUrl,
                 order: order,
+                openExternally: method.requiresExternalBrowser,
               ),
             );
           },
@@ -226,7 +228,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                     child: Center(child: CircularProgressIndicator()),
                   ),
                   error: (error, _) => Text(
-                    error.toString(),
+                    error.errorMessage,
                     style: AppStyle.bodyText.copyWith(
                       color: context.palette.textMuted,
                     ),
@@ -308,7 +310,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                     child: Center(child: CircularProgressIndicator()),
                   ),
                   error: (error, _) => Text(
-                    error.toString(),
+                    error.errorMessage,
                     style: AppStyle.bodyText.copyWith(
                       color: context.palette.textMuted,
                     ),
@@ -406,7 +408,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                     child: Center(child: CircularProgressIndicator()),
                   ),
                   error: (error, _) => Text(
-                    error.toString(),
+                    error.errorMessage,
                     style: AppStyle.bodyText.copyWith(
                       color: context.palette.textMuted,
                     ),

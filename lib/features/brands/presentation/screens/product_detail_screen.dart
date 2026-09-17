@@ -1,4 +1,5 @@
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:sfa/core/network/api_exception.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -103,7 +104,7 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
         ),
         body: Center(
           child: Text(
-            error.toString(),
+            error.errorMessage,
             style: AppStyle.bodyText.copyWith(color: context.palette.textMuted),
           ),
         ),
@@ -238,42 +239,11 @@ class _ProductDetailBody extends ConsumerWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            // 1. Huge Product Image with dots overlay
-            Stack(
-              children: [
-                CachedNetworkImage(
-                  imageUrl: productImage,
-                  height: 520,
-                  width: double.infinity,
-                  fit: BoxFit.cover,
-                  placeholder: (_, __) =>
-                      Container(color: context.palette.surfaceMuted),
-                  errorWidget: (_, __, ___) =>
-                      Container(color: context.palette.surfaceMuted),
-                ),
-                if (product.images.length > 1)
-                  Positioned(
-                    bottom: 16,
-                    left: 0,
-                    right: 0,
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: List.generate(product.images.length, (i) {
-                        return Container(
-                          width: i == 0 ? 20 : 6,
-                          height: 6,
-                          margin: const EdgeInsets.symmetric(horizontal: 3),
-                          decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(3),
-                            color: i == 0
-                                ? Colors.white
-                                : Colors.white.withValues(alpha: 0.5),
-                          ),
-                        );
-                      }),
-                    ),
-                  ),
-              ],
+            // 1. Huge Product Image carousel with dots overlay
+            _ProductImageCarousel(
+              images: product.images.isNotEmpty
+                  ? product.images
+                  : [productImage],
             ),
 
             const SizedBox(height: 16),
@@ -895,6 +865,79 @@ class _ProductDetailBody extends ConsumerWidget {
   }
 }
 
+/// Swipeable product image carousel with a dot indicator that tracks the
+/// current page.
+class _ProductImageCarousel extends StatefulWidget {
+  final List<String> images;
+
+  const _ProductImageCarousel({required this.images});
+
+  @override
+  State<_ProductImageCarousel> createState() => _ProductImageCarouselState();
+}
+
+class _ProductImageCarouselState extends State<_ProductImageCarousel> {
+  final PageController _pageController = PageController();
+  int _currentIndex = 0;
+
+  @override
+  void dispose() {
+    _pageController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Stack(
+      children: [
+        SizedBox(
+          height: 520,
+          width: double.infinity,
+          child: PageView.builder(
+            controller: _pageController,
+            itemCount: widget.images.length,
+            onPageChanged: (index) => setState(() => _currentIndex = index),
+            itemBuilder: (context, index) => CachedNetworkImage(
+              imageUrl: widget.images[index],
+              height: 520,
+              width: double.infinity,
+              fit: BoxFit.cover,
+              placeholder: (_, __) =>
+                  Container(color: context.palette.surfaceMuted),
+              errorWidget: (_, __, ___) =>
+                  Container(color: context.palette.surfaceMuted),
+            ),
+          ),
+        ),
+        if (widget.images.length > 1)
+          Positioned(
+            bottom: 16,
+            left: 0,
+            right: 0,
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: List.generate(widget.images.length, (i) {
+                final isActive = i == _currentIndex;
+                return AnimatedContainer(
+                  duration: const Duration(milliseconds: 200),
+                  width: isActive ? 20 : 6,
+                  height: 6,
+                  margin: const EdgeInsets.symmetric(horizontal: 3),
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(3),
+                    color: isActive
+                        ? Colors.white
+                        : Colors.white.withValues(alpha: 0.5),
+                  ),
+                );
+              }),
+            ),
+          ),
+      ],
+    );
+  }
+}
+
 /// Owns its own in-flight/loading state so the spinner and disabled state
 /// only ever reflect this button's own add-to-cart call, not any other
 /// concurrent cart mutation happening elsewhere in the app.
@@ -932,7 +975,7 @@ class _AddToCartButtonState extends ConsumerState<_AddToCartButton> {
         );
     if (!mounted) return;
     setState(() => _addingToCart = false);
-    final errorMessage = ref.read(cartProvider).error?.toString();
+    final errorMessage = ref.read(cartProvider).error?.errorMessage;
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:sfa/core/network/api_exception.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -79,7 +80,7 @@ class _AddressScreenState extends ConsumerState<AddressScreen> {
                     padding: const EdgeInsets.symmetric(vertical: 48),
                     child: Center(
                       child: Text(
-                        error.toString(),
+                        error.errorMessage,
                         style: AppStyle.labelText.copyWith(color: context.palette.textMuted),
                       ),
                     ),

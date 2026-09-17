@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'core/hive_services.dart';
 import 'core/localization/app_localizations.dart';
+import 'core/navigation/payment_deep_link_service.dart';
 import 'core/network/socket_service.dart';
 import 'core/notifications/push_notifications_service.dart';
 import 'core/notifications/realtime_listener.dart';
@@ -28,6 +29,7 @@ void main() async {
   SocketService.instance.connect();
   themeNotifier.loadFromStorage();
   localeNotifier.loadFromStorage();
+  await PaymentDeepLinkService.instance.init();
   runApp(const ProviderScope(child: MyApp()));
 }
 

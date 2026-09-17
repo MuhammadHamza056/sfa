@@ -1,4 +1,5 @@
 import 'dart:math' as math;
+import 'package:sfa/core/network/api_exception.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
@@ -194,7 +195,7 @@ class _OrderTrackingScreenState extends ConsumerState<OrderTrackingScreen> {
                 // cached value — stay quiet rather than popping a 2nd spinner.
                 loading: () => const SizedBox.shrink(),
                 error: (error, _) => Text(
-                  error.toString(),
+                  error.errorMessage,
                   style: AppStyle.bodyText.copyWith(
                     color: context.palette.textMuted,
                   ),
@@ -324,7 +325,7 @@ class _OrderTrackingScreenState extends ConsumerState<OrderTrackingScreen> {
                   // loader already handles the initial fetch.
                   loading: () => const SizedBox.shrink(),
                   error: (error, _) => Text(
-                    error.toString(),
+                    error.errorMessage,
                     style: AppStyle.bodyText.copyWith(
                       color: context.palette.textMuted,
                     ),

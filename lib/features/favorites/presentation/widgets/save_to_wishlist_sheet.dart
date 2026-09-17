@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:sfa/core/network/api_exception.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:sfa/core/localization/app_localizations.dart';
@@ -169,7 +170,7 @@ class _SaveToWishlistSheetState extends ConsumerState<SaveToWishlistSheet> {
                     ),
                     child: Center(
                       child: Text(
-                        error.toString(),
+                        error.errorMessage,
                         textAlign: TextAlign.center,
                         style: GoogleFonts.cairo(
                           fontSize: 14,

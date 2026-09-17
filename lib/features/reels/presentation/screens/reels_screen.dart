@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:sfa/core/network/api_exception.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -190,7 +191,7 @@ class _ReelsScreenState extends ConsumerState<ReelsScreen> {
             ),
             error: (error, _) => Center(
               child: Text(
-                error.toString(),
+                error.errorMessage,
                 style: const TextStyle(color: Colors.white),
               ),
             ),

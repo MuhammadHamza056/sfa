@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:sfa/core/network/api_exception.dart';
 import 'package:go_router/go_router.dart';
 import 'package:sfa/core/localization/app_localizations.dart';
 import 'package:sfa/utils/color_constants.dart';
@@ -197,7 +198,7 @@ class _RefundRequestScreenState extends ConsumerState<RefundRequestScreen> {
                       loading: () =>
                           const Center(child: CircularProgressIndicator()),
                       error: (error, _) => Text(
-                        error.toString(),
+                        error.errorMessage,
                         style: TextStyle(color: context.palette.textMuted),
                       ),
                       data: (items) {
@@ -332,7 +333,7 @@ class _RefundRequestScreenState extends ConsumerState<RefundRequestScreen> {
                     loading: () =>
                         const Center(child: CircularProgressIndicator()),
                     error: (error, _) => Text(
-                      error.toString(),
+                      error.errorMessage,
                       style: TextStyle(color: context.palette.textMuted),
                     ),
                     data: (reasons) => DropdownButtonFormField<String>(

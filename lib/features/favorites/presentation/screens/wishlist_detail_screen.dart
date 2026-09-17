@@ -1,4 +1,5 @@
 import 'dart:ui' show ImageFilter;
+import 'package:sfa/core/network/api_exception.dart';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -37,7 +38,7 @@ class WishlistDetailScreen extends ConsumerWidget {
           loading: () => const Center(child: CircularProgressIndicator()),
           error: (error, _) => Center(
             child: Text(
-              error.toString(),
+              error.errorMessage,
               style: TextStyle(color: context.palette.textMuted),
             ),
           ),
@@ -402,6 +403,10 @@ class _Image extends ConsumerWidget {
                   .removeItem(wishlistId, item.productId);
               if (result.isSuccess) {
                 ref.invalidate(wishlistDetailProvider(wishlistId));
+                // The list screen's card (cover images + item count) is a
+                // separate cached provider — without this it stays stale
+                // after popping back to it.
+                ref.invalidate(wishlistsListProvider);
               }
             },
             child: ClipRRect(

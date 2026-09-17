@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:sfa/core/network/api_exception.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:sfa/utils/Values.dart';
 import 'package:sfa/utils/app_style.dart';
@@ -72,7 +73,7 @@ class FeaturedProductsSection extends ConsumerWidget {
             error: (error, _) => Padding(
               padding: const EdgeInsets.symmetric(vertical: 24),
               child: Text(
-                error.toString(),
+                error.errorMessage,
                 style: AppStyle.bodyText.copyWith(color: context.palette.textMuted),
               ),
             ),
@@ -119,7 +120,7 @@ class FeaturedProductsSection extends ConsumerWidget {
                         error: (error, _) => Padding(
                           padding: const EdgeInsets.symmetric(vertical: 24),
                           child: Text(
-                            error.toString(),
+                            error.errorMessage,
                             style: AppStyle.bodyText.copyWith(color: context.palette.textMuted),
                           ),
                         ),

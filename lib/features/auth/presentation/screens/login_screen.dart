@@ -220,7 +220,22 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   _emailField()
                 else
                   PhoneInputField(controller: _phoneController),
-                const SizedBox(height: 28),
+                if (state.isEmailMode) ...[
+                  const SizedBox(height: 12),
+                  Align(
+                    alignment: loc.isArabic
+                        ? Alignment.centerLeft
+                        : Alignment.centerRight,
+                    child: TextButton(
+                      onPressed: () => context.push('/forgot-password'),
+                      child: Text(
+                        loc.translate('forgotPassword'),
+                        style: AppStyle.switchTextLink,
+                      ),
+                    ),
+                  ),
+                ],
+                SizedBox(height: state.isEmailMode ? 16 : 28),
 
                 // Submit Login Button
                 state.status == AuthStatus.loading

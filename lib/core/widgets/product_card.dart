@@ -78,7 +78,9 @@ class ProductCard extends StatelessWidget {
                           .contains(favProduct);
                       return Container(
                         decoration: BoxDecoration(
-                          color: Colors.white.withValues(alpha: 0.85),
+                          color: context.palette.surface.withValues(
+                            alpha: 0.85,
+                          ),
                           shape: BoxShape.circle,
                         ),
                         child: IconButton(

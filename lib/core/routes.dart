@@ -15,6 +15,9 @@ import '../features/auth/presentation/screens/login_screen.dart';
 import '../features/auth/presentation/screens/signup_screen.dart';
 import '../features/auth/presentation/screens/otp_screen.dart';
 import '../features/auth/presentation/screens/success_screen.dart';
+import '../features/auth/presentation/screens/forgot_password_screen.dart';
+import '../features/auth/presentation/screens/reset_otp_screen.dart';
+import '../features/auth/presentation/screens/reset_password_screen.dart';
 import '../features/dashboard/presentation/screens/app_shell.dart';
 import '../features/home/presentation/screens/home_screen.dart';
 import '../features/brands/presentation/screens/brands_screen.dart';
@@ -68,6 +71,18 @@ final router = GoRouter(
     GoRoute(
       path: '/success',
       builder: (context, state) => const SuccessScreen(),
+    ),
+    GoRoute(
+      path: '/forgot-password',
+      builder: (context, state) => const ForgotPasswordScreen(),
+    ),
+    GoRoute(
+      path: '/reset-otp',
+      builder: (context, state) => const ResetOtpScreen(),
+    ),
+    GoRoute(
+      path: '/reset-password',
+      builder: (context, state) => const ResetPasswordScreen(),
     ),
 
     // Legacy deep link — the 5 tabs now live at their own paths below.
@@ -186,7 +201,12 @@ final router = GoRouter(
       parentNavigatorKey: _rootNavigatorKey,
       builder: (context, state) {
         final args = state.extra as PaymentWebviewArgs;
-        return PaymentWebviewScreen(paymentUrl: args.paymentUrl, order: args.order);
+        return PaymentWebviewScreen(
+          paymentUrl: args.paymentUrl,
+          order: args.order,
+          isOrderRetry: args.isOrderRetry,
+          openExternally: args.openExternally,
+        );
       },
     ),
     GoRoute(

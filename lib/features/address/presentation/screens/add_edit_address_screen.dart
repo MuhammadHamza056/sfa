@@ -9,8 +9,10 @@ import 'package:go_router/go_router.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:sfa/core/localization/app_localizations.dart';
 import 'package:sfa/core/theme/app_palette.dart';
+import 'package:sfa/core/widgets/gulf_country_code_picker.dart';
 import 'package:sfa/utils/color_constants.dart';
 import 'package:sfa/utils/loader.dart';
+import 'package:sfa/utils/phone_number_formatter.dart';
 import '../../models/address.dart';
 import '../../providers/address_provider.dart';
 
@@ -40,8 +42,15 @@ final _coordinateFormatters = [
 ];
 
 class _AddEditAddressScreenState extends ConsumerState<AddEditAddressScreen> {
+  /// Dial codes recognized when splitting an existing address's saved
+  /// [Address.contactNumber] back into code + local number. Falls back to
+  /// [_defaultDialCode] for numbers saved before the picker existed.
+  static final _knownDialCodes = gulfPhoneLengths.keys.toList();
+  static const _defaultDialCode = '+965';
+
   late final TextEditingController _labelController;
   late final TextEditingController _contactNumberController;
+  String _dialCode = _defaultDialCode;
   late final TextEditingController _governorateController;
   late final TextEditingController _areaController;
   late final TextEditingController _blockController;
@@ -83,8 +92,16 @@ class _AddEditAddressScreenState extends ConsumerState<AddEditAddressScreen> {
     super.initState();
     final address = widget.address;
     _labelController = TextEditingController(text: address?.name ?? '');
+    final savedNumber = address?.contactNumber ?? '';
+    final knownCode = _knownDialCodes.firstWhere(
+      savedNumber.startsWith,
+      orElse: () => _defaultDialCode,
+    );
+    _dialCode = knownCode;
     _contactNumberController = TextEditingController(
-      text: address?.contactNumber ?? '',
+      text: savedNumber.startsWith(knownCode)
+          ? savedNumber.substring(knownCode.length)
+          : savedNumber,
     );
     _governorateController = TextEditingController(
       text: address?.governorate ?? '',
@@ -267,6 +284,15 @@ class _AddEditAddressScreenState extends ConsumerState<AddEditAddressScreen> {
       return;
     }
 
+    final phoneError = PhoneInputValidator.validatePhoneNumber(
+      contactNumber,
+      _dialCode,
+    );
+    if (phoneError != null) {
+      Loader.showError(phoneError);
+      return;
+    }
+
     // The pin is not optional: dispatch, driver assignment, distance
     // pricing and route optimisation all run off these coordinates, and a
     // 0/0 address silently breaks every one of them.
@@ -291,7 +317,7 @@ class _AddEditAddressScreenState extends ConsumerState<AddEditAddressScreen> {
     final address = Address(
       id: existing?.id ?? '',
       name: label,
-      contactNumber: contactNumber,
+      contactNumber: '$_dialCode$contactNumber',
       governorate: governorate,
       area: area,
       block: block,
@@ -389,13 +415,13 @@ class _AddEditAddressScreenState extends ConsumerState<AddEditAddressScreen> {
                 textAlign: textAlign,
               ),
               const SizedBox(height: 20),
-              _FormField(
+              _PhoneFormField(
                 label: loc.translate('phoneLabel'),
                 hint: loc.translate('phoneHint'),
                 controller: _contactNumberController,
-                keyboardType: TextInputType.phone,
-                textDirection: TextDirection.ltr,
-                textAlign: TextAlign.left,
+                dialCode: _dialCode,
+                onDialCodeChanged: (code) => setState(() => _dialCode = code),
+                textAlign: textAlign,
               ),
               const SizedBox(height: 20),
               _FormField(
@@ -621,6 +647,90 @@ class _AddEditAddressScreenState extends ConsumerState<AddEditAddressScreen> {
           ],
         ),
       ),
+    );
+  }
+}
+
+/// Phone field with a leading dial-code picker — [Address.contactNumber]
+/// stores the two concatenated (see [_AddEditAddressScreenState._onSave]),
+/// since the backend DTO has no separate country-code field.
+class _PhoneFormField extends StatelessWidget {
+  final String label;
+  final String hint;
+  final TextEditingController controller;
+  final String dialCode;
+  final ValueChanged<String> onDialCodeChanged;
+  final TextAlign textAlign;
+
+  const _PhoneFormField({
+    required this.label,
+    required this.hint,
+    required this.controller,
+    required this.dialCode,
+    required this.onDialCodeChanged,
+    required this.textAlign,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          label,
+          textAlign: textAlign,
+          style: TextStyle(
+            fontSize: 14,
+            fontWeight: FontWeight.w600,
+            color: context.palette.textPrimary,
+          ),
+        ),
+        const SizedBox(height: 8),
+        Directionality(
+          textDirection: TextDirection.ltr,
+          child: Container(
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: context.palette.divider, width: 1.5),
+            ),
+            child: Row(
+              children: [
+                GulfCountryCodePicker(
+                  initialSelection: dialCode,
+                  onChanged: (country) =>
+                      onDialCodeChanged(country.dialCode ?? dialCode),
+                ),
+                Container(height: 24, width: 1, color: context.palette.divider),
+                Expanded(
+                  child: TextField(
+                    controller: controller,
+                    keyboardType: TextInputType.phone,
+                    textAlign: TextAlign.left,
+                    inputFormatters: [
+                      PhoneInputFormatter(
+                        maxLength: gulfPhoneLengths[dialCode] ?? 9,
+                      ),
+                    ],
+                    style: TextStyle(color: context.palette.textPrimary),
+                    decoration: InputDecoration(
+                      hintText: hint,
+                      hintStyle: TextStyle(
+                        color: context.palette.textMuted,
+                        fontSize: 13,
+                      ),
+                      contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 16,
+                      ),
+                      border: InputBorder.none,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ],
     );
   }
 }

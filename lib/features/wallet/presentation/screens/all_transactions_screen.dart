@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:sfa/core/network/api_exception.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:sfa/core/localization/app_localizations.dart';
 import 'package:sfa/utils/app_style.dart';
@@ -22,7 +23,7 @@ class AllTransactionsScreen extends ConsumerWidget {
         child: transactionsAsync.when(
           loading: () => const Center(child: CircularProgressIndicator()),
           error: (error, _) => Center(
-            child: Text(error.toString(), style: AppStyle.bodyText.copyWith(color: context.palette.textMuted)),
+            child: Text(error.errorMessage, style: AppStyle.bodyText.copyWith(color: context.palette.textMuted)),
           ),
           data: (transactions) {
             if (transactions.isEmpty) {

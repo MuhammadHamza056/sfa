@@ -58,9 +58,40 @@ class HomeScreen extends ConsumerWidget {
                       child: Stack(
                         children: [
                           Positioned.fill(
-                            child: Image.asset(
-                              AssetsConstants.homeBackground,
-                              fit: BoxFit.cover,
+                            child: Consumer(
+                              builder: (context, ref, _) {
+                                final selectedCategoryIndex = ref.watch(
+                                  homeSelectedCategoryIndexProvider,
+                                );
+                                return AnimatedSwitcher(
+                                  duration: const Duration(milliseconds: 350),
+                                  switchInCurve: Curves.easeOut,
+                                  switchOutCurve: Curves.easeIn,
+                                  layoutBuilder:
+                                      (currentChild, previousChildren) {
+                                        return Stack(
+                                          fit: StackFit.expand,
+                                          children: [
+                                            ...previousChildren,
+                                            ?currentChild,
+                                          ],
+                                        );
+                                      },
+                                  child: Image.asset(
+                                    _heroBackgroundFor(selectedCategoryIndex),
+                                    key: ValueKey(selectedCategoryIndex),
+                                    fit: BoxFit.cover,
+                                  ),
+                                );
+                              },
+                            ),
+                          ),
+                          // Flat dark scrim over the whole hero image so
+                          // bright backgrounds (e.g. the men's/kids' photos)
+                          // don't wash out the white tab/announcement text.
+                          Positioned.fill(
+                            child: Container(
+                              color: Colors.black.withValues(alpha: 0.25),
                             ),
                           ),
                           Positioned.fill(
@@ -287,7 +318,9 @@ class HomeScreen extends ConsumerWidget {
                                 ),
                                 const SizedBox(height: 20),
                                 InkWell(
-                                  onTap: () {},
+                                  onTap: () {
+                                    context.push('/featured-products');
+                                  },
                                   child: Container(
                                     padding: const EdgeInsets.symmetric(
                                       vertical: 4,
@@ -504,6 +537,18 @@ class HomeScreen extends ConsumerWidget {
         ],
       ),
     );
+  }
+
+  /// Maps the selected Women(0)/Men(1)/Kids(2) tab to its hero background.
+  String _heroBackgroundFor(int selectedCategoryIndex) {
+    switch (selectedCategoryIndex) {
+      case 1:
+        return AssetsConstants.homeBackgroundMen;
+      case 2:
+        return AssetsConstants.homeBackgroundKids;
+      default:
+        return AssetsConstants.homeBackgroundWomen;
+    }
   }
 
   Widget _buildTab(

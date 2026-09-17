@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:sfa/core/network/api_exception.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
@@ -124,7 +125,7 @@ class WalletScreen extends ConsumerWidget {
                         child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
                       ),
                       error: (error, _) => Text(
-                        error.toString(),
+                        error.errorMessage,
                         style: AppStyle.walletTxDate.copyWith(color: Colors.white),
                       ),
                       data: (balance) => Text(
@@ -167,7 +168,7 @@ class WalletScreen extends ConsumerWidget {
               transactionsAsync.when(
                 loading: () => const Center(child: CircularProgressIndicator()),
                 error: (error, _) => Text(
-                  error.toString(),
+                  error.errorMessage,
                   style: AppStyle.bodyText.copyWith(color: context.palette.textMuted),
                 ),
                 data: (transactions) {

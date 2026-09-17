@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:sfa/core/network/api_exception.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:sfa/core/localization/app_localizations.dart';
 import 'package:go_router/go_router.dart';
@@ -57,7 +58,12 @@ Future<bool> startOrderPayment({
       } else {
         await context.push(
           '/payment-webview',
-          extra: PaymentWebviewArgs(paymentUrl: payment.paymentUrl, order: confirmed),
+          extra: PaymentWebviewArgs(
+            paymentUrl: payment.paymentUrl,
+            order: confirmed,
+            isOrderRetry: true,
+            openExternally: method.requiresExternalBrowser,
+          ),
         );
       }
       return true;
@@ -141,7 +147,7 @@ class _OrderPaymentMethodSheetState extends ConsumerState<_OrderPaymentMethodShe
                 error: (error, _) => Padding(
                   padding: const EdgeInsets.symmetric(vertical: 12),
                   child: Text(
-                    error.toString(),
+                    error.errorMessage,
                     style: AppStyle.bodyText.copyWith(color: context.palette.textMuted),
                   ),
                 ),

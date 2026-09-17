@@ -182,40 +182,47 @@ class AuthRepository {
     return _client.post<void>(ApiEndpoints.logout, fromJson: (_) {});
   }
 
-  /// M10: Request password reset OTP
+  /// M10: Request password reset OTP. Either `email` or
+  /// `countryCode`+`phoneNumber` is required — confirmed against the live
+  /// backend (`ForgotPasswordRequestDto`).
   Future<ApiResult<OtpRequestResult>> forgotPasswordRequest({
-    required String countryCode,
-    required String phoneNumber,
+    String? email,
+    String? countryCode,
+    String? phoneNumber,
     String type = 'user',
   }) {
     return _client.post<OtpRequestResult>(
       ApiEndpoints.forgotPasswordRequest,
-      data: {'countryCode': countryCode, 'phoneNumber': phoneNumber, 'type': type},
+      data: {
+        if (email != null) 'email': email,
+        if (countryCode != null) 'countryCode': countryCode,
+        if (phoneNumber != null) 'phoneNumber': phoneNumber,
+        'type': type,
+      },
       fromJson: (data) =>
           OtpRequestResult.fromJson(data as Map<String, dynamic>),
     );
   }
 
-  /// Not a separate numbered endpoint in the current guide (the old M08
-  /// "verify reset OTP" was dropped from the master index) — inferred as a
-  /// reuse of M02's `/auth/otp/verify` with `type: FORGOT_PASSWORD` (the
-  /// server's confirmed enum, per its `otp/verify` validation error),
-  /// expecting a `resetToken` back instead of a session. Still unwired to
-  /// any screen — verify the `resetToken` field name against the real
-  /// backend before relying on this.
+  /// Reuses M02's `/auth/otp/verify` with `type: FORGOT_PASSWORD` — confirmed
+  /// against the live backend to return `{ resetToken }` instead of a
+  /// session (valid 10 minutes, consumed by [forgotPasswordReset]).
   Future<ApiResult<String>> verifyPasswordResetOtp({
-    required String countryCode,
-    required String phoneNumber,
+    String? email,
+    String? countryCode,
+    String? phoneNumber,
     required String otp,
+    String targetType = 'user',
   }) {
     return _client.post<String>(
       ApiEndpoints.otpVerify,
       data: {
-        'countryCode': countryCode,
-        'phoneNumber': phoneNumber,
+        if (email != null) 'email': email,
+        if (countryCode != null) 'countryCode': countryCode,
+        if (phoneNumber != null) 'phoneNumber': phoneNumber,
         'otp': otp,
         'type': 'FORGOT_PASSWORD',
-        'targetType': 'user',
+        'targetType': targetType,
       },
       fromJson: (data) =>
           (data as Map<String, dynamic>)['resetToken'] as String,

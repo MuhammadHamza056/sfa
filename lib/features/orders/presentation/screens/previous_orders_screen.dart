@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:sfa/core/network/api_exception.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
@@ -176,7 +177,7 @@ class _PreviousOrdersScreenState extends ConsumerState<PreviousOrdersScreen>
                 loading: () => const Center(child: CircularProgressIndicator()),
                 error: (error, _) => Center(
                   child: Text(
-                    error.toString(),
+                    error.errorMessage,
                     style: AppStyle.bodyText.copyWith(color: context.palette.textMuted),
                   ),
                 ),

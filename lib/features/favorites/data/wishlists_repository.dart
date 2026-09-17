@@ -17,7 +17,9 @@ class WishlistsRepository {
         final raw = data is Map<String, dynamic> && data['items'] is List
             ? data['items'] as List
             : (data is List ? data : const []);
-        return raw.map((v) => WishlistSummary.fromJson(v as Map<String, dynamic>)).toList();
+        return raw
+            .map((v) => WishlistSummary.fromJson(v as Map<String, dynamic>))
+            .toList();
       },
     );
   }
@@ -28,7 +30,8 @@ class WishlistsRepository {
     return _client.post<WishlistSummary>(
       ApiEndpoints.wishlists,
       data: {'name': name},
-      fromJson: (data) => WishlistSummary.fromJson(data as Map<String, dynamic>),
+      fromJson: (data) =>
+          WishlistSummary.fromJson(data as Map<String, dynamic>),
     );
   }
 
@@ -54,8 +57,8 @@ class WishlistsRepository {
       ApiEndpoints.wishlistItems(wishlistId),
       data: {
         'productId': productId,
-        if (selectedSize != null) 'selectedSize': selectedSize,
-        if (selectedColor != null) 'selectedColor': selectedColor,
+        // if (selectedSize != null) 'selectedSize': selectedSize,
+        // if (selectedColor != null) 'selectedColor': selectedColor,
       },
       fromJson: (_) {},
     );
@@ -73,7 +76,8 @@ class WishlistsRepository {
   Future<ApiResult<WishlistShareResult>> getShareLink(String id) {
     return _client.get<WishlistShareResult>(
       ApiEndpoints.wishlistShare(id),
-      fromJson: (data) => WishlistShareResult.fromJson(data as Map<String, dynamic>),
+      fromJson: (data) =>
+          WishlistShareResult.fromJson(data as Map<String, dynamic>),
     );
   }
 

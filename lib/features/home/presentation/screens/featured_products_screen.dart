@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:sfa/core/network/api_exception.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:sfa/core/widgets/primary_app_bar.dart';
 import 'package:sfa/utils/app_style.dart';
@@ -31,7 +32,7 @@ class FeaturedProductsScreen extends ConsumerWidget {
             loading: () => const Center(child: CircularProgressIndicator()),
             error: (error, _) => Center(
               child: Text(
-                error.toString(),
+                error.errorMessage,
                 style: AppStyle.bodyText.copyWith(color: context.palette.textMuted),
               ),
             ),
@@ -85,7 +86,7 @@ class FeaturedProductsScreen extends ConsumerWidget {
                           loading: () => const Center(child: CircularProgressIndicator()),
                           error: (error, _) => Center(
                             child: Text(
-                              error.toString(),
+                              error.errorMessage,
                               style: AppStyle.bodyText.copyWith(color: context.palette.textMuted),
                             ),
                           ),

@@ -96,31 +96,31 @@ class DeliveryTermsBottomSheet extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(height: 12),
-                    Align(
-                      alignment: AlignmentDirectional.centerStart,
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          SvgPicture.asset(
-                            AssetsConstants.moveLeft,
-                            width: 18,
-                            height: 18,
-                            colorFilter: ColorFilter.mode(
-                              AppColors.primary,
-                              BlendMode.srcIn,
-                            ),
-                          ),
-                          const SizedBox(width: 10),
-                          Text(
-                            loc.translate('freeReturnsMoreLink'),
-                            style: AppStyle.bodyText.copyWith(
-                              fontSize: 13,
-                              color: AppColors.primary,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
+                    // Align(
+                    //   alignment: AlignmentDirectional.centerStart,
+                    //   child: Row(
+                    //     mainAxisSize: MainAxisSize.min,
+                    //     children: [
+                    //       SvgPicture.asset(
+                    //         AssetsConstants.moveLeft,
+                    //         width: 18,
+                    //         height: 18,
+                    //         colorFilter: ColorFilter.mode(
+                    //           AppColors.primary,
+                    //           BlendMode.srcIn,
+                    //         ),
+                    //       ),
+                    //       const SizedBox(width: 10),
+                    //       Text(
+                    //         loc.translate('freeReturnsMoreLink'),
+                    //         style: AppStyle.bodyText.copyWith(
+                    //           fontSize: 13,
+                    //           color: AppColors.primary,
+                    //         ),
+                    //       ),
+                    //     ],
+                    //   ),
+                    // ),
                   ],
                 ),
               ),

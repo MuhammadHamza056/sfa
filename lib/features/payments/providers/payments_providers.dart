@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/network/api_client.dart';
@@ -23,5 +25,17 @@ final myFatoorahPaymentMethodsProvider = FutureProvider.family<List<MyFatoorahPa
   final result = await ref
       .read(paymentsRepositoryProvider)
       .getLiveMyFatoorahMethods(amount: args.amount, currency: args.currency);
-  return result.when(success: (data) => data, failure: (e) => throw e);
+  return result.when(
+    success: (data) => data.where(_isSupportedOnThisPlatform).toList(),
+    failure: (e) => throw e,
+  );
 });
+
+/// MyFatoorah's method list isn't platform-aware — it always returns Apple
+/// Pay and Google Pay regardless of device, so the wallet that can't exist
+/// on this OS has to be filtered out here instead.
+bool _isSupportedOnThisPlatform(MyFatoorahPaymentMethod method) {
+  if (Platform.isAndroid && method.code == 'APPLE_PAY') return false;
+  if (Platform.isIOS && method.code == 'GOOGLE_PAY') return false;
+  return true;
+}

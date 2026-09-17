@@ -63,7 +63,8 @@ class _AppShellState extends ConsumerState<AppShell>
     // branch, so screens pushed on top know which tab to keep lit.
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
-      if (ref.read(highlightedTabIndexProvider) != widget.navigationShell.currentIndex) {
+      if (ref.read(highlightedTabIndexProvider) !=
+          widget.navigationShell.currentIndex) {
         ref.read(highlightedTabIndexProvider.notifier).state =
             widget.navigationShell.currentIndex;
       }
@@ -149,6 +150,7 @@ class AppDrawer extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isAr = loc.isArabic;
     return Scaffold(
       // warm off-white in light, raised maroon in dark
       backgroundColor: context.palette.surfaceWarm,
@@ -158,7 +160,19 @@ class AppDrawer extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              const SizedBox(height: 24),
+              // const SizedBox(height: 24),
+              Align(
+                alignment: isAr ? Alignment.centerLeft : Alignment.centerRight,
+                child: IconButton(
+                  onPressed: () => context.pop(),
+                  icon: SvgPicture.asset(
+                    AssetsConstants.back,
+                    // width: 22,
+                    matchTextDirection: true,
+                    // colorFilter: iconColor,
+                  ),
+                ),
+              ),
 
               // ── Menu items ──
               _DrawerItem(

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:sfa/core/network/api_exception.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
@@ -72,7 +73,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
             child: CircularProgressIndicator(strokeWidth: 2),
           ),
           error: (error, _) => Text(
-            error.toString(),
+            error.errorMessage,
             style: AppStyle.subtitleDesc.copyWith(
               color: context.palette.textMuted,
             ),
@@ -232,7 +233,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                   child: CircularProgressIndicator(strokeWidth: 2),
                 ),
                 error: (error, _) => Text(
-                  error.toString(),
+                  error.errorMessage,
                   style: GoogleFonts.cairo(color: Colors.white),
                 ),
                 data: (balance) => Text(
@@ -333,6 +334,28 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     // Logout button
     final Widget logoutBtn = OutlinedButton(
       onPressed: () async {
+        final confirmed = await showDialog<bool>(
+          context: context,
+          builder: (context) => AlertDialog(
+            title: Text(loc.isArabic ? 'تسجيل الخروج' : 'Log Out'),
+            content: Text(
+              loc.isArabic
+                  ? 'هل تريد تسجيل الخروج؟'
+                  : 'Are you sure you want to log out?',
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => context.pop(false),
+                child: Text(loc.translate('cancel')),
+              ),
+              TextButton(
+                onPressed: () => context.pop(true),
+                child: Text(loc.translate('logout')),
+              ),
+            ],
+          ),
+        );
+        if (confirmed != true) return;
         await ref.read(authProvider.notifier).logout();
         if (context.mounted) context.go('/login');
       },
@@ -385,7 +408,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                         membershipAsync.when(
                           loading: () => buildPointsProgressCard(null),
                           error: (error, _) => Text(
-                            error.toString(),
+                            error.errorMessage,
                             style: AppStyle.bodyText.copyWith(
                               color: context.palette.textMuted,
                             ),

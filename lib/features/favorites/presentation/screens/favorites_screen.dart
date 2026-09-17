@@ -1,21 +1,17 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
+import 'package:sfa/core/network/api_exception.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:share_plus/share_plus.dart';
 import 'package:sfa/core/localization/app_localizations.dart';
 import 'package:sfa/core/models/product.dart';
 import 'package:sfa/core/widgets/product_card.dart';
-import 'package:sfa/utils/assets_constants.dart';
 import 'package:sfa/utils/color_constants.dart';
 import 'package:sfa/features/favorites/data/wishlist_models.dart';
 import 'package:sfa/features/favorites/presentation/widgets/wishlist_name_dialog.dart';
 import 'package:sfa/features/favorites/providers/favorites_provider.dart';
 import 'package:sfa/features/favorites/providers/wishlists_providers.dart';
 import 'package:sfa/core/theme/app_palette.dart';
-import 'package:sfa/core/theme/always_light.dart';
 
 class FavoritesScreen extends ConsumerWidget {
   const FavoritesScreen({super.key});
@@ -214,7 +210,7 @@ class _WishlistsTab extends ConsumerWidget {
     return wishlistsAsync.when(
       loading: () => const Center(child: CircularProgressIndicator()),
       error: (error, _) => Center(
-        child: Text(error.toString(), style: TextStyle(color: context.palette.textMuted)),
+        child: Text(error.errorMessage, style: TextStyle(color: context.palette.textMuted)),
       ),
       data: (wishlists) {
         if (wishlists.isEmpty) {
@@ -237,120 +233,67 @@ class _WishlistsTab extends ConsumerWidget {
   Widget _buildWishlistCard(BuildContext context, WishlistSummary wishlist, bool isAr) {
     final loc = AppLocalizations.of(context);
 
-    return AlwaysLight(
-      child: GestureDetector(
-        onTap: () => context.push('/wishlist-detail/${wishlist.id}'),
-        child: Container(
-          margin: const EdgeInsets.only(bottom: 16),
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: const Color(0xFFFDFDFD),
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: const Color(0xFFF3EFE9), width: 1),
-            boxShadow: [
-              BoxShadow(color: Colors.black.withValues(alpha: 0.02), blurRadius: 10, offset: const Offset(0, 4)),
-            ],
-          ),
-          child: Column(
-            children: [
-              // Cover images row
-              Row(
-                children: List.generate(3, (imgIndex) {
-                  final url = imgIndex < wishlist.coverImages.length ? wishlist.coverImages[imgIndex] : null;
-                  return Expanded(
-                    child: Padding(
-                      padding: EdgeInsets.only(left: imgIndex == 2 ? 0 : 8.0, right: imgIndex == 0 ? 0 : 8.0),
-                      child: AspectRatio(
-                        aspectRatio: 0.9,
-                        child: ClipRRect(
-                          borderRadius: BorderRadius.circular(12),
-                          child: url == null
-                              ? Container(color: Colors.grey.shade200)
-                              : Image.network(
-                                  url,
-                                  fit: BoxFit.cover,
-                                  errorBuilder: (context, error, stackTrace) => Container(color: Colors.grey.shade200),
-                                ),
-                        ),
-                      ),
-                    ),
-                  );
-                }),
-              ),
-              const SizedBox(height: 14),
-
-              // Title + Count & Share Button Row
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Column(
-                    crossAxisAlignment: isAr ? CrossAxisAlignment.end : CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        wishlist.title,
-                        style: GoogleFonts.cairo(fontSize: 16, fontWeight: FontWeight.bold, color: context.palette.textPrimary),
-                      ),
-                      Text(
-                        '${wishlist.itemCount} ${loc.translate('productsCount')}',
-                        style: GoogleFonts.cairo(fontSize: 12, color: context.palette.textMuted),
-                      ),
-                    ],
-                  ),
-                  Theme(
-                    data: Theme.of(context).copyWith(cardColor: const Color(0xFFF5EFEB)),
-                    child: PopupMenuButton<int>(
-                      offset: const Offset(0, 40),
-                      elevation: 4,
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                      icon: Container(
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          border: Border.all(color: context.palette.textPrimary.withValues(alpha: 0.1), width: 1),
-                        ),
-                        padding: const EdgeInsets.all(8),
-                        child: SvgPicture.asset(
-                          AssetsConstants.iconShare2,
-                          width: 18,
-                          height: 18,
-                          colorFilter: ColorFilter.mode(context.palette.textPrimary, BlendMode.srcIn),
-                        ),
-                      ),
-                      padding: EdgeInsets.zero,
-                      constraints: const BoxConstraints(),
-                      onSelected: (val) async {
-                        if (val != 1) return;
-                        final result = await ProviderScope.containerOf(context)
-                            .read(wishlistsRepositoryProvider)
-                            .getShareLink(wishlist.id);
-                        final link = result.dataOrNull?.shareUrl;
-                        if (link == null) return;
-                        Clipboard.setData(ClipboardData(text: link));
-                        Share.share(
-                          isAr ? 'ألقِ نظرة على قائمة أمنياتي: $link' : 'Check out my wishlist: $link',
-                        );
-                      },
-                      itemBuilder: (context) => [
-                        PopupMenuItem(
-                          value: 1,
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Icon(Icons.copy_rounded, color: context.palette.textPrimary, size: 18),
-                              const SizedBox(width: 8),
-                              Text(
-                                loc.translate('copyShareLink'),
-                                style: GoogleFonts.cairo(fontSize: 13, fontWeight: FontWeight.bold, color: context.palette.textPrimary),
+    return GestureDetector(
+      onTap: () => context.push('/wishlist-detail/${wishlist.id}'),
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 16),
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: context.palette.surface,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: context.palette.divider, width: 1),
+          boxShadow: [
+            BoxShadow(color: Colors.black.withValues(alpha: 0.02), blurRadius: 10, offset: const Offset(0, 4)),
+          ],
+        ),
+        child: Column(
+          children: [
+            // Cover images row
+            Row(
+              children: List.generate(3, (imgIndex) {
+                final url = imgIndex < wishlist.coverImages.length ? wishlist.coverImages[imgIndex] : null;
+                return Expanded(
+                  child: Padding(
+                    padding: EdgeInsets.only(left: imgIndex == 2 ? 0 : 8.0, right: imgIndex == 0 ? 0 : 8.0),
+                    child: AspectRatio(
+                      aspectRatio: 0.9,
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(12),
+                        child: url == null
+                            ? Container(color: context.palette.surfaceMuted)
+                            : Image.network(
+                                url,
+                                fit: BoxFit.cover,
+                                errorBuilder: (context, error, stackTrace) => Container(color: context.palette.surfaceMuted),
                               ),
-                            ],
-                          ),
-                        ),
-                      ],
+                      ),
                     ),
                   ),
-                ],
-              ),
-            ],
-          ),
+                );
+              }),
+            ),
+            const SizedBox(height: 14),
+
+            // Title + Count
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Column(
+                  crossAxisAlignment: isAr ? CrossAxisAlignment.end : CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      wishlist.title,
+                      style: GoogleFonts.cairo(fontSize: 16, fontWeight: FontWeight.bold, color: context.palette.textPrimary),
+                    ),
+                    Text(
+                      '${wishlist.itemCount} ${loc.translate('productsCount')}',
+                      style: GoogleFonts.cairo(fontSize: 12, color: context.palette.textMuted),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ],
         ),
       ),
     );

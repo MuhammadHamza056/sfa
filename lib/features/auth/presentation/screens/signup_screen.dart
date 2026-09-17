@@ -14,6 +14,8 @@ import 'package:sfa/features/auth/presentation/widgets/social_sign_in_row.dart';
 import 'package:sfa/features/auth/presentation/widgets/phone_input_field.dart';
 import 'package:sfa/core/theme/app_palette.dart';
 
+import '../../../brands/presentation/widgets/delivery_terms_bottom_sheet.dart';
+
 class SignUpScreen extends ConsumerStatefulWidget {
   const SignUpScreen({super.key});
 
@@ -337,29 +339,32 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
                       ),
                     ),
                     Expanded(
-                      child: Text.rich(
-                        TextSpan(
-                          children: loc.isArabic
-                              ? [
-                                  const TextSpan(text: 'أؤكد أني قرأت '),
-                                  TextSpan(
-                                    text: 'الشروط والأحكام',
-                                    style: AppStyle.bodyTextBoldUnderline,
-                                  ),
-                                  const TextSpan(text: ' وأوافق عليها'),
-                                ]
-                              : [
-                                  const TextSpan(
-                                    text:
-                                        'I confirm that I have read and agree to the ',
-                                  ),
-                                  TextSpan(
-                                    text: 'Terms & Conditions',
-                                    style: AppStyle.bodyTextBoldUnderline,
-                                  ),
-                                ],
+                      child: GestureDetector(
+                        onTap: () => DeliveryTermsBottomSheet.show(context),
+                        child: Text.rich(
+                          TextSpan(
+                            children: loc.isArabic
+                                ? [
+                                    const TextSpan(text: 'أؤكد أني قرأت '),
+                                    TextSpan(
+                                      text: 'الشروط والأحكام',
+                                      style: AppStyle.bodyTextBoldUnderline,
+                                    ),
+                                    const TextSpan(text: ' وأوافق عليها'),
+                                  ]
+                                : [
+                                    const TextSpan(
+                                      text:
+                                          'I confirm that I have read and agree to the ',
+                                    ),
+                                    TextSpan(
+                                      text: 'Terms & Conditions',
+                                      style: AppStyle.bodyTextBoldUnderline,
+                                    ),
+                                  ],
+                          ),
+                          style: AppStyle.bodyText,
                         ),
-                        style: AppStyle.bodyText,
                       ),
                     ),
                   ],

@@ -1,5 +1,7 @@
 import 'dart:ui';
 
+import '../../../core/localization/app_localizations.dart';
+import '../../../utils/currency_formatter.dart';
 import '../../cart/data/cart_models.dart' show colorFromHex;
 
 /// M85/M87 — the guide gives no response example for either; item fields
@@ -28,13 +30,25 @@ class WishlistItemEntry {
   Color? get colorValue => colorFromHex(selectedColor);
 
   factory WishlistItemEntry.fromJson(Map<String, dynamic> json) {
+    final isAr = localeNotifier.value.languageCode == 'ar';
     final name = json['name'];
+    final priceFils = (json['priceFils'] as num?)?.toInt();
+    final images = json['images'] as List?;
     return WishlistItemEntry(
-      productId: (json['productId'] ?? json['itemId'] ?? json['id'])?.toString() ?? '',
+      // Items come back with `_id`, not `productId`/`itemId` — needed for
+      // both `DELETE /wishlists/:id/items/:productId` and the product-detail
+      // push, so it has to be hedged the same way the other entry types are.
+      productId: (json['productId'] ?? json['itemId'] ?? json['_id'] ?? json['id'])?.toString() ?? '',
       brandName: json['brandName']?.toString() ?? '',
-      name: name is Map ? (name['ar'] ?? name['en'] ?? '').toString() : (name?.toString() ?? ''),
-      price: json['price']?.toString() ?? '',
-      imageUrl: json['image']?.toString() ?? json['imageUrl']?.toString() ?? '',
+      name: name is Map
+          ? ((isAr ? name['ar'] : name['en']) ?? name['ar'] ?? name['en'] ?? '').toString()
+          : (name?.toString() ?? ''),
+      price: priceFils != null
+          ? CurrencyFormatter.fromHalalas(priceFils, isAr: isAr)
+          : (json['price']?.toString() ?? ''),
+      imageUrl: (images != null && images.isNotEmpty)
+          ? images.first.toString()
+          : (json['image']?.toString() ?? json['imageUrl']?.toString() ?? ''),
       selectedColor: json['selectedColor'] as String?,
       selectedSize: json['selectedSize'] as String?,
     );
@@ -59,6 +73,18 @@ class WishlistSummary {
   });
 
   factory WishlistSummary.fromJson(Map<String, dynamic> json) {
+    // The list endpoint has no top-level `coverImages`/`images` — instead
+    // each embedded item carries its own `images` list, so the card's
+    // cover strip is built from the first image of each item.
+    final topLevelImages = (json['coverImages'] as List? ?? json['images'] as List? ?? const [])
+        .map((v) => v.toString())
+        .toList();
+    final itemImages = (json['items'] as List? ?? const [])
+        .map((item) => (item as Map<String, dynamic>)['images'] as List?)
+        .where((images) => images != null && images.isNotEmpty)
+        .map((images) => images!.first.toString())
+        .toList();
+
     return WishlistSummary(
       // Hedged across key spellings the way `WishlistItemEntry` already is —
       // an empty id here both breaks the `/wishlist-detail/:id` push and
@@ -66,9 +92,7 @@ class WishlistSummary {
       id: (json['id'] ?? json['_id'] ?? json['wishlistId'])?.toString() ?? '',
       title: (json['title'] ?? json['name'])?.toString() ?? '',
       itemCount: (json['itemCount'] as num?)?.toInt() ?? (json['count'] as num?)?.toInt() ?? 0,
-      coverImages: (json['coverImages'] as List? ?? json['images'] as List? ?? const [])
-          .map((v) => v.toString())
-          .toList(),
+      coverImages: topLevelImages.isNotEmpty ? topLevelImages : itemImages,
       ownerName: json['ownerName']?.toString() ?? json['addedByName']?.toString() ?? '',
       ownerAvatar: json['ownerAvatar']?.toString() ?? json['avatarUrl']?.toString() ?? '',
     );

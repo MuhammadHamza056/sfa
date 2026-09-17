@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:sfa/core/network/api_exception.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
@@ -49,7 +50,7 @@ class _CartScreenState extends ConsumerState<CartScreen> {
     ref.listen(cartProvider, (previous, next) {
       final error = next.hasError ? next.error : null;
       if (error != null && previous?.hasError != true) {
-        _showError(error.toString());
+        _showError(error.errorMessage);
       }
     });
 
@@ -67,13 +68,18 @@ class _CartScreenState extends ConsumerState<CartScreen> {
               // every tap; skipping it keeps the list on screen so the
               // per-item spinners in [_CartBody] are what the user sees.
               skipLoadingOnReload: true,
+              // A failed mutation (e.g. an invalid promo code) keeps the
+              // previous cart attached via copyWithPrevious. Without this
+              // flag that error would replace the whole screen instead of
+              // just the snackbar `ref.listen` already shows above.
+              skipError: true,
               loading: () => const Center(child: CircularProgressIndicator()),
               error: (error, _) => ListView(
                 padding: const EdgeInsets.symmetric(vertical: 96),
                 children: [
                   Center(
                     child: Text(
-                      error.toString(),
+                      error.errorMessage,
                       style: AppStyle.labelText.copyWith(
                         color: context.palette.textMuted,
                       ),

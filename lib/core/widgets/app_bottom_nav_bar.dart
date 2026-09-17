@@ -54,7 +54,9 @@ class AppBottomNavBar extends ConsumerWidget {
       if (isReelStyle) {
         return isSelected ? Colors.white : Colors.white.withValues(alpha: 0.5);
       }
-      return isSelected ? context.palette.textPrimary : context.palette.textMuted;
+      return isSelected
+          ? context.palette.textPrimary
+          : context.palette.textMuted;
     }
 
     return BottomNavigationBar(
@@ -65,7 +67,9 @@ class AppBottomNavBar extends ConsumerWidget {
           ? Colors.white.withValues(alpha: 0.05)
           : context.palette.surface,
       elevation: isReelStyle ? 0 : 8,
-      selectedItemColor: isReelStyle ? Colors.white : context.palette.textPrimary,
+      selectedItemColor: isReelStyle
+          ? Colors.white
+          : context.palette.textPrimary,
       unselectedItemColor: isReelStyle
           ? Colors.white.withValues(alpha: 0.5)
           : context.palette.textMuted,
@@ -74,7 +78,9 @@ class AppBottomNavBar extends ConsumerWidget {
       ),
       unselectedLabelStyle: AppStyle.navLabel.copyWith(
         fontWeight: FontWeight.normal,
-        color: isReelStyle ? Colors.white.withValues(alpha: 0.5) : context.palette.textMuted,
+        color: isReelStyle
+            ? Colors.white.withValues(alpha: 0.5)
+            : context.palette.textMuted,
       ),
       items: [
         BottomNavigationBarItem(

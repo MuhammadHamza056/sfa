@@ -63,25 +63,44 @@ class HomeScreen extends ConsumerWidget {
                                 final selectedCategoryIndex = ref.watch(
                                   homeSelectedCategoryIndexProvider,
                                 );
-                                return AnimatedSwitcher(
-                                  duration: const Duration(milliseconds: 350),
-                                  switchInCurve: Curves.easeOut,
-                                  switchOutCurve: Curves.easeIn,
-                                  layoutBuilder:
-                                      (currentChild, previousChildren) {
-                                        return Stack(
-                                          fit: StackFit.expand,
-                                          children: [
-                                            ...previousChildren,
-                                            ?currentChild,
-                                          ],
-                                        );
-                                      },
-                                  child: Image.asset(
-                                    _heroBackgroundFor(selectedCategoryIndex),
-                                    key: ValueKey(selectedCategoryIndex),
-                                    fit: BoxFit.cover,
-                                  ),
+                                final feedAsync = ref.watch(homeFeedProvider);
+
+                                return feedAsync.maybeWhen(
+                                  data: (data) {
+                                    if (data.topBanners.isEmpty) {
+                                      return const SizedBox.shrink();
+                                    }
+                                    final index = selectedCategoryIndex.clamp(
+                                      0,
+                                      data.topBanners.length - 1,
+                                    );
+                                    final banner = data.topBanners[index];
+
+                                    return AnimatedSwitcher(
+                                      duration: const Duration(
+                                        milliseconds: 350,
+                                      ),
+                                      switchInCurve: Curves.easeOut,
+                                      switchOutCurve: Curves.easeIn,
+                                      layoutBuilder:
+                                          (currentChild, previousChildren) {
+                                            return Stack(
+                                              fit: StackFit.expand,
+                                              children: [
+                                                ...previousChildren,
+                                                if (currentChild != null)
+                                                  currentChild,
+                                              ],
+                                            );
+                                          },
+                                      child: Image.network(
+                                        banner.imageUrl,
+                                        key: ValueKey(banner.id),
+                                        fit: BoxFit.cover,
+                                      ),
+                                    );
+                                  },
+                                  orElse: () => const SizedBox.shrink(),
                                 );
                               },
                             ),
@@ -245,29 +264,52 @@ class HomeScreen extends ConsumerWidget {
                                         final selectedCategoryIndex = ref.watch(
                                           homeSelectedCategoryIndexProvider,
                                         );
-                                        return Row(
-                                          children: [
-                                            _buildTab(
-                                              ref,
-                                              0,
-                                              loc.translate('women'),
-                                              selectedCategoryIndex,
-                                            ),
-                                            const SizedBox(width: 12),
-                                            _buildTab(
-                                              ref,
-                                              1,
-                                              loc.translate('men'),
-                                              selectedCategoryIndex,
-                                            ),
-                                            const SizedBox(width: 12),
-                                            _buildTab(
-                                              ref,
-                                              2,
-                                              loc.translate('kids'),
-                                              selectedCategoryIndex,
-                                            ),
-                                          ],
+                                        final feedAsync = ref.watch(
+                                          homeFeedProvider,
+                                        );
+
+                                        return feedAsync.maybeWhen(
+                                          data: (data) {
+                                            if (data.topBanners.isEmpty) {
+                                              return const SizedBox.shrink();
+                                            }
+                                            return SingleChildScrollView(
+                                              scrollDirection: Axis.horizontal,
+                                              child: Row(
+                                                children: data.topBanners
+                                                    .asMap()
+                                                    .entries
+                                                    .map((entry) {
+                                                      final index = entry.key;
+                                                      final banner =
+                                                          entry.value;
+                                                      return Row(
+                                                        mainAxisSize:
+                                                            MainAxisSize.min,
+                                                        children: [
+                                                          _buildTab(
+                                                            ref,
+                                                            index,
+                                                            banner.title
+                                                                .resolve(isAr),
+                                                            selectedCategoryIndex,
+                                                          ),
+                                                          if (index <
+                                                              data
+                                                                      .topBanners
+                                                                      .length -
+                                                                  1)
+                                                            const SizedBox(
+                                                              width: 12,
+                                                            ),
+                                                        ],
+                                                      );
+                                                    })
+                                                    .toList(),
+                                              ),
+                                            );
+                                          },
+                                          orElse: () => const SizedBox.shrink(),
                                         );
                                       },
                                     ),
@@ -282,68 +324,75 @@ class HomeScreen extends ConsumerWidget {
                                 100, // push up slightly so it doesn't get cut off by bottom nav
                             left: 24,
                             right: 24,
-                            child: Column(
-                              crossAxisAlignment: isAr
-                                  ? CrossAxisAlignment.end
-                                  : CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  isAr
-                                      ? 'مجموعة\nاليوم الوطني'
-                                      : 'National Day\nCollection',
-                                  textAlign: isAr
-                                      ? TextAlign.right
-                                      : TextAlign.left,
-                                  style: GoogleFonts.cairo(
-                                    color: Colors.white,
-                                    fontSize: 34,
-                                    fontWeight: FontWeight.w800,
-                                    height: 1.2,
-                                  ),
-                                ),
-                                const SizedBox(height: 12),
-                                Text(
-                                  isAr
-                                      ? 'أكثر من 100 علامة تجارية سعودية أصلية\nعلامات تجارية سعودية نفخر بها'
-                                      : 'More than 100 authentic Saudi brands\nSaudi brands we are proud of',
-                                  textAlign: isAr
-                                      ? TextAlign.right
-                                      : TextAlign.left,
-                                  style: GoogleFonts.cairo(
-                                    color: Colors.white.withValues(alpha: 0.9),
-                                    fontSize: 14,
-                                    height: 1.4,
-                                    fontWeight: FontWeight.w500,
-                                  ),
-                                ),
-                                const SizedBox(height: 20),
-                                InkWell(
-                                  onTap: () {
-                                    context.push('/featured-products');
-                                  },
-                                  child: Container(
-                                    padding: const EdgeInsets.symmetric(
-                                      vertical: 4,
-                                    ),
-                                    decoration: const BoxDecoration(
-                                      border: Border(
-                                        bottom: BorderSide(
-                                          color: Colors.white,
-                                          width: 1.5,
+                            child: Consumer(
+                              builder: (context, ref, _) {
+                                final selectedCategoryIndex = ref.watch(
+                                  homeSelectedCategoryIndexProvider,
+                                );
+                                final feedAsync = ref.watch(homeFeedProvider);
+
+                                return feedAsync.maybeWhen(
+                                  data: (data) {
+                                    if (data.topBanners.isEmpty) {
+                                      return const SizedBox.shrink();
+                                    }
+                                    final index = selectedCategoryIndex.clamp(
+                                      0,
+                                      data.topBanners.length - 1,
+                                    );
+                                    final banner = data.topBanners[index];
+
+                                    return Column(
+                                      crossAxisAlignment: isAr
+                                          ? CrossAxisAlignment.end
+                                          : CrossAxisAlignment.start,
+                                      children: [
+                                        if (banner.subtitle != null)
+                                          Text(
+                                            banner.subtitle!.resolve(isAr),
+                                            textAlign: isAr
+                                                ? TextAlign.right
+                                                : TextAlign.left,
+                                            style: GoogleFonts.cairo(
+                                              color: Colors.white,
+                                              fontSize: 34,
+                                              fontWeight: FontWeight.w800,
+                                              height: 1.2,
+                                            ),
+                                          ),
+                                        const SizedBox(height: 20),
+                                        InkWell(
+                                          onTap: () {
+                                            context.push('/featured-products');
+                                          },
+                                          child: Container(
+                                            padding: const EdgeInsets.symmetric(
+                                              vertical: 4,
+                                            ),
+                                            decoration: const BoxDecoration(
+                                              border: Border(
+                                                bottom: BorderSide(
+                                                  color: Colors.white,
+                                                  width: 1.5,
+                                                ),
+                                              ),
+                                            ),
+                                            child: Text(
+                                              loc.translate('shopNow'),
+                                              style: GoogleFonts.cairo(
+                                                color: Colors.white,
+                                                fontSize: 16,
+                                                fontWeight: FontWeight.bold,
+                                              ),
+                                            ),
+                                          ),
                                         ),
-                                      ),
-                                    ),
-                                    child: Text(
-                                      loc.translate('shopNow'),
-                                      style: GoogleFonts.cairo(
-                                        color: Colors.white,
-                                        fontSize: 16,
-                                        fontWeight: FontWeight.bold,
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                              ],
+                                      ],
+                                    );
+                                  },
+                                  orElse: () => const SizedBox.shrink(),
+                                );
+                              },
                             ),
                           ),
                         ],
@@ -537,18 +586,6 @@ class HomeScreen extends ConsumerWidget {
         ],
       ),
     );
-  }
-
-  /// Maps the selected Women(0)/Men(1)/Kids(2) tab to its hero background.
-  String _heroBackgroundFor(int selectedCategoryIndex) {
-    switch (selectedCategoryIndex) {
-      case 1:
-        return AssetsConstants.homeBackgroundMen;
-      case 2:
-        return AssetsConstants.homeBackgroundKids;
-      default:
-        return AssetsConstants.homeBackgroundWomen;
-    }
   }
 
   Widget _buildTab(

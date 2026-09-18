@@ -70,8 +70,10 @@ class CatalogProductOption {
       name: LocalizedText.fromDynamic(json['name']),
       values: choices != null
           ? choices
-              .map((v) => (v as Map<String, dynamic>)['name']?.toString() ?? '')
-              .toList()
+                .map(
+                  (v) => (v as Map<String, dynamic>)['name']?.toString() ?? '',
+                )
+                .toList()
           : (values ?? const []).map((v) => v.toString()).toList(),
     );
   }
@@ -273,13 +275,17 @@ class CatalogBrand {
 class CatalogBanner {
   final String id;
   final LocalizedText title;
+  final LocalizedText? subtitle;
   final String imageUrl;
+  final String? placement;
   final String? linkType;
   final String? linkId;
 
   const CatalogBanner({
     required this.id,
     required this.title,
+    this.subtitle,
+    this.placement,
     required this.imageUrl,
     this.linkType,
     this.linkId,
@@ -289,6 +295,10 @@ class CatalogBanner {
     return CatalogBanner(
       id: (json['_id'] ?? json['id'])?.toString() ?? '',
       title: LocalizedText.fromDynamic(json['title']),
+      placement: json['placement'] as String?,
+      subtitle: json['subtitle'] != null
+          ? LocalizedText.fromDynamic(json['subtitle'])
+          : null,
       imageUrl: (json['image'] ?? json['imageUrl'])?.toString() ?? '',
       linkType: json['linkType'] as String?,
       linkId: json['linkId']?.toString(),
@@ -322,6 +332,7 @@ class HomeReel {
 /// M12 — the whole `GET /home/feed` payload.
 class HomeFeedData {
   final List<CatalogBanner> banners;
+  final List<CatalogBanner> topBanners;
   final List<CatalogCategory> categories;
   final List<CatalogBrand> brands;
   final List<CatalogProduct> featuredProducts;
@@ -329,6 +340,7 @@ class HomeFeedData {
 
   const HomeFeedData({
     required this.banners,
+    this.topBanners = const [],
     required this.categories,
     required this.brands,
     required this.featuredProducts,
@@ -342,8 +354,14 @@ class HomeFeedData {
           .toList();
     }
 
+    final topBanners = list('topBanners', CatalogBanner.fromJson);
+    // final topBannerIds = topBanners.map((b) => b.id).toSet();
+    final allBanners = list('banners', CatalogBanner.fromJson);
+    // final banners = allBanners.where((b) => b.placement == 'TOP_HERO').toList();
+
     return HomeFeedData(
-      banners: list('banners', CatalogBanner.fromJson),
+      banners: allBanners,
+      topBanners: topBanners,
       categories: list('categories', CatalogCategory.fromJson),
       brands: list('brands', CatalogBrand.fromJson),
       featuredProducts: list('featuredProducts', CatalogProduct.fromJson),
@@ -388,9 +406,11 @@ class SearchResults {
       products: ProductSearchPage.fromJson(
         json['products'] as Map<String, dynamic>? ?? const {},
       ),
-      brands: (((json['brands'] as Map<String, dynamic>?)?['items']) as List? ?? const [])
-          .map((v) => CatalogBrand.fromJson(v as Map<String, dynamic>))
-          .toList(),
+      brands:
+          (((json['brands'] as Map<String, dynamic>?)?['items']) as List? ??
+                  const [])
+              .map((v) => CatalogBrand.fromJson(v as Map<String, dynamic>))
+              .toList(),
     );
   }
 }

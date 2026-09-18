@@ -292,32 +292,32 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
                 const SizedBox(height: 24),
 
                 // Checkboxes Section
-                Row(
-                  children: [
-                    Checkbox(
-                      value: state.registerAsMerchant,
-                      onChanged: (val) {
-                        ref
-                            .read(authProvider.notifier)
-                            .toggleRegisterAsMerchant(val ?? false);
-                      },
-                      activeColor: AppColors.primary,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(6),
-                      ),
-                      side: BorderSide(
-                        color: context.palette.textMuted,
-                        width: 1.5,
-                      ),
-                    ),
-                    Expanded(
-                      child: Text(
-                        loc.translate('registerAsMerchant'),
-                        style: AppStyle.checkboxText,
-                      ),
-                    ),
-                  ],
-                ),
+                // Row(
+                //   children: [
+                //     Checkbox(
+                //       value: state.registerAsMerchant,
+                //       onChanged: (val) {
+                //         ref
+                //             .read(authProvider.notifier)
+                //             .toggleRegisterAsMerchant(val ?? false);
+                //       },
+                //       activeColor: AppColors.primary,
+                //       shape: RoundedRectangleBorder(
+                //         borderRadius: BorderRadius.circular(6),
+                //       ),
+                //       side: BorderSide(
+                //         color: context.palette.textMuted,
+                //         width: 1.5,
+                //       ),
+                //     ),
+                //     Expanded(
+                //       child: Text(
+                //         loc.translate('registerAsMerchant'),
+                //         style: AppStyle.checkboxText,
+                //       ),
+                //     ),
+                //   ],
+                // ),
                 const SizedBox(height: 8),
 
                 Row(
